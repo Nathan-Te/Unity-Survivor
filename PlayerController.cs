@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private float maxHp = 100f;
-    private float _currentHp;
+    [SerializeField] private float _currentHp;
 
     [Header("Interaction Ennemis")]
     [SerializeField] private LayerMask enemyLayer;
@@ -62,8 +62,6 @@ public class PlayerController : MonoBehaviour
             {
                 if (_hitBuffer[i] == null) continue;
 
-                // --- OPTIMISATION MAJEURE ---
-                // Au lieu de GetComponent, on demande au Manager
                 if (EnemyManager.Instance.TryGetEnemyByCollider(_hitBuffer[i], out EnemyController enemy))
                 {
                     totalDamageThisFrame += enemy.currentDamage;

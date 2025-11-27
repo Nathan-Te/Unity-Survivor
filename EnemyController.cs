@@ -17,6 +17,10 @@ public class EnemyController : MonoBehaviour
     {
         _rb = GetComponent<Rigidbody>();
         _myCollider = GetComponent<Collider>(); // On le récupère UNE fois ici
+        if (_myCollider == null)
+        {
+            _myCollider = GetComponentInChildren<Collider>();
+        }
         InitializeStats();
     }
 
