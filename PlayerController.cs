@@ -1,0 +1,120 @@
+using UnityEngine;
+
+[RequireComponent(typeof(CharacterController))]
+public class PlayerController : MonoBehaviour
+{
+    [Header("Stats de Base")]
+    [SerializeField] private float moveSpeed = 8f;
+    [SerializeField] private float rotationSpeed = 10f;
+    [SerializeField] private float maxHp = 100f;
+    private float _currentHp;
+
+    [Header("Interaction Ennemis")]
+    [SerializeField] private LayerMask enemyLayer;
+    [SerializeField] private float hitRadius = 1.0f;
+    [SerializeField] private float slowFactor = 0.5f;
+    [SerializeField] private LayerMask groundMask;
+
+    private CharacterController _controller;
+    private Camera _mainCamera;
+    private Vector2 _moveInput;
+    private Collider[] _hitBuffer = new Collider[20];
+
+    public static PlayerController Instance { get; private set; }
+
+    private void Awake()
+    {
+        Instance = this;
+        _controller = GetComponent<CharacterController>();
+        _mainCamera = Camera.main;
+        _currentHp = maxHp;
+    }
+
+    private void Update()
+    {
+        // 1. Inputs
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+        _moveInput = new Vector2(h, v);
+
+        // 2. Gestion des Ennemis (Optimisée)
+        float currentSpeed = moveSpeed;
+        CheckEnemyContact(ref currentSpeed);
+
+        // 3. Mouvements
+        HandleMovement(currentSpeed);
+        HandleRotation();
+    }
+
+    private void CheckEnemyContact(ref float currentMoveSpeed)
+    {
+        // Nettoyage du buffer
+        System.Array.Clear(_hitBuffer, 0, _hitBuffer.Length);
+
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, hitRadius, _hitBuffer, enemyLayer);
+
+        if (numColliders > 0)
+        {
+            currentMoveSpeed *= slowFactor;
+            float totalDamageThisFrame = 0f;
+
+            for (int i = 0; i < numColliders; i++)
+            {
+                if (_hitBuffer[i] == null) continue;
+
+                // --- OPTIMISATION MAJEURE ---
+                // Au lieu de GetComponent, on demande au Manager
+                if (EnemyManager.Instance.TryGetEnemyByCollider(_hitBuffer[i], out EnemyController enemy))
+                {
+                    totalDamageThisFrame += enemy.currentDamage;
+                }
+            }
+
+            if (totalDamageThisFrame > 0)
+            {
+                TakeDamage(totalDamageThisFrame * Time.deltaTime);
+            }
+        }
+    }
+
+    private void TakeDamage(float amount)
+    {
+        _currentHp -= amount;
+        if (_currentHp <= 0)
+        {
+            Debug.Log("GAME OVER");
+            Time.timeScale = 0;
+        }
+    }
+
+    private void HandleMovement(float speed)
+    {
+        Vector3 move = new Vector3(_moveInput.x, 0, _moveInput.y);
+        if (move.magnitude > 1f) move.Normalize();
+
+        Vector3 finalMove = move * speed;
+        finalMove.y = -9.81f;
+
+        _controller.Move(finalMove * Time.deltaTime);
+    }
+
+    private void HandleRotation()
+    {
+        Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f, groundMask))
+        {
+            Vector3 targetPosition = new Vector3(hit.point.x, transform.position.y, hit.point.z);
+            Vector3 direction = (targetPosition - transform.position).normalized;
+            if (direction != Vector3.zero)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * rotationSpeed);
+            }
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, hitRadius);
+    }
+}
