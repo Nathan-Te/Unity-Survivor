@@ -195,6 +195,171 @@ public class EnemyManager : MonoBehaviour
         return _colliderCache.TryGetValue(col.GetInstanceID(), out enemy);
     }
 
+    // --- SYSTÈME DE CIBLAGE AVANCÉ ---
+
+    public Transform GetTarget(Vector3 sourcePos, float range, TargetingMode mode, float areaSize = 2f, bool checkVisibility = true)
+    {
+        switch (mode)
+        {
+            case TargetingMode.Nearest:
+                return GetNearestEnemy(sourcePos, range, checkVisibility);
+
+            case TargetingMode.HighestDensity:
+                return GetDensestCluster(sourcePos, range, areaSize, checkVisibility);
+
+            case TargetingMode.Random:
+                return GetRandomEnemy(sourcePos, range, checkVisibility);
+
+            default:
+                return null;
+        }
+    }
+
+    // 1. LE PLUS PROCHE (Avec Option Visibilité)
+    private Transform GetNearestEnemy(Vector3 sourcePos, float range, bool checkVisibility)
+    {
+        EnemyController nearest = null;
+        float minDistSqr = range * range;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            EnemyController enemy = _activeEnemies[i];
+            if (enemy == null) continue;
+
+            float distSqr = (enemy.transform.position - sourcePos).sqrMagnitude;
+
+            // Si c'est plus proche que le précédent record ET dans la range
+            if (distSqr < minDistSqr)
+            {
+                // Vérification du mur (Raycast simple)
+                if (checkVisibility && !IsVisible(sourcePos, enemy.transform.position))
+                    continue;
+
+                minDistSqr = distSqr;
+                nearest = enemy;
+            }
+        }
+
+        return nearest != null ? nearest.transform : null;
+    }
+
+    // 2. LE PLUS GROS GROUPE (Pour les sorts de zone)
+    // areaSize = rayon de l'explosion du sort
+    private Transform GetDensestCluster(Vector3 sourcePos, float range, float areaSize, bool checkVisibility)
+    {
+        // --- 1. RÉFLEXE DE SURVIE (NOUVEAU) ---
+        // Si un ennemi est trop proche (ex: 4 unités), on panique et on le vise lui.
+        float panicDistance = 4.0f;
+
+        // On utilise la méthode existante qui est très rapide
+        Transform panicTarget = GetNearestEnemy(sourcePos, panicDistance, checkVisibility);
+        if (panicTarget != null)
+        {
+            return panicTarget;
+        }
+
+        // --- 2. LOGIQUE DE DENSITÉ (Classique) ---
+        Transform bestTarget = null;
+        int maxNeighbors = -1;
+        float rangeSqr = range * range;
+        float areaSqr = areaSize * areaSize;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            EnemyController candidate = _activeEnemies[i];
+            if (candidate == null) continue;
+
+            if ((candidate.transform.position - sourcePos).sqrMagnitude > rangeSqr) continue;
+            if (checkVisibility && !IsVisible(sourcePos, candidate.transform.position)) continue;
+
+            int neighborCount = 0;
+            for (int j = 0; j < _activeEnemies.Count; j++)
+            {
+                if (i == j) continue;
+                if ((_activeEnemies[j].transform.position - candidate.transform.position).sqrMagnitude <= areaSqr)
+                {
+                    neighborCount++;
+                }
+            }
+
+            if (neighborCount > maxNeighbors)
+            {
+                maxNeighbors = neighborCount;
+                bestTarget = candidate.transform;
+            }
+        }
+
+        if (bestTarget == null) return GetNearestEnemy(sourcePos, range, checkVisibility);
+
+        return bestTarget;
+    }
+
+    // 3. CIBLAGE ALÉATOIRE (Dans la portée)
+    private Transform GetRandomEnemy(Vector3 sourcePos, float range, bool checkVisibility)
+    {
+        // On mélange une liste temporaire d'indices pour ne pas toujours prendre les mêmes
+        // Note: Pour l'opti extrême, on pourrait juste prendre un index random, mais on risque de tomber hors portée souvent.
+        // Ici on fait une itération simple.
+
+        // Liste des candidats valides
+        List<Transform> candidates = new List<Transform>();
+        float rangeSqr = range * range;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] == null) continue;
+
+            if ((_activeEnemies[i].transform.position - sourcePos).sqrMagnitude <= rangeSqr)
+            {
+                if (!checkVisibility || IsVisible(sourcePos, _activeEnemies[i].transform.position))
+                {
+                    candidates.Add(_activeEnemies[i].transform);
+                }
+            }
+        }
+
+        if (candidates.Count > 0)
+        {
+            return candidates[UnityEngine.Random.Range(0, candidates.Count)];
+        }
+        return null;
+    }
+
+    // --- UTILITAIRE : Line of Sight ---
+    private bool IsVisible(Vector3 start, Vector3 end)
+    {
+        Vector3 dir = end - start;
+        float dist = dir.magnitude;
+
+        // On lance un rayon. Si on touche un Obstacle avant d'arriver à la distance de l'ennemi -> Pas visible
+        // Attention : LayerMask "Obstacle" doit être correctement configuré sur tes murs
+        if (Physics.Raycast(start, dir.normalized, out RaycastHit hit, dist, obstacleLayer))
+        {
+            // Si on touche quelque chose qui n'est PAS un ennemi (donc un mur)
+            // Note: Ton obstacleLayer ne doit contenir QUE les murs pour que ce check soit simple
+            return false;
+        }
+        return true;
+    }
+
+    // Ajoute ceci dans EnemyManager.cs
+    public List<EnemyController> GetEnemiesInRange(Vector3 center, float radius)
+    {
+        List<EnemyController> results = new List<EnemyController>();
+        float radiusSqr = radius * radius;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] == null) continue;
+
+            if ((_activeEnemies[i].transform.position - center).sqrMagnitude <= radiusSqr)
+            {
+                results.Add(_activeEnemies[i]);
+            }
+        }
+        return results;
+    }
+
     private void OnDestroy()
     {
         if (_moveSpeeds.IsCreated) _moveSpeeds.Dispose();
