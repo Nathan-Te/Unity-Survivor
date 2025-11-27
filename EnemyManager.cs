@@ -16,9 +16,13 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private LayerMask obstacleLayer;
 
     [Header("Steering Settings")]
-    [SerializeField] private float separationWeight = 8.0f;
+    [SerializeField] private float separationWeight = 1.5f;
     [SerializeField] private float rayDistance = 5.0f;
     [SerializeField] private float rayAngle = 45f;
+
+    [Header("Rotation Settings")]
+    [SerializeField] private float rotationSpeed = 8f;
+    [SerializeField] private float avoidanceBlendSpeed = 3f;
 
     // Données Job System
     private List<EnemyController> _activeEnemies = new List<EnemyController>();
@@ -29,6 +33,9 @@ public class EnemyManager : MonoBehaviour
     private NativeArray<RaycastCommand> _rayCommands;
     private NativeArray<RaycastHit> _rayResults;
     private int _currentCapacity = 0;
+
+    // Stockage des directions précédentes pour le lissage
+    private NativeArray<float3> _previousDirections;
 
     private Dictionary<int, EnemyController> _colliderCache = new Dictionary<int, EnemyController>();
 
@@ -46,20 +53,22 @@ public class EnemyManager : MonoBehaviour
         int requiredSize = _activeEnemies.Count * 3;
 
         // Redimensionner les arrays si nécessaire
-        if (!_rayCommands.IsCreated || _currentCapacity != requiredSize)
+        if (!_rayCommands.IsCreated || _currentCapacity != requiredSize / 3)
         {
             if (_rayCommands.IsCreated) _rayCommands.Dispose();
             if (_rayResults.IsCreated) _rayResults.Dispose();
+            if (_previousDirections.IsCreated) _previousDirections.Dispose();
 
             _rayCommands = new NativeArray<RaycastCommand>(requiredSize, Allocator.Persistent);
             _rayResults = new NativeArray<RaycastHit>(requiredSize, Allocator.Persistent);
-            _currentCapacity = requiredSize;
+            _previousDirections = new NativeArray<float3>(requiredSize / 3, Allocator.Persistent);
+            _currentCapacity = requiredSize / 3;
         }
 
         // --- ETAPE 1 : PRÉPARATION ---
         QueryParameters queryParams = new QueryParameters
         {
-            layerMask = -1,
+            layerMask = obstacleLayer,
             hitTriggers = QueryTriggerInteraction.Ignore,
             hitBackfaces = false
         };
@@ -100,7 +109,10 @@ public class EnemyManager : MonoBehaviour
             DeltaTime = Time.deltaTime,
             MoveSpeeds = _moveSpeeds.AsArray(),
             RayResults = _rayResults,
-            AvoidanceWeight = separationWeight
+            PreviousDirections = _previousDirections,
+            AvoidanceWeight = separationWeight,
+            RotationSpeed = rotationSpeed,
+            AvoidanceBlendSpeed = avoidanceBlendSpeed
         };
 
         JobHandle moveHandle = moveJob.Schedule(_transformAccessArray, raycastHandle);
@@ -189,24 +201,28 @@ public class EnemyManager : MonoBehaviour
         if (_transformAccessArray.isCreated) _transformAccessArray.Dispose();
         if (_rayCommands.IsCreated) _rayCommands.Dispose();
         if (_rayResults.IsCreated) _rayResults.Dispose();
+        if (_previousDirections.IsCreated) _previousDirections.Dispose();
     }
 }
 
-// --- JOB DE MOUVEMENT ---
+// --- JOB DE MOUVEMENT AMÉLIORÉ ---
 [BurstCompile]
 public struct MoveEnemiesJob : IJobParallelForTransform
 {
-    public Vector3 PlayerPosition;
+    public float3 PlayerPosition;
     public float DeltaTime;
     public float AvoidanceWeight;
+    public float RotationSpeed;
+    public float AvoidanceBlendSpeed;
 
     [ReadOnly] public NativeArray<float> MoveSpeeds;
     [ReadOnly] public NativeArray<RaycastHit> RayResults;
+    public NativeArray<float3> PreviousDirections;
 
     public void Execute(int index, TransformAccess transform)
     {
-        Vector3 currentPos = transform.position;
-        Vector3 dirToPlayer = (PlayerPosition - currentPos).normalized;
+        float3 currentPos = transform.position;
+        float3 dirToPlayer = math.normalize(PlayerPosition - currentPos);
         dirToPlayer.y = 0;
 
         int baseIndex = index * 3;
@@ -214,32 +230,59 @@ public struct MoveEnemiesJob : IJobParallelForTransform
         bool hitLeft = RayResults[baseIndex + 1].colliderInstanceID != 0;
         bool hitRight = RayResults[baseIndex + 2].colliderInstanceID != 0;
 
-        Vector3 finalDirection = dirToPlayer;
-        Vector3 right = transform.rotation * Vector3.right;
-        Vector3 left = transform.rotation * Vector3.left;
+        float3 finalDirection = dirToPlayer;
+        float3 right = transform.rotation * new float3(1, 0, 0);
+        float3 left = transform.rotation * new float3(-1, 0, 0);
 
+        // Calcul de l'évitement plus progressif
         if (hitCenter)
         {
-            if (!hitLeft) finalDirection = left;
-            else finalDirection = right;
-            finalDirection += dirToPlayer * 0.2f;
-            finalDirection = finalDirection.normalized * AvoidanceWeight;
+            float3 avoidDirection;
+            if (!hitLeft && !hitRight)
+            {
+                // Choix aléatoire mais cohérent basé sur la position
+                avoidDirection = (index % 2 == 0) ? left : right;
+            }
+            else if (!hitLeft)
+            {
+                avoidDirection = left;
+            }
+            else
+            {
+                avoidDirection = right;
+            }
+
+            // Blend progressif entre la direction du joueur et l'évitement
+            finalDirection = math.normalize(math.lerp(dirToPlayer, avoidDirection, 0.7f));
         }
         else if (hitLeft || hitRight)
         {
-            Vector3 nudge = Vector3.zero;
-            if (hitLeft) nudge += right;
-            if (hitRight) nudge += left;
-            finalDirection += nudge.normalized * AvoidanceWeight;
+            float3 nudge = float3.zero;
+            if (hitLeft) nudge += right * 0.5f;
+            if (hitRight) nudge += left * 0.5f;
+            finalDirection = math.normalize(dirToPlayer + nudge * AvoidanceWeight);
         }
 
-        finalDirection.Normalize();
-        transform.position += finalDirection * MoveSpeeds[index] * DeltaTime;
-
-        if (finalDirection.sqrMagnitude > 0.01f)
+        // Lissage de la direction avec la frame précédente
+        if (math.lengthsq(PreviousDirections[index]) > 0.01f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(finalDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 15f * DeltaTime);
+            finalDirection = math.normalize(math.lerp(
+                PreviousDirections[index],
+                finalDirection,
+                AvoidanceBlendSpeed * DeltaTime
+            ));
+        }
+
+        PreviousDirections[index] = finalDirection;
+
+        // Déplacement
+        transform.position += (Vector3)(finalDirection * MoveSpeeds[index] * DeltaTime);
+
+        // Rotation lissée
+        if (math.lengthsq(finalDirection) > 0.01f)
+        {
+            quaternion targetRot = quaternion.LookRotation(finalDirection, new float3(0, 1, 0));
+            transform.rotation = math.slerp(transform.rotation, targetRot, RotationSpeed * DeltaTime);
         }
     }
 }
