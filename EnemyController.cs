@@ -41,6 +41,39 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    public void ResetEnemy()
+    {
+        InitializeStats(); // Remet les PV et dégâts à la valeur du ScriptableObject
+                           // Réinitialise la vélocité si nécessaire
+        if (TryGetComponent<Rigidbody>(out var rb))
+        {
+            rb.linearVelocity = Vector3.zero; // Attention: linearVelocity pour Unity 6 (anciennement velocity)
+            rb.angularVelocity = Vector3.zero;
+        }
+    }
+
+    public void TakeDamage(float amount)
+    {
+        currentHp -= amount;
+        if (currentHp <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        // Au lieu de Destroy(gameObject);
+        if (EnemyPool.Instance != null)
+        {
+            EnemyPool.Instance.ReturnToPool(this.gameObject);
+        }
+        else
+        {
+            Destroy(gameObject); // Fallback si pas de pool
+        }
+    }
+
     private void OnEnable()
     {
         if (EnemyManager.Instance != null)
