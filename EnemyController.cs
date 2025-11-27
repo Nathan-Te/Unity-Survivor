@@ -12,6 +12,7 @@ public class EnemyController : MonoBehaviour
 
     private Rigidbody _rb;
     private Collider _myCollider; // Référence locale mise en cache
+    private int _xpValue;
 
     private void Awake()
     {
@@ -31,6 +32,7 @@ public class EnemyController : MonoBehaviour
             currentHp = 10f;
             currentDamage = 5f;
             currentSpeed = 3f;
+            _xpValue = 10;
         }
         else
         {
@@ -38,6 +40,7 @@ public class EnemyController : MonoBehaviour
             currentDamage = data.baseDamage;
             currentSpeed = data.baseSpeed;
             if (_rb) _rb.mass = data.mass;
+            _xpValue = data.xpDropAmount;
         }
     }
 
@@ -63,14 +66,21 @@ public class EnemyController : MonoBehaviour
 
     private void Die()
     {
-        // Au lieu de Destroy(gameObject);
+        // --- NOUVEAU : Drop d'XP ---
+        if (GemPool.Instance != null)
+        {
+            // On peut donner une valeur fixe (ex: 10) ou dépendante du type d'ennemi
+            GemPool.Instance.Spawn(transform.position, _xpValue);
+        }
+
+        // --- Reste inchangé ---
         if (EnemyPool.Instance != null)
         {
             EnemyPool.Instance.ReturnToPool(this.gameObject);
         }
         else
         {
-            Destroy(gameObject); // Fallback si pas de pool
+            Destroy(gameObject);
         }
     }
 

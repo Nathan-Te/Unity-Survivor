@@ -15,4 +15,7 @@ public class EnemyData : ScriptableObject
     [Header("Physique")]
     public float mass = 1f;
     public float pushPower = 2f; // Force avec laquelle il pousse les autres
+
+    [Header("Récompenses")]
+    public int xpDropAmount = 10;
 }
