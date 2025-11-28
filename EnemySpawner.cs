@@ -35,13 +35,14 @@ public class EnemySpawner : MonoBehaviour
         Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRadius;
         Vector3 spawnPos = _playerTransform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
 
+        // TODO : Commenté car désactivé
         // On récupère depuis le Pool au lieu d'Instantiate
-        GameObject enemyObj = EnemyPool.Instance.GetEnemy(spawnPos, Quaternion.identity);
+        //GameObject enemyObj = EnemyPool.Instance.GetEnemy(spawnPos, Quaternion.identity);
 
-        // IMPORTANT : On réinitialise les stats de l'ennemi recyclé
-        if (enemyObj.TryGetComponent<EnemyController>(out var controller))
-        {
-            controller.ResetEnemy();
-        }
+        //// IMPORTANT : On réinitialise les stats de l'ennemi recyclé
+        //if (enemyObj.TryGetComponent<EnemyController>(out var controller))
+        //{
+        //    controller.ResetEnemy();
+        //}
     }
 }

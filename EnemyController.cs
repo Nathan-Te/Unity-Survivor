@@ -13,6 +13,8 @@ public class EnemyController : MonoBehaviour
     private Rigidbody _rb;
     private Collider _myCollider; // Référence locale mise en cache
     private int _xpValue;
+    public EnemyData Data => data;
+    private float _attackTimer;
 
     private void Awake()
     {
@@ -23,6 +25,15 @@ public class EnemyController : MonoBehaviour
             _myCollider = GetComponentInChildren<Collider>();
         }
         InitializeStats();
+    }
+
+    private void Update()
+    {
+        // Seuls les ennemis avec un projectile attaquent à distance
+        if (data != null && data.projectilePrefab != null)
+        {
+            HandleRangedAttack();
+        }
     }
 
     public void InitializeStats()
@@ -66,21 +77,85 @@ public class EnemyController : MonoBehaviour
 
     private void Die()
     {
-        // --- NOUVEAU : Drop d'XP ---
+        // 1. Drop d'XP
         if (GemPool.Instance != null)
         {
-            // On peut donner une valeur fixe (ex: 10) ou dépendante du type d'ennemi
             GemPool.Instance.Spawn(transform.position, _xpValue);
         }
 
-        // --- Reste inchangé ---
-        if (EnemyPool.Instance != null)
+        // 2. Retour au Pool (Modifié)
+        if (EnemyPool.Instance != null && data != null && data.prefab != null)
         {
-            EnemyPool.Instance.ReturnToPool(this.gameObject);
+            // On passe le prefab d'origine pour savoir dans quelle file le ranger
+            EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
         }
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    private void HandleRangedAttack()
+    {
+        // Si le joueur est mort ou absent, on arrête
+        if (PlayerController.Instance == null) return;
+
+        float distSqr = (PlayerController.Instance.transform.position - transform.position).sqrMagnitude;
+
+        // Calculs des seuils (au carré pour la perf)
+        float fleeDistSqr = data.fleeDistance * data.fleeDistance;
+        float attackRange = data.stopDistance + 2f; // On tire un peu plus loin que la zone d'arrêt
+        float attackRangeSqr = attackRange * attackRange;
+
+        // --- NOUVELLE LOGIQUE : PANIQUE ---
+        // Si l'ennemi a une distance de fuite configurée (> 0)
+        // ET qu'il est actuellement trop proche du joueur (dans la zone de fuite)
+        if (data.fleeDistance > 0 && distSqr < fleeDistSqr)
+        {
+            // Il est en train de fuir (géré par le Job de mouvement), donc il ne peut pas viser/tirer.
+            return;
+        }
+
+        // --- LOGIQUE DE TIR STANDARD ---
+        if (distSqr <= attackRangeSqr)
+        {
+            _attackTimer += Time.deltaTime;
+            if (_attackTimer >= data.attackCooldown)
+            {
+                Attack();
+                _attackTimer = 0f;
+            }
+        }
+        else
+        {
+            // Optionnel : Si le joueur sort de la portée, on peut reset un peu le timer 
+            // pour ne pas tirer instantanément dès qu'il rentre à nouveau (0.5f de réaction)
+            _attackTimer = Mathf.Min(_attackTimer, data.attackCooldown * 0.5f);
+        }
+    }
+
+    private void Attack()
+    {
+        // Direction vers le joueur
+        Vector3 dir = (PlayerController.Instance.transform.position - transform.position).normalized;
+
+        // Utilisation du ProjectilePool (on peut réutiliser le pool du joueur ou en créer un EnemyProjectilePool dédié)
+        // Pour faire simple, utilisons le ProjectilePool existant.
+        // ATTENTION : Il faut créer un ProjectileController pour l'ennemi qui blesse le PLAYER !
+
+        // Note: Pour ce prototype, assure-toi que le projectilePrefab de l'ennemi a un script qui fait des dégâts au joueur
+        // (voir Étape 4 ci-dessous)
+
+        Vector3 spawnPos = transform.position + Vector3.up + dir;
+        GameObject proj = ProjectilePool.Instance.Get(data.projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+
+        // Tu devras adapter ProjectileController pour qu'il puisse être "Hostile"
+        if (proj.TryGetComponent<ProjectileController>(out var ctrl))
+        {
+            // On triche un peu ici en créant un SpellData temporaire pour l'ennemi, 
+            // ou alors on surcharge Initialize pour prendre juste des dégâts.
+            // Le mieux est de modifier ProjectileController (voir plus bas).
+            ctrl.InitializeEnemyProjectile(data.baseDamage, data.projectilePrefab);
         }
     }
 

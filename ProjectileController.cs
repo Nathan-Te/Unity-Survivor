@@ -13,6 +13,8 @@ public class ProjectileController : MonoBehaviour
     private Vector3 _startPosition;
     private int _hitCount;
 
+    private bool _isHostile = false;
+
     // Initialisation appelée par le Spawner/Manager au moment du tir
     public void Initialize(SpellData data, Vector3 direction)
     {
@@ -47,6 +49,21 @@ public class ProjectileController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (_isHostile)
+        {
+            if (other.TryGetComponent<PlayerController>(out var player))
+            {
+                // Il faudrait ajouter une méthode TakeDamage publique sur PlayerController
+                // player.TakeDamage(_damage); <-- À AJOUTER DANS PLAYER
+
+                // Hack pour l'instant si la méthode est privée :
+                player.SendMessage("TakeDamage", _damage, SendMessageOptions.DontRequireReceiver);
+
+                Despawn();
+            }
+            return;
+        }
+
         // On vérifie si c'est un ennemi ou un obstacle
         bool isEnemy = EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController directHitEnemy);
         // Note: Assure-toi que le layer "Obstacle" est bien défini dans ton projet
@@ -72,6 +89,20 @@ public class ProjectileController : MonoBehaviour
                 Despawn();
             }
         }
+    }
+
+    public void InitializeEnemyProjectile(float damage, GameObject sourcePrefab)
+    {
+        _damage = damage;
+        _speed = 10f; // Vitesse par défaut ennemi
+        _range = 30f;
+        _pierceCount = 0;
+        _explosionRadius = 0;
+        _sourcePrefab = sourcePrefab;
+        _isHostile = true; // Marque comme hostile
+
+        _startPosition = transform.position;
+        _hitCount = 0;
     }
 
     private void Explode()

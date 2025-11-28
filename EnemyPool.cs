@@ -5,51 +5,50 @@ public class EnemyPool : MonoBehaviour
 {
     public static EnemyPool Instance { get; private set; }
 
-    [Header("Pool Config")]
-    [SerializeField] private GameObject enemyPrefab;
-    [SerializeField] private int initialPoolSize = 50;
-
-    private Queue<GameObject> _pool = new Queue<GameObject>();
+    // Dictionnaire : ID du Prefab -> File d'attente
+    private Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
 
     private void Awake()
     {
         Instance = this;
-        InitializePool();
     }
 
-    private void InitializePool()
+    // On demande un ennemi spécifique (prefab)
+    public GameObject GetEnemy(GameObject prefab, Vector3 position, Quaternion rotation)
     {
-        for (int i = 0; i < initialPoolSize; i++)
+        int key = prefab.GetInstanceID();
+
+        if (!_pools.ContainsKey(key))
         {
-            CreateNewEnemy();
+            _pools.Add(key, new Queue<GameObject>());
+        }
+
+        if (_pools[key].Count > 0)
+        {
+            GameObject obj = _pools[key].Dequeue();
+            obj.transform.position = position;
+            obj.transform.rotation = rotation;
+            obj.SetActive(true);
+            return obj;
+        }
+        else
+        {
+            // On instancie si la file est vide
+            GameObject newObj = Instantiate(prefab, position, rotation, transform);
+            return newObj;
         }
     }
 
-    private GameObject CreateNewEnemy()
-    {
-        GameObject obj = Instantiate(enemyPrefab, transform);
-        obj.SetActive(false);
-        _pool.Enqueue(obj);
-        return obj;
-    }
-
-    public GameObject GetEnemy(Vector3 position, Quaternion rotation)
-    {
-        if (_pool.Count == 0)
-        {
-            CreateNewEnemy(); // Agrandissement dynamique si nécessaire
-        }
-
-        GameObject enemy = _pool.Dequeue();
-        enemy.transform.position = position;
-        enemy.transform.rotation = rotation;
-        enemy.SetActive(true);
-        return enemy;
-    }
-
-    public void ReturnToPool(GameObject enemy)
+    public void ReturnToPool(GameObject enemy, GameObject originalPrefab)
     {
         enemy.SetActive(false);
-        _pool.Enqueue(enemy);
+        int key = originalPrefab.GetInstanceID();
+
+        if (!_pools.ContainsKey(key))
+        {
+            _pools.Add(key, new Queue<GameObject>());
+        }
+
+        _pools[key].Enqueue(enemy);
     }
 }

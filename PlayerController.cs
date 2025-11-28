@@ -16,6 +16,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float hitRadius = 1.0f;
     [SerializeField] private float slowFactor = 0.5f;
     [SerializeField] private LayerMask groundMask;
+    
+    private bool _isGodMode = false;
 
     // --- NOUVEAU : Gestion de la visée ---
     public bool IsManualAiming { get; private set; }
@@ -82,8 +84,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void TakeDamage(float amount)
+    public void ToggleGodMode()
     {
+        _isGodMode = !_isGodMode;
+        Debug.Log($"God Mode: {_isGodMode}");
+    }
+
+    public void TakeDamage(float amount)
+    {
+        if (_isGodMode) return; // <--- LE HOOK EST ICI
+
         _currentHp -= amount;
         if (_currentHp <= 0)
         {
