@@ -6,24 +6,35 @@ using TMPro;
 public class LevelUpUI : MonoBehaviour
 {
     [Header("Panneaux")]
-    [SerializeField] private GameObject draftPanel;    // Contient les 3 cartes
-    [SerializeField] private GameObject inventoryPanel;// Contient les slots du joueur pour choisir
-    [SerializeField] private TextMeshProUGUI instructionText; // "Choisissez une amélioration" vs "Choisissez un slot"
+    [SerializeField] private GameObject draftPanel;
+    [SerializeField] private GameObject inventoryPanel;
+    [SerializeField] private GameObject modifierReplacePanel; // NOUVEAU : Popup "Quel mod remplacer ?"
+    [SerializeField] private TextMeshProUGUI instructionText;
+
+    [Header("Boutons Draft")]
+    [SerializeField] private Button rerollButton;
+    [SerializeField] private TextMeshProUGUI rerollCostText;
+    [SerializeField] private Button banButton; // Toggle mode Ban
+    [SerializeField] private TextMeshProUGUI banStockText;
 
     [Header("Conteneurs")]
     [SerializeField] private Transform cardsContainer;
-    [SerializeField] private Transform inventoryContainer; // Grid Layout pour les slots
+    [SerializeField] private Transform inventoryContainer;
+    [SerializeField] private Transform replaceContainer; // Pour les boutons de remplacement
 
     [Header("Prefabs")]
     [SerializeField] private GameObject cardPrefab;
     [SerializeField] private GameObject slotPrefab;
+    [SerializeField] private GameObject replaceButtonPrefab; // Bouton simple avec texte/icone
 
     [Header("Data")]
     [SerializeField] private List<SpellForm> availableSpells;
+    [SerializeField] private List<SpellEffect> availableEffects; // NOUVEAU
     [SerializeField] private List<SpellModifier> availableModifiers;
 
-    // État temporaire
     private UpgradeData _pendingUpgrade;
+    private int _targetSlotIndex;
+    private bool _isBanMode = false;
 
     private void Start()
     {
@@ -31,25 +42,28 @@ public class LevelUpUI : MonoBehaviour
 
         draftPanel.SetActive(false);
         inventoryPanel.SetActive(false);
-        instructionText.gameObject.SetActive(false); // <--- AJOUT : Caché au départ
+        if (modifierReplacePanel) modifierReplacePanel.SetActive(false);
+
+        // Setup Boutons
+        rerollButton.onClick.AddListener(OnRerollClicked);
+        banButton.onClick.AddListener(OnBanModeClicked);
     }
 
     public void StartLevelUpSequence()
     {
         Time.timeScale = 0f;
         _pendingUpgrade = null;
-
+        _isBanMode = false;
         ShowDraftPhase();
     }
 
-    // PHASE 1 : Afficher les 3 cartes
     private void ShowDraftPhase()
     {
         draftPanel.SetActive(true);
         inventoryPanel.SetActive(false);
+        if (modifierReplacePanel) modifierReplacePanel.SetActive(false);
 
-        instructionText.gameObject.SetActive(true);
-        instructionText.text = "LEVEL UP ! Choisissez une récompense";
+        UpdateDraftButtons();
 
         // Nettoyage
         foreach (Transform child in cardsContainer) Destroy(child.gameObject);
@@ -64,37 +78,83 @@ public class LevelUpUI : MonoBehaviour
                 card.Initialize(option, this);
             }
         }
+
+        instructionText.gameObject.SetActive(true);
+        instructionText.text = "LEVEL UP ! Choisissez une récompense";
     }
 
+    private void UpdateDraftButtons()
+    {
+        // Mise à jour visuelle des stocks
+        if (rerollCostText) rerollCostText.text = $"Reroll ({LevelManager.Instance.availableRerolls})";
+        rerollButton.interactable = LevelManager.Instance.availableRerolls > 0;
+
+        if (banStockText) banStockText.text = $"Ban ({LevelManager.Instance.availableBans})";
+        banButton.interactable = LevelManager.Instance.availableBans > 0;
+
+        // Visuel mode Ban activé (changement de couleur par ex)
+        banButton.image.color = _isBanMode ? Color.red : Color.white;
+    }
+
+    public void OnRerollClicked()
+    {
+        if (LevelManager.Instance.ConsumeReroll())
+        {
+            ShowDraftPhase(); // Régénère
+        }
+    }
+
+    public void OnBanModeClicked()
+    {
+        _isBanMode = !_isBanMode;
+        UpdateDraftButtons();
+        instructionText.text = _isBanMode ? "CLIQUEZ SUR UNE CARTE POUR LA BANNIR" : "LEVEL UP ! Choisissez une récompense";
+    }
+
+    // Appelé par la carte
     // Appelé par la carte quand on clique dessus
     public void SelectUpgrade(UpgradeData upgrade)
     {
+        // MODE BAN (Inchangé)
+        if (_isBanMode)
+        {
+            LevelManager.Instance.BanRune(upgrade.Name);
+            EndLevelUp();
+            return;
+        }
+
+        // MODE NORMAL
         _pendingUpgrade = upgrade;
+        SpellManager sm = FindFirstObjectByType<SpellManager>();
 
         if (upgrade.Type == UpgradeType.NewSpell)
         {
-            // Si c'est un nouveau sort, on l'ajoute direct (ou on demande de remplacer si inventaire plein)
-            // Pour l'instant : Ajout direct
-            FindFirstObjectByType<SpellManager>().AddNewSlot(upgrade.TargetForm);
-            EndLevelUp();
+            if (sm.CanAddSpell())
+            {
+                // Cas 1 : Il y a de la place -> Ajout direct
+                sm.AddSpell(upgrade.TargetForm);
+                EndLevelUp();
+            }
+            else
+            {
+                // Cas 2 : Plein -> On demande de remplacer un sort existant
+                ShowTargetingPhase();
+                instructionText.text = "Inventaire Plein ! Choisissez un sort à remplacer";
+            }
         }
-        else if (upgrade.Type == UpgradeType.Modifier) // Ou Effect
+        else if (upgrade.Type == UpgradeType.Modifier || upgrade.Type == UpgradeType.Effect)
         {
-            // Si c'est un modificateur, on doit choisir où le mettre
+            // Cas 3 : Amélioration (Mod ou Effet) -> On choisit la cible
             ShowTargetingPhase();
         }
     }
 
-    // PHASE 2 : Afficher l'inventaire pour choisir la cible
     private void ShowTargetingPhase()
     {
         draftPanel.SetActive(false);
         inventoryPanel.SetActive(true);
-
-        instructionText.gameObject.SetActive(true);
         instructionText.text = $"Où appliquer {_pendingUpgrade.Name} ?";
 
-        // On affiche les slots actuels du joueur
         foreach (Transform child in inventoryContainer) Destroy(child.gameObject);
 
         SpellManager sm = FindFirstObjectByType<SpellManager>();
@@ -105,22 +165,35 @@ public class LevelUpUI : MonoBehaviour
             GameObject obj = Instantiate(slotPrefab, inventoryContainer);
             if (obj.TryGetComponent<SpellSlotUI>(out var ui))
             {
-                // On passe 'this' pour dire que c'est cliquable et que ça rappelera OnSlotClicked
                 ui.Initialize(slots[i], i, this);
             }
         }
-
-        // Ajouter un bouton "Retour" ou "Annuler" serait bien ici
     }
 
     // Appelé par SpellSlotUI quand on clique sur un slot
     public void OnSlotClicked(int slotIndex)
     {
+        _targetSlotIndex = slotIndex;
         SpellManager sm = FindFirstObjectByType<SpellManager>();
+        SpellSlot slot = sm.GetSlots()[slotIndex];
 
-        if (_pendingUpgrade.Type == UpgradeType.Modifier)
+        // CAS A : REMPLACEMENT DE SORT (Inventaire Plein)
+        if (_pendingUpgrade.Type == UpgradeType.NewSpell)
         {
-            bool success = sm.TryAddModifierToSlot(_pendingUpgrade.TargetModifier, slotIndex);
+            sm.ReplaceSpell(_pendingUpgrade.TargetForm, slotIndex);
+            EndLevelUp();
+        }
+        // CAS B : CHANGEMENT D'EFFET (Élément)
+        else if (_pendingUpgrade.Type == UpgradeType.Effect)
+        {
+            sm.ReplaceEffect(_pendingUpgrade.TargetEffect, slotIndex);
+            EndLevelUp();
+        }
+        // CAS C : AJOUT DE MODIFICATEUR (Inchangé)
+        else if (_pendingUpgrade.Type == UpgradeType.Modifier)
+        {
+            // On essaie d'ajouter (sans forcer le remplacement)
+            bool success = sm.TryApplyModifierToSlot(_pendingUpgrade.TargetModifier, slotIndex, -1);
 
             if (success)
             {
@@ -128,32 +201,97 @@ public class LevelUpUI : MonoBehaviour
             }
             else
             {
-                // Feedback visuel : "Impossible !"
-                instructionText.text = "Incompatible avec ce sort !";
-                // Animation de shake ou son d'erreur
+                // Vérif Incompatibilité
+                if (_pendingUpgrade.TargetModifier.requiredTag != SpellTag.None &&
+                    !slot.formRune.AsForm.tags.HasFlag(_pendingUpgrade.TargetModifier.requiredTag))
+                {
+                    instructionText.text = "Incompatible avec cette forme !";
+                    return;
+                }
+
+                // Si compatible mais plein -> Menu Remplacement
+                ShowReplaceMenu(slot);
             }
         }
+    }
+
+    private void ShowReplaceMenu(SpellSlot slot)
+    {
+        inventoryPanel.SetActive(false);
+        if (modifierReplacePanel != null) modifierReplacePanel.SetActive(true);
+        if (instructionText != null) instructionText.text = "Quel Modificateur remplacer ?";
+
+        foreach (Transform child in replaceContainer) Destroy(child.gameObject);
+
+        for (int i = 0; i < slot.modifierRunes.Length; i++)
+        {
+            // CORRECTION : On saute les slots vides ou mal initialisés
+            if (slot.modifierRunes[i] == null || slot.modifierRunes[i].Data == null) continue;
+
+            GameObject btnObj = Instantiate(replaceButtonPrefab, replaceContainer);
+            var btn = btnObj.GetComponent<Button>();
+            var txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
+
+            // Maintenant c'est safe car on a vérifié Data != null
+            txt.text = slot.modifierRunes[i].Data.runeName;
+
+            int indexToReplace = i;
+            btn.onClick.AddListener(() => {
+                FindFirstObjectByType<SpellManager>().TryApplyModifierToSlot(_pendingUpgrade.TargetModifier, _targetSlotIndex, indexToReplace);
+                EndLevelUp();
+            });
+        }
+
+        // Optionnel : Ajouter un bouton "Annuler" pour sortir de ce menu
     }
 
     private void EndLevelUp()
     {
         draftPanel.SetActive(false);
         inventoryPanel.SetActive(false);
+        if (modifierReplacePanel) modifierReplacePanel.SetActive(false);
         instructionText.gameObject.SetActive(false);
+
         Time.timeScale = 1f;
+
+        // On vérifie s'il reste des niveaux en attente
+        if (LevelManager.Instance != null)
+        {
+            // Petite pause d'une frame ou appel direct ? Direct pour l'instant.
+            LevelManager.Instance.TriggerNextLevelUp();
+        }
     }
 
-    // ... (GenerateOptions reste inchangé) ...
     private List<UpgradeData> GenerateOptions(int count)
     {
         List<UpgradeData> picks = new List<UpgradeData>();
-        for (int i = 0; i < count; i++)
+        int attempts = 0;
+
+        while (picks.Count < count && attempts < 100)
         {
-            bool pickSpell = Random.value > 0.5f;
-            if (pickSpell && availableSpells.Count > 0)
-                picks.Add(new UpgradeData(availableSpells[Random.Range(0, availableSpells.Count)]));
-            else if (availableModifiers.Count > 0)
-                picks.Add(new UpgradeData(availableModifiers[Random.Range(0, availableModifiers.Count)]));
+            attempts++;
+
+            // Tirage aléatoire pondéré (exemple simple)
+            float r = Random.value;
+            UpgradeData candidate = null;
+
+            if (r < 0.2f && availableSpells.Count > 0) // 20% Spell
+                candidate = new UpgradeData(availableSpells[Random.Range(0, availableSpells.Count)]);
+            else if (r < 0.5f && availableEffects.Count > 0) // 30% Effect
+                candidate = new UpgradeData(availableEffects[Random.Range(0, availableEffects.Count)]);
+            else if (availableModifiers.Count > 0) // 50% Modifier
+                candidate = new UpgradeData(availableModifiers[Random.Range(0, availableModifiers.Count)]);
+
+            if (candidate != null)
+            {
+                // Vérification Ban
+                if (LevelManager.Instance.IsRuneBanned(candidate.Name)) continue;
+
+                // Vérif Doublon dans le tirage
+                if (picks.Exists(x => x.Name == candidate.Name)) continue;
+
+                picks.Add(candidate);
+            }
         }
         return picks;
     }

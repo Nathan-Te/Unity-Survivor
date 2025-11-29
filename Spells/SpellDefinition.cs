@@ -13,6 +13,7 @@ public class SpellDefinition
     public float Size;
     public float Range;
     public float Duration;
+    public float Spread;
     public int Count;
     public int Pierce;
     

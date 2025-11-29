@@ -29,6 +29,9 @@ public static class SpellBuilder
 
         def.Pierce = form.basePierce;
         def.Duration = form.baseDuration;
+
+        float finalSpread = form.baseSpread;
+
         def.Range = 20f; // Ou une valeur dans Form
 
         // --- CALCULS AVEC CROISSANCE (EFFECT) ---
@@ -71,6 +74,7 @@ public static class SpellBuilder
 
             def.Count += mod.addCount;
             def.Pierce += mod.addPierce;
+            finalSpread += mod.addSpread;
             if (mod.enableHoming) def.IsHoming = true;
         }
 
@@ -79,6 +83,7 @@ public static class SpellBuilder
         def.Cooldown = Mathf.Max(0.1f, baseCooldown * cooldownMult);
         def.Speed = form.baseSpeed * speedMult;
         def.Size = (form.prefab ? form.prefab.transform.localScale.x : 1f) * sizeMult;
+        def.Spread = finalSpread;
 
         return def;
     }

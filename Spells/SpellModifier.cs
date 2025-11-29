@@ -22,6 +22,7 @@ public class SpellModifier : RuneSO // <-- Hérite de RuneSO
     [Header("Additions")]
     public int addCount = 0;
     public int addPierce = 0;
+    public float addSpread = 0f;
     public bool enableHoming;
 
     public override string GetLevelUpDescription(int nextLevel)

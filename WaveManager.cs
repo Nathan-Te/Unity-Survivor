@@ -6,16 +6,16 @@ using UnityEngine;
 public struct EnemySpawnConfig
 {
     public EnemyData enemy;
-    [Range(0f, 100f)] public float weight; // Probabilité relative (ex: 80 pour Squelette, 20 pour Archer)
+    [Range(0f, 100f)] public float weight;
 }
 
 [System.Serializable]
 public struct TimedSpawn
 {
-    public string name; // Juste pour l'orga dans l'inspecteur (ex: "Mid-Boss")
+    public string name;
     public EnemyData enemy;
-    public float spawnTime; // À quelle seconde de la vague il apparaît (ex: 30)
-    public int count;       // Combien en faire apparaître d'un coup (ex: 1 Boss, ou 5 Élites)
+    public float spawnTime;
+    public int count;
 }
 
 [System.Serializable]
@@ -31,7 +31,6 @@ public class WaveDefinition
     [Header("Spawns Fixes (Événements)")]
     public List<TimedSpawn> timedSpawns;
 
-    // Cache pour le runtime
     [HideInInspector] public float totalWeight;
 }
 
@@ -47,10 +46,8 @@ public class WaveManager : MonoBehaviour
     public float waveTimer = 0f;
 
     private float _spawnTimer;
-    private int _nextTimedSpawnIndex; // Pour savoir quel est le prochain événement
+    private int _nextTimedSpawnIndex;
     private Transform _playerTransform;
-
-    // Listes triées pour l'exécution
     private List<TimedSpawn> _currentWaveTimedSpawns;
 
     private void Start()
@@ -62,28 +59,29 @@ public class WaveManager : MonoBehaviour
         {
             InitializeWave(0);
         }
+        else
+        {
+            Debug.LogWarning("WaveManager: Aucune vague configurée !");
+            enabled = false; // Désactive le script pour éviter les erreurs
+        }
     }
 
     private void Update()
     {
-        if (_playerTransform == null || waves.Count == 0) return;
+        if (_playerTransform == null) return;
 
-        // Gestion de la boucle finale
-        if (currentWaveIndex >= waves.Count)
-        {
-            if (loopLastWave) InitializeWave(waves.Count - 1);
-            else return;
-        }
+        // Sécurité supplémentaire
+        if (currentWaveIndex >= waves.Count) return;
 
         WaveDefinition currentWave = waves[currentWaveIndex];
 
         // 1. Avancée du Temps
         waveTimer += Time.deltaTime;
 
-        // 2. Vérification des Spawns Fixes (Boss / Élites)
+        // 2. Vérification des Spawns Fixes
         CheckTimedSpawns();
 
-        // 3. Vérification des Spawns Aléatoires (Horde)
+        // 3. Vérification des Spawns Aléatoires
         _spawnTimer += Time.deltaTime;
         if (_spawnTimer >= currentWave.spawnInterval)
         {
@@ -100,6 +98,9 @@ public class WaveManager : MonoBehaviour
 
     private void InitializeWave(int index)
     {
+        // Sécurité anti-crash
+        if (index >= waves.Count) return;
+
         currentWaveIndex = index;
         waveTimer = 0f;
         _spawnTimer = 0f;
@@ -107,14 +108,14 @@ public class WaveManager : MonoBehaviour
 
         WaveDefinition wave = waves[currentWaveIndex];
 
-        // A. Calcul des poids pour le random
+        // Calcul des poids
         wave.totalWeight = 0f;
         foreach (var config in wave.randomSpawns)
         {
             wave.totalWeight += config.weight;
         }
 
-        // B. Préparation des événements fixes (Triés par temps pour l'efficacité)
+        // Préparation des événements
         if (wave.timedSpawns != null)
         {
             _currentWaveTimedSpawns = wave.timedSpawns.OrderBy(x => x.spawnTime).ToList();
@@ -129,15 +130,55 @@ public class WaveManager : MonoBehaviour
 
     private void NextWave()
     {
-        InitializeWave(currentWaveIndex + 1);
+        int nextIndex = currentWaveIndex + 1;
+
+        // CORRECTION : On vérifie si la prochaine vague existe
+        if (nextIndex >= waves.Count)
+        {
+            if (loopLastWave && waves.Count > 0)
+            {
+                // On boucle sur la dernière vague
+                // Attention : On reste sur le même index, mais on réinitialise le timer
+                InitializeWave(waves.Count - 1);
+                Debug.Log("WaveManager: Boucle sur la dernière vague");
+            }
+            else
+            {
+                // Fin du jeu (Plus de vagues)
+                Debug.Log("WaveManager: Toutes les vagues sont terminées !");
+                enabled = false; // On arrête le script
+            }
+        }
+        else
+        {
+            // On passe à la suivante normalement
+            InitializeWave(nextIndex);
+        }
     }
 
-    // --- LOGIQUE SPAWN ALÉATOIRE (PONDÉRÉ) ---
+    private void CheckTimedSpawns()
+    {
+        if (_currentWaveTimedSpawns == null) return;
+
+        while (_nextTimedSpawnIndex < _currentWaveTimedSpawns.Count &&
+               waveTimer >= _currentWaveTimedSpawns[_nextTimedSpawnIndex].spawnTime)
+        {
+            TimedSpawn spawnInfo = _currentWaveTimedSpawns[_nextTimedSpawnIndex];
+
+            for (int i = 0; i < spawnInfo.count; i++)
+            {
+                SpawnEntity(spawnInfo.enemy);
+            }
+
+            Debug.Log($"WaveManager: Event '{spawnInfo.name}' déclenché à {waveTimer:F1}s");
+            _nextTimedSpawnIndex++;
+        }
+    }
+
     private void SpawnRandomEnemy(WaveDefinition wave)
     {
         if (wave.randomSpawns == null || wave.randomSpawns.Count == 0) return;
 
-        // Algorithme de sélection pondérée
         float randomValue = Random.Range(0, wave.totalWeight);
         float currentSum = 0;
         EnemyData selectedEnemy = null;
@@ -158,27 +199,6 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    // --- LOGIQUE SPAWN FIXE (BOSS) ---
-    private void CheckTimedSpawns()
-    {
-        // Tant qu'il reste des événements et que le temps est dépassé
-        while (_nextTimedSpawnIndex < _currentWaveTimedSpawns.Count &&
-               waveTimer >= _currentWaveTimedSpawns[_nextTimedSpawnIndex].spawnTime)
-        {
-            TimedSpawn spawnInfo = _currentWaveTimedSpawns[_nextTimedSpawnIndex];
-
-            // Spawn multiple (si count > 1)
-            for (int i = 0; i < spawnInfo.count; i++)
-            {
-                SpawnEntity(spawnInfo.enemy);
-            }
-
-            Debug.Log($"WaveManager: Event '{spawnInfo.name}' déclenché à {waveTimer:F1}s");
-            _nextTimedSpawnIndex++;
-        }
-    }
-
-    // Méthode générique de spawn
     private void SpawnEntity(EnemyData data)
     {
         if (data == null || data.prefab == null) return;
@@ -186,11 +206,13 @@ public class WaveManager : MonoBehaviour
         Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRadius;
         Vector3 spawnPos = _playerTransform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
 
-        GameObject enemyObj = EnemyPool.Instance.GetEnemy(data.prefab, spawnPos, Quaternion.identity);
-
-        if (enemyObj.TryGetComponent<EnemyController>(out var controller))
+        if (EnemyPool.Instance != null)
         {
-            controller.ResetEnemy();
+            GameObject enemyObj = EnemyPool.Instance.GetEnemy(data.prefab, spawnPos, Quaternion.identity);
+            if (enemyObj.TryGetComponent<EnemyController>(out var controller))
+            {
+                controller.ResetEnemy();
+            }
         }
     }
 }

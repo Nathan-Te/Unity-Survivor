@@ -18,7 +18,8 @@ public class UpgradeCard : MonoBehaviour
         _data = data;
         _manager = manager;
 
-        titleText.text = data.Name;
+        string lvlSuffix = data.Level > 1 ? $" (Lvl {data.Level})" : "";
+        titleText.text = data.Name + lvlSuffix;
         descriptionText.text = data.Description;
 
         if (data.Icon != null)

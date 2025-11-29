@@ -5,9 +5,9 @@ using UnityEngine.Events;
 [System.Serializable]
 public struct XpTier
 {
-    public string name;      // Juste pour t'y retrouver dans l'inspecteur (ex: "Débutant")
-    public int maxLevel;     // Jusqu'à quel niveau ce palier s'applique (ex: 10)
-    public int growthAmount; // Combien d'XP on ajoute à chaque niveau (ex: 10)
+    public string name;
+    public int maxLevel;
+    public int growthAmount;
 }
 
 public class LevelManager : MonoBehaviour
@@ -17,13 +17,22 @@ public class LevelManager : MonoBehaviour
     [Header("État")]
     public int currentLevel = 1;
     public int currentExperience = 0;
-    public int experienceToNextLevel = 100; // Valeur de départ (Niveau 1->2)
+    public int experienceToNextLevel = 100;
 
-    [Header("Configuration des Paliers")]
+    // NOUVEAU : Stockage des niveaux en attente
+    private int _pendingLevelUps = 0;
+
+    [Header("Meta-Progression")]
+    public int availableRerolls = 2; // Stock de départ
+    public int availableBans = 1;    // Stock de départ
+
+    // Liste des runes bannies pour cette partie
+    private List<string> _bannedRunes = new List<string>();
+
+    [Header("Configuration")]
     [SerializeField] private List<XpTier> growthTiers = new List<XpTier>();
-    [SerializeField] private int defaultGrowth = 100; // Fallback si on dépasse le dernier palier
+    [SerializeField] private int defaultGrowth = 100;
 
-    // Événements
     public UnityEvent OnLevelUp;
     public UnityEvent<float> OnExperienceChanged;
 
@@ -41,43 +50,74 @@ public class LevelManager : MonoBehaviour
 
     private void CheckLevelUp()
     {
-        // On utilise une boucle while au cas où on gagne assez d'XP pour passer 2 niveaux d'un coup
         while (currentExperience >= experienceToNextLevel)
         {
-            // 1. On consomme l'XP
             currentExperience -= experienceToNextLevel;
-
-            // 2. On monte de niveau
             currentLevel++;
 
-            // 3. On calcule le coût du PROCHAIN niveau
             int growth = GetGrowthForLevel(currentLevel);
             experienceToNextLevel += growth;
 
-            Debug.Log($"LEVEL UP! Niveau {currentLevel}. Prochain requis : {experienceToNextLevel} (+{growth})");
+            _pendingLevelUps++; // On empile les niveaux
+        }
+
+        // Si l'UI n'est pas déjà ouverte, on déclenche le premier
+        if (_pendingLevelUps > 0 && Time.timeScale > 0)
+        {
+            TriggerNextLevelUp();
+        }
+    }
+
+    public void TriggerNextLevelUp()
+    {
+        if (_pendingLevelUps > 0)
+        {
+            _pendingLevelUps--;
+            Debug.Log($"LEVEL UP! Reste à traiter : {_pendingLevelUps}");
             OnLevelUp?.Invoke();
         }
     }
 
+    // Gestion des Bans
+    public void BanRune(string runeName)
+    {
+        if (!_bannedRunes.Contains(runeName) && availableBans > 0)
+        {
+            _bannedRunes.Add(runeName);
+            availableBans--;
+        }
+        // Après un ban, on considère le niveau comme "passé" (ou on reroll, selon le design).
+        // Ici, tu as demandé : "cela passe le niveau sans choisir".
+        // Donc on relance la boucle.
+
+        // On ferme l'UI actuelle via l'événement (sera géré par LevelUpUI)
+    }
+
+    public bool IsRuneBanned(string runeName) => _bannedRunes.Contains(runeName);
+
+    public bool ConsumeReroll()
+    {
+        if (availableRerolls > 0)
+        {
+            availableRerolls--;
+            return true;
+        }
+        return false;
+    }
+
+    // ... (GetGrowthForLevel et UpdateInterface inchangés) ...
     private int GetGrowthForLevel(int level)
     {
-        // On cherche dans quel palier on se trouve
         foreach (var tier in growthTiers)
         {
-            if (level <= tier.maxLevel)
-            {
-                return tier.growthAmount;
-            }
+            if (level <= tier.maxLevel) return tier.growthAmount;
         }
-        // Si on a dépassé tous les paliers, on utilise la valeur par défaut
         return defaultGrowth;
     }
 
     private void UpdateInterface()
     {
-        // Sécurité pour éviter la division par zéro
         if (experienceToNextLevel == 0) experienceToNextLevel = 100;
-
         float ratio = (float)currentExperience / experienceToNextLevel;
         OnExperienceChanged?.Invoke(ratio);
     }
