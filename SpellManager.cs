@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +8,8 @@ public class SpellManager : MonoBehaviour
     [SerializeField] private List<SpellSlot> activeSlots = new List<SpellSlot>();
 
     private Transform _playerTransform;
+
+    public event Action OnInventoryUpdated;
 
     private void Start()
     {
@@ -20,6 +23,8 @@ public class SpellManager : MonoBehaviour
             slot.ForceInit();
             slot.currentCooldown = 0.5f;
         }
+
+        OnInventoryUpdated?.Invoke();
     }
 
     private void Update()
@@ -34,24 +39,22 @@ public class SpellManager : MonoBehaviour
 
     private void ProcessSlot(SpellSlot slot)
     {
+        // On vérifie Definition car les runes peuvent être vides au départ
         if (slot.Definition == null) return;
 
         slot.currentCooldown -= Time.deltaTime;
 
         if (slot.currentCooldown <= 0f)
         {
-            // CORRECTION : On passe bien une SpellDefinition
             bool attacked = AttemptAttack(slot.Definition);
 
             if (attacked)
             {
-                // CORRECTION : Majuscule à Cooldown
                 slot.currentCooldown = slot.Definition.Cooldown;
             }
         }
     }
 
-    // CORRECTION : Le paramètre est SpellDefinition, plus SpellData
     private bool AttemptAttack(SpellDefinition def)
     {
         Vector3 targetPos = Vector3.zero;
@@ -98,10 +101,8 @@ public class SpellManager : MonoBehaviour
         float spread = def.Form.baseSpread;
 
         bool isFullCircle = Mathf.Abs(spread - 360f) < 0.1f;
-
         float angleStep = (count > 1) ? (isFullCircle ? spread / count : spread / (count - 1)) : 0;
         float startAngle = count > 1 ? -spread / 2f : 0;
-
         if (isFullCircle) startAngle = 0f;
 
         for (int i = 0; i < count; i++)
@@ -121,40 +122,47 @@ public class SpellManager : MonoBehaviour
         }
     }
 
-    // Ajoute un nouveau slot avec une Forme donnée et un Effet par défaut (Physique)
-    public void AddSpell(SpellForm form)
+    // --- CORRECTIONS POUR LA NOUVELLE ARCHITECTURE RUNE ---
+
+    public void AddNewSlot(SpellForm form)
     {
         SpellSlot newSlot = new SpellSlot();
-        newSlot.form = form;
+        newSlot.formRune = new Rune(form, 1);
 
-        // Pour l'instant, on met un effet par défaut (Il faudra un Asset "DefaultPhysical" dans ton projet)
-        // Ou on charge le premier effet trouvé
-        newSlot.effect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
-
-        if (newSlot.effect == null)
-        {
-            Debug.LogError("Impossible de trouver l'effet 'Physical' dans Resources/Spells/Effects/");
-            // Fallback: Créer une instance vide pour éviter le crash
-            newSlot.effect = ScriptableObject.CreateInstance<SpellEffect>();
-        }
+        // Effet par défaut
+        var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
+        newSlot.effectRune = new Rune(defaultEffect, 1);
 
         newSlot.ForceInit();
         activeSlots.Add(newSlot);
+
+        OnInventoryUpdated?.Invoke(); // Refresh UI
     }
 
-    // Ajoute un modificateur au premier slot compatible (Logique simplifiée)
-    public void AddModifier(SpellModifier mod)
+    public bool TryAddModifierToSlot(SpellModifier mod, int slotIndex)
     {
-        foreach (var slot in activeSlots)
+        if (slotIndex < 0 || slotIndex >= activeSlots.Count) return false;
+
+        SpellSlot slot = activeSlots[slotIndex];
+
+        // Vérif Tag
+        if (mod.requiredTag != SpellTag.None && !slot.formRune.AsForm.tags.HasFlag(mod.requiredTag))
         {
-            // Vérifie la compatibilité des Tags
-            if (mod.requiredTag == SpellTag.None || slot.form.tags.HasFlag(mod.requiredTag))
-            {
-                slot.modifiers.Add(mod);
-                slot.RecalculateStats(); // Important ! Recalculer les stats
-                return; // On l'ajoute à un seul sort
-            }
+            Debug.Log("Incompatible !");
+            return false;
         }
-        Debug.Log("Aucun sort compatible trouvé pour ce modificateur.");
+
+        // Ajout ou Remplacement (Logique FIFO simple pour l'instant)
+        Rune newRune = new Rune(mod, 1);
+        if (!slot.TryAddModifier(newRune))
+        {
+            // Si plein, on remplace le premier (ou le dernier)
+            slot.ReplaceModifier(0, newRune);
+        }
+
+        OnInventoryUpdated?.Invoke();
+        return true;
     }
+
+    public List<SpellSlot> GetSlots() => activeSlots;
 }

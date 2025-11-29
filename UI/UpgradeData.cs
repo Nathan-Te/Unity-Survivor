@@ -10,16 +10,15 @@ public class UpgradeData
     public Sprite Icon;
     public UpgradeType Type;
 
-    // Références (L'un de ces champs sera rempli selon le type)
-    public SpellForm TargetForm;       // Pour un nouveau sort
-    public SpellModifier TargetModifier; // Pour modifier un sort existant
-    // public StatUpgrade TargetStat; // Pour plus tard (Vitesse, MaxHP...)
+    public SpellForm TargetForm;
+    public SpellModifier TargetModifier;
 
-    // Constructeurs rapides
+    // Constructeur pour un nouveau sort
     public UpgradeData(SpellForm form)
     {
         Type = UpgradeType.NewSpell;
-        Name = $"Nouveau : {form.formName}";
+        // CORRECTION : 'formName' devient 'runeName' (hérité de RuneSO)
+        Name = $"Nouveau : {form.runeName}";
         Description = form.description;
         Icon = form.icon;
         TargetForm = form;
@@ -28,9 +27,12 @@ public class UpgradeData
     public UpgradeData(SpellModifier mod)
     {
         Type = UpgradeType.Modifier;
-        Name = $"Module : {mod.modifierName}";
+        Name = $"Module : {mod.runeName}"; // Assure-toi que c'est runeName (hérité de RuneSO)
         Description = mod.description;
-        // Icon = mod.icon; // Ajoute un sprite à SpellModifier si tu veux
+
+        // CORRECTION : On assigne l'icône ici
+        Icon = mod.icon;
+
         TargetModifier = mod;
     }
 }

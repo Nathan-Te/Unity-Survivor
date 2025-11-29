@@ -1,24 +1,31 @@
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Spells/Modifier")]
-public class SpellModifier : ScriptableObject
+public class SpellModifier : RuneSO // <-- Hérite de RuneSO
 {
-    [Header("Identité")]
-    public string modifierName;
-    [TextArea] public string description;
+    public override RuneType Type => RuneType.Modifier;
 
     [Header("Restriction")]
-    public SpellTag requiredTag; // Si "None", s'applique à tout
+    public SpellTag requiredTag;
 
     [Header("Multiplicateurs de Stats")]
     public float damageMult = 1f;
-    public float cooldownMult = 1f; // Frenzy = 0.8
-    public float sizeMult = 1f;     // Giant = 1.5
+    public float cooldownMult = 1f;
+    public float sizeMult = 1f;
     public float speedMult = 1f;
     public float durationMult = 1f;
 
+    // --- NOUVEAU : CROISSANCE ---
+    [Header("Croissance")]
+    public float damageMultGrowth = 0.05f; // +5% dégâts par niveau
+
     [Header("Additions")]
-    public int addCount = 0;   // Multicast +1
-    public int addPierce = 0;  // Pierce +1
-    public bool enableHoming;  // Homing
+    public int addCount = 0;
+    public int addPierce = 0;
+    public bool enableHoming;
+
+    public override string GetLevelUpDescription(int nextLevel)
+    {
+        return $"Boost Dégâts amélioré de {damageMultGrowth * 100}%";
+    }
 }
