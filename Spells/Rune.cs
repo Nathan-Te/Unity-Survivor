@@ -4,25 +4,30 @@ using UnityEngine;
 public class Rune
 {
     public RuneSO Data;
-    public int Level;
-    // public Rarity Rarity; // SUPPRIMÉ : La rune n'a pas de rareté intrinsèque
 
-    public Rune(RuneSO data, int level = 1)
+    // Le niveau affiché au joueur (1, 2, 3...)
+    public int Level;
+
+    // La puissance réelle accumulée (1.0, 2.5, 5.5...)
+    // C'est cette valeur qui sera utilisée dans les formules de dégâts.
+    public float TotalPower;
+
+    public Rune(RuneSO data, float initialPower = 1.0f)
     {
         Data = data;
-        Level = level;
+        Level = 1;
+        TotalPower = initialPower; // Une rune commence généralement avec 1.0 de puissance (base)
     }
 
-    // NOUVEAU : On ajoute X niveaux d'un coup
-    public void IncreaseLevel(int amount)
+    // Appelé quand on choisit une carte d'amélioration
+    public void Upgrade(Rarity rarity)
     {
-        Level += amount;
+        Level++; // Toujours +1 niveau
+        TotalPower += RarityUtils.GetPowerBoost(rarity); // Mais la puissance bondit selon la rareté
     }
 
     // Helpers
     public SpellForm AsForm => Data as SpellForm;
     public SpellEffect AsEffect => Data as SpellEffect;
     public SpellModifier AsModifier => Data as SpellModifier;
-
-    // SUPPRIMÉ : PowerMultiplier n'existe plus, c'est le Level qui fait tout.
 }

@@ -4,7 +4,6 @@ public enum Rarity { Common, Rare, Epic, Legendary }
 
 public static class RarityUtils
 {
-    // NOUVEAU : La rareté définit le saut de niveau
     public static int GetLevelBoost(Rarity rarity)
     {
         switch (rarity)
@@ -14,6 +13,21 @@ public static class RarityUtils
             case Rarity.Epic: return 3;
             case Rarity.Legendary: return 5; // Jackpot !
             default: return 1;
+        }
+    }
+
+    // C'est le coeur de ton équilibrage.
+    // Common = Croissance normale (100%)
+    // Legendary = Croissance triple (300%) sur un seul niveau !
+    public static float GetPowerBoost(Rarity rarity)
+    {
+        switch (rarity)
+        {
+            case Rarity.Common: return 1.0f;
+            case Rarity.Rare: return 1.5f;
+            case Rarity.Epic: return 2.0f;
+            case Rarity.Legendary: return 3.0f;
+            default: return 1.0f;
         }
     }
 

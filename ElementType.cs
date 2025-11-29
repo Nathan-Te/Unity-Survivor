@@ -1,0 +1,1 @@
+public enum ElementType { Physical, Fire, Ice, Lightning, Necrotic }

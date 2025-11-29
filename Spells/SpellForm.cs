@@ -1,10 +1,11 @@
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Spells/Form")]
-public class SpellForm : RuneSO // <-- Hérite de RuneSO
+public class SpellForm : RuneSO
 {
     public override RuneType Type => RuneType.Form;
 
+    // ... (Tout tes champs existants : prefab, targetingMode, stats...) ...
     [Header("Visuals")]
     public GameObject prefab;
 
@@ -18,11 +19,10 @@ public class SpellForm : RuneSO // <-- Hérite de RuneSO
     public int baseCount = 1;
     public int basePierce = 0;
     public float baseSpread = 0f;
-    
-    // --- NOUVEAU : CROISSANCE ---
-    [Header("Croissance (Par Niveau)")]
-    public float cooldownReductionPerLevel = 0.05f; // -0.05s par niveau
-    public int countIncreaseEveryXLevels = 5;       // +1 projectile tous les 5 niveaux
+
+    [Header("Croissance")]
+    public float cooldownReductionPerLevel = 0.05f;
+    public int countIncreaseEveryXLevels = 5;
 
     [Header("Mouvement")]
     public float baseSpeed = 20f;
@@ -30,13 +30,20 @@ public class SpellForm : RuneSO // <-- Hérite de RuneSO
     public float baseDuration = 5f;
     [Range(0f, 1f)] public float procCoefficient = 1.0f;
 
-    public override string GetLevelUpDescription(int nextLevel, Rarity rarity)
+    // IMPLEMENTATION
+    public override string GetLevelUpDescription(int level)
     {
-        // Pour le Cooldown, on divise souvent par la rareté (plus rare = plus rapide)
-        // ou on multiplie la réduction.
-        float mult = RarityUtils.GetMultiplier(rarity);
-        float currentCdReduc = cooldownReductionPerLevel * (nextLevel - 1) * mult;
+        // Calcul Cooldown
+        float reduction = cooldownReductionPerLevel * (level - 1);
+        float finalCd = Mathf.Max(0.1f, baseCooldown - reduction);
 
-        return $"Cooldown réduit de {currentCdReduc:F2}s <color=grey>(x{mult})</color>";
+        // Calcul Count (tous les X niveaux)
+        int extraCount = (level - 1) / Mathf.Max(1, countIncreaseEveryXLevels);
+        int finalCount = baseCount + extraCount;
+
+        string desc = $"Cooldown : {finalCd:F2}s";
+        if (extraCount > 0) desc += $"\nProjectiles : {finalCount}";
+
+        return desc;
     }
 }

@@ -1,10 +1,11 @@
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Spells/Modifier")]
-public class SpellModifier : RuneSO // <-- Hérite de RuneSO
+public class SpellModifier : RuneSO
 {
     public override RuneType Type => RuneType.Modifier;
 
+    // ... (Champs existants) ...
     [Header("Restriction")]
     public SpellTag requiredTag;
 
@@ -15,9 +16,8 @@ public class SpellModifier : RuneSO // <-- Hérite de RuneSO
     public float speedMult = 1f;
     public float durationMult = 1f;
 
-    // --- NOUVEAU : CROISSANCE ---
     [Header("Croissance")]
-    public float damageMultGrowth = 0.05f; // +5% dégâts par niveau
+    public float damageMultGrowth = 0.05f;
 
     [Header("Additions")]
     public int addCount = 0;
@@ -25,11 +25,14 @@ public class SpellModifier : RuneSO // <-- Hérite de RuneSO
     public float addSpread = 0f;
     public bool enableHoming;
 
-    public override string GetLevelUpDescription(int nextLevel, Rarity rarity)
+    // IMPLEMENTATION
+    public override string GetLevelUpDescription(int level)
     {
-        float mult = RarityUtils.GetMultiplier(rarity);
-        float growth = damageMultGrowth * (nextLevel - 1) * mult;
+        // Exemple pour les dégâts
+        float growth = damageMultGrowth * (level - 1);
+        float totalMult = damageMult + growth;
 
-        return $"Boost Dégâts +{growth * 100:F0}% <color=grey>(x{mult})</color>";
+        // On affiche en pourcentage (x1.5 = +50%)
+        return $"Puissance : x{totalMult:F2}";
     }
 }

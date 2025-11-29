@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // N'oublie pas d'importer TextMeshPro via le Package Manager ou clic droit
+using TMPro;
 
 public class UpgradeCard : MonoBehaviour
 {
@@ -18,20 +18,32 @@ public class UpgradeCard : MonoBehaviour
         _data = data;
         _manager = manager;
 
-        int boost = RarityUtils.GetLevelBoost(data.Rarity);
-        string rarityText = data.Rarity.ToString();
+        // Calcul du bonus visuel
+        float powerBoost = RarityUtils.GetPowerBoost(data.Rarity);
+        string rarityName = data.Rarity.ToString();
+        Color rarityColor = RarityUtils.GetColor(data.Rarity);
 
-        titleText.text = $"{data.Name} <size=70%>+{boost} Lvl</size>";
-        titleText.color = RarityUtils.GetColor(data.Rarity);
+        // Titre : "Fireball (Legendary)"
+        titleText.text = $"{data.Name} <size=70%>{rarityName}</size>";
+        titleText.color = rarityColor;
 
+        // Description
+        // On essaie d'afficher ce que ce boost donnerait sur une rune de base
+        // (C'est approximatif car on ne sait pas sur quel spell le joueur va le mettre, 
+        // mais ça donne une idée de la puissance).
         RuneSO so = null;
         if (data.Type == UpgradeType.NewSpell) so = data.TargetForm;
         else if (data.Type == UpgradeType.Modifier) so = data.TargetModifier;
         else if (data.Type == UpgradeType.Effect) so = data.TargetEffect;
 
+        int boost = RarityUtils.GetLevelBoost(data.Rarity);
+        int targetDisplayLevel = 1 + boost;
+
         if (so != null)
         {
-            descriptionText.text = so.GetLevelUpDescription(1 + boost);
+            // J'ai retiré GetLevelUpDescription de RuneSO pour simplifier
+            // On affiche la description statique + info bonus
+            descriptionText.text = so.GetLevelUpDescription(targetDisplayLevel);
         }
 
         if (data.Icon != null)
@@ -44,7 +56,6 @@ public class UpgradeCard : MonoBehaviour
             iconImage.enabled = false;
         }
 
-        // Nettoyage des anciens listeners
         selectButton.onClick.RemoveAllListeners();
         selectButton.onClick.AddListener(OnSelect);
     }

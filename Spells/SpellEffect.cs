@@ -1,13 +1,13 @@
 using UnityEngine;
 
-public enum ElementType { Physical, Fire, Ice, Lightning, Necrotic }
-
 [CreateAssetMenu(menuName = "Spells/Effect")]
-public class SpellEffect : RuneSO // <-- Hérite de RuneSO
+public class SpellEffect : RuneSO
 {
     public override RuneType Type => RuneType.Effect;
 
-    [Header("Élément")]
+    // ... (Tous tes champs existants) ...
+    [Header("Identité")]
+    public string effectName;
     public ElementType element;
     public Color tintColor = Color.white;
 
@@ -16,11 +16,11 @@ public class SpellEffect : RuneSO // <-- Hérite de RuneSO
     public float damageMultiplier = 1.0f;
     public float knockbackForce = 0f;
 
-    // --- NOUVEAU : CROISSANCE ---
     [Header("Croissance")]
-    public float damageGrowth = 2f; // +2 dégâts par niveau
-    public float multiplierGrowth = 0.1f; // +10% par niveau
+    public float damageGrowth = 2f;
+    public float multiplierGrowth = 0.1f;
 
+    // ... (Status, Chain, Necro, Zone...) ...
     [Header("Status / Spécial")]
     public bool applyBurn;
     public bool applySlow;
@@ -39,10 +39,12 @@ public class SpellEffect : RuneSO // <-- Hérite de RuneSO
     [Header("Zone")]
     public float aoeRadius = 0f;
 
-    public override string GetLevelUpDescription(int targetLevel)
+    // IMPLEMENTATION
+    public override string GetLevelUpDescription(int level)
     {
-        // Calcul simple basé sur le niveau cible
-        float dmg = baseDamage + (damageGrowth * (targetLevel - 1));
-        return $"Dégâts (Lvl {targetLevel}) : {dmg:F1}";
+        float dmg = baseDamage + (damageGrowth * (level - 1));
+        // float mult = damageMultiplier + (multiplierGrowth * (level - 1)); // Si tu veux afficher le mult aussi
+
+        return $"Dégâts de base : {dmg:F1}";
     }
 }

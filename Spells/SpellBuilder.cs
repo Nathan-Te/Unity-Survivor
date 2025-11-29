@@ -3,7 +3,6 @@ using UnityEngine;
 
 public static class SpellBuilder
 {
-    // On prend le Slot en entrée pour accéder aux Niveaux des runes
     public static SpellDefinition Build(SpellSlot slot)
     {
         SpellDefinition def = new SpellDefinition();
@@ -11,38 +10,40 @@ public static class SpellBuilder
         SpellForm form = slot.formRune.AsForm;
         SpellEffect effect = slot.effectRune.AsEffect;
 
-        // 1. Base (Forme) & Comportement
+        // ON UTILISE TOTALPOWER AU LIEU DE LEVEL
+        float formPower = slot.formRune.TotalPower;
+        float effectPower = slot.effectRune.TotalPower;
+
+        // 1. Base (Forme)
         def.Form = form;
         def.Effect = effect;
         def.Mode = form.targetingMode;
         def.RequiresLoS = form.requiresLineOfSight;
 
-        int formLvl = slot.formRune.Level;
-        int effectLvl = slot.effectRune.Level;
-
-        // --- CALCULS (SIMPLIFIÉS) ---
-        // Cooldown : Dépend uniquement du niveau
-        float reduction = form.cooldownReductionPerLevel * (formLvl - 1); // Plus de formMult
+        // --- CALCULS FORM (Basés sur formPower) ---
+        // Cooldown : Réduit selon la puissance accumulée
+        // (Power - 1) car au niveau 1 (Power 1), le bonus est de 0.
+        float reduction = form.cooldownReductionPerLevel * (formPower - 1);
         float baseCooldown = Mathf.Max(0.1f, form.baseCooldown - reduction);
 
-        // Count augmente par palier
-        int extraCount = (formLvl - 1) / form.countIncreaseEveryXLevels; // Division entière
+        // Count augmente par palier de puissance
+        int extraCount = Mathf.FloorToInt((formPower - 1) / form.countIncreaseEveryXLevels);
         def.Count = form.baseCount + extraCount;
 
         def.Pierce = form.basePierce;
         def.Duration = form.baseDuration;
 
+        // Spread (Initial)
         float finalSpread = form.baseSpread;
+        def.Range = 20f;
 
-        def.Range = 20f; // Ou une valeur dans Form
-
-        // --- CALCULS AVEC CROISSANCE & RARETÉ (EFFECT) ---
-        float effectMult = slot.effectRune.PowerMultiplier;
+        // --- CALCULS EFFECT (Basés sur effectPower) ---
         // Dégâts
-        float baseDamage = effect.baseDamage + (effect.damageGrowth * (effectLvl - 1)); // Plus de effectMult
-        float damageMult = effect.damageMultiplier + (effect.multiplierGrowth * (effectLvl - 1));
+        float baseDamage = effect.baseDamage + (effect.damageGrowth * (effectPower - 1));
+        // Multiplicateur
+        float finalDmgMult = effect.damageMultiplier + (effect.multiplierGrowth * (effectPower - 1));
 
-        // Transfert des stats spéciales
+        // Transfert stats
         def.ChainCount = effect.baseChainCount;
         def.ChainRange = effect.chainRange;
         def.ChainDamageReduction = effect.chainDamageReduction;
@@ -50,7 +51,7 @@ public static class SpellBuilder
         def.MinionPrefab = effect.minionPrefab;
 
         // 2. Modificateurs
-        float damageMultTotal = effectMult;
+        float damageMultTotal = finalDmgMult;
         float cooldownMult = 1f;
         float sizeMult = 1f;
         float speedMult = 1f;
@@ -60,14 +61,12 @@ public static class SpellBuilder
             if (modRune == null || modRune.AsModifier == null) continue;
 
             SpellModifier mod = modRune.AsModifier;
-            float modRarity = modRune.PowerMultiplier;
-            int modLvl = modRune.Level;
+            float modPower = modRune.TotalPower;
 
-            // Vérification Tag
             if (mod.requiredTag != SpellTag.None && !form.tags.HasFlag(mod.requiredTag)) continue;
 
-            // --- CALCULS AVEC CROISSANCE (MODIFIER) ---
-            float growth = mod.damageMultGrowth * (modLvl - 1); // Plus de modRarity
+            // --- CALCULS MODIFIER (Basés sur modPower) ---
+            float growth = mod.damageMultGrowth * (modPower - 1);
             float modDmg = mod.damageMult + growth;
 
             damageMultTotal *= modDmg;
