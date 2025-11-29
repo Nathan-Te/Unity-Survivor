@@ -16,6 +16,15 @@ public class EnemyController : MonoBehaviour
     public EnemyData Data => data;
     private float _attackTimer;
 
+    // --- STATUTS ---
+    private float _burnTimer;
+    private float _burnDamagePerSec;
+    private float _burnTickTimer; // Pour appliquer les dégâts chaque seconde
+
+    private float _slowTimer;
+    private float _originalSpeed;
+    private bool _isSlowed;
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
@@ -34,6 +43,8 @@ public class EnemyController : MonoBehaviour
         {
             HandleRangedAttack();
         }
+
+        HandleStatusEffects();
     }
 
     public void InitializeStats()
@@ -53,6 +64,59 @@ public class EnemyController : MonoBehaviour
             if (_rb) _rb.mass = data.mass;
             _xpValue = data.xpDropAmount;
         }
+        _originalSpeed = currentSpeed;
+    }
+
+    private void HandleStatusEffects()
+    {
+        float dt = Time.deltaTime;
+
+        // GESTION BRÛLURE
+        if (_burnTimer > 0)
+        {
+            _burnTimer -= dt;
+            _burnTickTimer += dt;
+
+            if (_burnTickTimer >= 1.0f) // Dégâts toutes les secondes
+            {
+                TakeDamage(_burnDamagePerSec);
+                _burnTickTimer = 0f;
+                // TODO: Faire pop un texte de dégâts couleur feu
+            }
+        }
+
+        // GESTION RALENTISSEMENT
+        if (_slowTimer > 0)
+        {
+            _slowTimer -= dt;
+            if (_slowTimer <= 0)
+            {
+                // Fin du slow
+                currentSpeed = _originalSpeed;
+                _isSlowed = false;
+            }
+        }
+    }
+
+    public void ApplyBurn(float dps, float duration)
+    {
+        // On refresh ou on applique si c'est plus fort
+        if (_burnTimer <= 0 || dps > _burnDamagePerSec)
+        {
+            _burnDamagePerSec = dps;
+        }
+        _burnTimer = duration;
+    }
+
+    public void ApplySlow(float factor, float duration)
+    {
+        if (!_isSlowed)
+        {
+            _originalSpeed = currentSpeed; // Sauvegarde
+            currentSpeed *= factor;        // Application (ex: speed * 0.5)
+            _isSlowed = true;
+        }
+        _slowTimer = duration;
     }
 
     public void ResetEnemy()

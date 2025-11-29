@@ -5,6 +5,7 @@ public class SpellForm : ScriptableObject
 {
     [Header("Identité")]
     public string formName;
+    public string description;
     public GameObject prefab;
     public Sprite icon;
 

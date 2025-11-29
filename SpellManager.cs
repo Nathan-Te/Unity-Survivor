@@ -112,18 +112,45 @@ public class SpellManager : MonoBehaviour
 
             if (p.TryGetComponent<ProjectileController>(out var ctrl))
             {
-                ctrl.Initialize(def, finalDir);
+                ctrl.Initialize(def, finalDir, i, count);
             }
         }
     }
 
-    // --- CORRECTION TEMPORAIRE : On commente AddSpell ---
-    // Cette méthode ne peut plus prendre SpellData. Il faudra créer une méthode
-    // qui prend (Form, Effect, Mods) plus tard.
-    /*
-    public void AddSpell(SpellData newSpell)
+    // Ajoute un nouveau slot avec une Forme donnée et un Effet par défaut (Physique)
+    public void AddSpell(SpellForm form)
     {
-        activeSlots.Add(new SpellSlot(newSpell));
+        SpellSlot newSlot = new SpellSlot();
+        newSlot.form = form;
+
+        // Pour l'instant, on met un effet par défaut (Il faudra un Asset "DefaultPhysical" dans ton projet)
+        // Ou on charge le premier effet trouvé
+        newSlot.effect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
+
+        if (newSlot.effect == null)
+        {
+            Debug.LogError("Impossible de trouver l'effet 'Physical' dans Resources/Spells/Effects/");
+            // Fallback: Créer une instance vide pour éviter le crash
+            newSlot.effect = ScriptableObject.CreateInstance<SpellEffect>();
+        }
+
+        newSlot.ForceInit();
+        activeSlots.Add(newSlot);
     }
-    */
+
+    // Ajoute un modificateur au premier slot compatible (Logique simplifiée)
+    public void AddModifier(SpellModifier mod)
+    {
+        foreach (var slot in activeSlots)
+        {
+            // Vérifie la compatibilité des Tags
+            if (mod.requiredTag == SpellTag.None || slot.form.tags.HasFlag(mod.requiredTag))
+            {
+                slot.modifiers.Add(mod);
+                slot.RecalculateStats(); // Important ! Recalculer les stats
+                return; // On l'ajoute à un seul sort
+            }
+        }
+        Debug.Log("Aucun sort compatible trouvé pour ce modificateur.");
+    }
 }
