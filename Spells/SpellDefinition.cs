@@ -1,3 +1,5 @@
+using UnityEngine;
+
 [System.Serializable]
 public class SpellDefinition
 {
@@ -14,11 +16,16 @@ public class SpellDefinition
     public int Count;
     public int Pierce;
     
-    // --- AJOUTER CECI ---
     public TargetingMode Mode;
     public bool RequiresLoS;
-    // --------------------
-
     public bool IsHoming;
+
+    public int ChainCount;
+    public float ChainRange;
+    public float ChainDamageReduction;
+
+    public float MinionChance;
+    public GameObject MinionPrefab;
+
     public SpellDefinition() { }
 }

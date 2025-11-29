@@ -97,8 +97,12 @@ public class SpellManager : MonoBehaviour
         int count = def.Count;
         float spread = def.Form.baseSpread;
 
-        float angleStep = count > 1 ? spread / (count - 1) : 0;
+        bool isFullCircle = Mathf.Abs(spread - 360f) < 0.1f;
+
+        float angleStep = (count > 1) ? (isFullCircle ? spread / count : spread / (count - 1)) : 0;
         float startAngle = count > 1 ? -spread / 2f : 0;
+
+        if (isFullCircle) startAngle = 0f;
 
         for (int i = 0; i < count; i++)
         {

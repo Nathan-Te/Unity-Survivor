@@ -227,15 +227,90 @@ public class ProjectileController : MonoBehaviour
 
     private void ApplyDamage(EnemyController enemy)
     {
+        // 1. Calcul si le coup est fatal (pour Nécrotique)
+        bool isFatal = (enemy.currentHp - _def.Damage) <= 0;
+
+        // 2. Application Dégâts
         enemy.TakeDamage(_def.Damage);
 
+        // 3. Application Status (Burn/Slow)
         if (_def.Effect.applyBurn) enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
         if (_def.Effect.applySlow) enemy.ApplySlow(0.5f, 2f);
 
+        // 4. Knockback
         if (_def.Effect.knockbackForce > 0 && enemy.TryGetComponent<Rigidbody>(out var rb))
         {
             Vector3 pushDir = (enemy.transform.position - transform.position).normalized;
             rb.AddForce(pushDir * _def.Effect.knockbackForce, ForceMode.Impulse);
+        }
+
+        // --- NOUVEAU : NÉCROMANCIE (Spawn Minion) ---
+        if (isFatal && _def.MinionChance > 0 && _def.MinionPrefab != null)
+        {
+            if (Random.value <= _def.MinionChance)
+            {
+                SpawnMinion(enemy.transform.position);
+            }
+        }
+
+        // --- NOUVEAU : FOUDRE (Chain Reaction) ---
+        if (_def.ChainCount > 0)
+        {
+            HandleChainReaction(enemy);
+        }
+    }
+
+    private void SpawnMinion(Vector3 position)
+    {
+        // Pour l'instant, on instancie juste. Plus tard -> MinionManager / Pool
+        Instantiate(_def.MinionPrefab, position, Quaternion.identity);
+    }
+
+    private void HandleChainReaction(EnemyController currentTarget)
+    {
+        // On cherche une cible proche, en excluant celle qu'on vient de toucher
+        // Astuce : On utilise GetEnemiesInRange et on filtre
+        var candidates = EnemyManager.Instance.GetEnemiesInRange(transform.position, _def.ChainRange);
+
+        EnemyController bestCandidate = null;
+        float closestDist = float.MaxValue;
+
+        foreach (var candidate in candidates)
+        {
+            // On ignore la cible actuelle et les morts
+            if (candidate == currentTarget || candidate.currentHp <= 0) continue;
+
+            float d = Vector3.SqrMagnitude(candidate.transform.position - transform.position);
+            if (d < closestDist)
+            {
+                closestDist = d;
+                bestCandidate = candidate;
+            }
+        }
+
+        if (bestCandidate != null)
+        {
+            // On crée une NOUVELLE définition pour le rebond (plus faible)
+            SpellDefinition chainDef = new SpellDefinition();
+            // Copie manuelle des valeurs importantes (ou Clone si on avait une méthode)
+            chainDef.Form = _def.Form;
+            chainDef.Effect = _def.Effect;
+            chainDef.Size = _def.Size * 0.8f; // Plus petit
+            chainDef.Speed = _def.Speed;
+            chainDef.Range = _def.ChainRange * 1.5f; // Portée suffisante pour atteindre la cible
+            chainDef.Damage = _def.Damage * _def.ChainDamageReduction; // Moins de dégâts
+
+            chainDef.ChainCount = _def.ChainCount - 1; // Un rebond de moins !
+            chainDef.ChainRange = _def.ChainRange;
+            chainDef.ChainDamageReduction = _def.ChainDamageReduction;
+
+            // On fait spawn le nouveau projectile à la position de l'impact
+            GameObject p = ProjectilePool.Instance.Get(_def.Form.prefab, transform.position, Quaternion.LookRotation(Vector3.forward));
+            if (p.TryGetComponent<ProjectileController>(out var ctrl))
+            {
+                Vector3 dir = (bestCandidate.transform.position - transform.position).normalized;
+                ctrl.Initialize(chainDef, dir);
+            }
         }
     }
 

@@ -22,8 +22,16 @@ public static class SpellBuilder
         float baseRange = 20f;
 
         def.Count = form.baseCount;
-        def.Pierce = form.basePierce; // <--- CORRIGÉ (Au lieu de 0)
+        def.Pierce = form.basePierce;
         def.Duration = form.baseDuration;
+
+        def.ChainCount = effect.baseChainCount;
+        def.ChainRange = effect.chainRange;
+        def.ChainDamageReduction = effect.chainDamageReduction;
+
+        def.MinionChance = effect.minionSpawnChance;
+        def.MinionPrefab = effect.minionPrefab;
+
 
         // 2. Application des Multiplicateurs (Mods)
         float damageMult = effect.damageMultiplier;
