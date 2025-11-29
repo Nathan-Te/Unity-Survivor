@@ -41,8 +41,6 @@ public class ProjectileController : MonoBehaviour
         }
         else if (_def.Form.tags.HasFlag(SpellTag.Orbit))
         {
-            // Pour Orbit, on ignore la direction, la position sera calculée dans Update
-            // On peut mettre une position initiale propre pour éviter un flash visuel au centre
             UpdateOrbitPosition();
         }
         else
@@ -62,11 +60,12 @@ public class ProjectileController : MonoBehaviour
 
     public void InitializeEnemyProjectile(float damage, GameObject sourcePrefab)
     {
-        // ... (Ton code existant pour ennemi) ...
+        // On crée une définition "fake" pour l'ennemi pour garder la compatibilité
         _def = new SpellDefinition();
         _def.Damage = damage;
         _def.Speed = 10f;
         _def.Range = 30f;
+        _def.Pierce = 0;
         _def.Effect = ScriptableObject.CreateInstance<SpellEffect>();
         _sourcePrefab = sourcePrefab;
         _isHostile = true;
@@ -121,7 +120,7 @@ public class ProjectileController : MonoBehaviour
             // BOOM !
             _hasImpacted = true;
             ApplyAreaDamage(transform.position); // Smite est toujours une zone
-            Despawn(); // Ou jouer VFX d'explosion puis Despawn
+            Despawn();
         }
     }
 
@@ -130,9 +129,7 @@ public class ProjectileController : MonoBehaviour
     {
         if (PlayerController.Instance == null) return;
 
-        // On utilise un timer global ou local accumulé pour que la rotation soit fluide
         _orbitTimer += Time.deltaTime;
-
         UpdateOrbitPosition();
 
         // Durée de vie
@@ -144,18 +141,17 @@ public class ProjectileController : MonoBehaviour
     {
         if (PlayerController.Instance == null) return;
 
-        // 1. Calcul de l'angle de base (répartition équitable : 0°, 120°, 240°...)
+        // 1. Calcul de l'angle de base (répartition équitable)
         float angleSeparation = 360f / _totalCount;
         float baseAngle = angleSeparation * _index;
 
         // 2. Ajout de la rotation dans le temps
-        // Vitesse * 40 pour avoir un chiffre raisonnable dans l'inspecteur
         float currentRotation = _orbitTimer * _def.Speed * 40f;
 
         float finalAngleRad = (baseAngle + currentRotation) * Mathf.Deg2Rad;
 
         // 3. Calcul position
-        Vector3 offset = new Vector3(Mathf.Cos(finalAngleRad), 0, Mathf.Sin(finalAngleRad)) * 2.0f; // 2.0f = Rayon (tu peux le mettre dans SpellForm si tu veux)
+        Vector3 offset = new Vector3(Mathf.Cos(finalAngleRad), 0, Mathf.Sin(finalAngleRad)) * 2.0f;
 
         transform.position = PlayerController.Instance.transform.position + Vector3.up + offset;
     }
@@ -165,41 +161,58 @@ public class ProjectileController : MonoBehaviour
         // Pour le Smite, on ignore les collisions physiques avant l'explosion du timer
         if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite)) return;
 
-        // ... (Reste de ton code OnTriggerEnter existant : gestion hostile/ennemi/obstacle) ...
-        // ... (N'oublie pas d'ajouter l'appel aux status ci-dessous dans ApplyDamage) ...
+        // GESTION ENNEMIE (Hostile)
+        if (_isHostile)
+        {
+            if (other.TryGetComponent<PlayerController>(out var player))
+            {
+                player.SendMessage("TakeDamage", _def.Damage, SendMessageOptions.DontRequireReceiver);
+                Despawn();
+            }
+            else if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle"))
+            {
+                Despawn();
+            }
+            return;
+        }
+
+        // GESTION JOUEUR (Allié)
+        bool isEnemy = EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy);
+        bool isObstacle = !isEnemy && other.gameObject.layer == LayerMask.NameToLayer("Obstacle");
+
+        if (isEnemy)
+        {
+            ApplyHit(enemy);
+            _hitCount++;
+
+            // Pierce check : Si on a touché plus d'ennemis que permis
+            // Pour AOE (Explosion), on despawn généralement au premier impact
+            if (_def.Effect.aoeRadius > 0)
+            {
+                Despawn();
+            }
+            else if (_hitCount > _def.Pierce)
+            {
+                Despawn();
+            }
+        }
+        else if (isObstacle)
+        {
+            // Explosion murale ?
+            if (_def.Effect.aoeRadius > 0) ApplyAreaDamage(transform.position);
+            Despawn();
+        }
     }
 
-    private void ApplyDamage(EnemyController enemy)
+    private void ApplyHit(EnemyController target)
     {
-        enemy.TakeDamage(_def.Damage);
-
-        // --- NOUVEAU : Application des Status ---
-        if (_def.Effect.applyBurn)
+        if (_def.Effect.aoeRadius > 0)
         {
-            // Exemple : 20% des dégâts du coup par seconde pendant 3s
-            enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
+            ApplyAreaDamage(transform.position);
         }
-        if (_def.Effect.applySlow)
+        else
         {
-            // Ralentissement de 50% pendant 2s
-            enemy.ApplySlow(0.5f, 2f);
-        }
-
-        // Knockback
-        if (_def.Effect.knockbackForce > 0 && enemy.TryGetComponent<Rigidbody>(out var rb))
-        {
-            Vector3 pushDir = (enemy.transform.position - transform.position).normalized;
-            rb.AddForce(pushDir * _def.Effect.knockbackForce, ForceMode.Impulse);
-        }
-    }
-
-    // ... (Reste des méthodes : ApplyAreaDamage, Despawn, ApplyColor...)
-    private void ApplyColor()
-    {
-        if (_def.Effect != null && _def.Effect.tintColor != Color.white)
-        {
-            var rend = GetComponentInChildren<Renderer>();
-            if (rend) rend.material.color = _def.Effect.tintColor;
+            ApplyDamage(target);
         }
     }
 
@@ -212,8 +225,37 @@ public class ProjectileController : MonoBehaviour
         foreach (var e in enemies) ApplyDamage(e);
     }
 
+    private void ApplyDamage(EnemyController enemy)
+    {
+        enemy.TakeDamage(_def.Damage);
+
+        // --- Application des Status ---
+        if (_def.Effect.applyBurn)
+        {
+            enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
+        }
+        if (_def.Effect.applySlow)
+        {
+            enemy.ApplySlow(0.5f, 2f);
+        }
+
+        // Knockback
+        if (_def.Effect.knockbackForce > 0 && enemy.TryGetComponent<Rigidbody>(out var rb))
+        {
+            Vector3 pushDir = (enemy.transform.position - transform.position).normalized;
+            rb.AddForce(pushDir * _def.Effect.knockbackForce, ForceMode.Impulse);
+        }
+    }
+
     private void Despawn()
     {
-        ProjectilePool.Instance.ReturnToPool(gameObject, _sourcePrefab);
+        if (ProjectilePool.Instance != null)
+        {
+            ProjectilePool.Instance.ReturnToPool(gameObject, _sourcePrefab);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }
