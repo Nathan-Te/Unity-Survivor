@@ -103,33 +103,34 @@ public class SpellManager : MonoBehaviour
     {
         SpellSlot newSlot = new SpellSlot();
 
-        newSlot.formRune = new Rune(form, 1, rarity); // <--- RARETÉ
+        // Le niveau initial dépend de la rareté de la carte "Nouveau Sort"
+        // Commune = Lvl 1, Légendaire = Lvl 5 direct
+        int startLevel = RarityUtils.GetLevelBoost(rarity);
+
+        newSlot.formRune = new Rune(form, startLevel);
 
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
-        // L'effet par défaut est toujours Commun pour commencer
-        newSlot.effectRune = new Rune(defaultEffect, 1, Rarity.Common);
+        // L'effet par défaut commence niveau 1 (ou match le niveau du sort ?)
+        // Disons niveau 1 pour l'instant.
+        newSlot.effectRune = new Rune(defaultEffect, 1);
 
         newSlot.ForceInit();
         activeSlots.Add(newSlot);
         OnInventoryUpdated?.Invoke();
     }
 
-    // Gestion complexe des Modificateurs (Upgrade vs Replace)
-    // Retourne TRUE si l'opération est faite, FALSE si on doit demander au joueur de choisir quoi remplacer
-    // Dans SpellManager.cs
-
-    public void ReplaceEffect(SpellEffect newEffect, int slotIndex)
+    // Remplacement d'effet (Upgrade)
+    public void ReplaceEffect(SpellEffect newEffect, int slotIndex, Rarity rarity)
     {
         if (slotIndex < 0 || slotIndex >= activeSlots.Count) return;
-
         SpellSlot slot = activeSlots[slotIndex];
 
-        // On remplace l'effet (Niveau 1)
-        slot.effectRune = new Rune(newEffect, 1);
+        // Si on remplace, on peut décider de garder le niveau d'avant ou reset
+        // Ici : On reset, mais on applique le boost de la nouvelle carte
+        int startLevel = RarityUtils.GetLevelBoost(rarity);
 
-        // Important : Recalculer les stats car l'effet change les dégâts de base
+        slot.effectRune = new Rune(newEffect, startLevel);
         slot.RecalculateStats();
-
         OnInventoryUpdated?.Invoke();
     }
 
@@ -167,36 +168,37 @@ public class SpellManager : MonoBehaviour
         // 1. Vérif Compatibilité
         if (mod.requiredTag != SpellTag.None && !slot.formRune.AsForm.tags.HasFlag(mod.requiredTag)) return false;
 
-        // 2. Vérif Existant (Upgrade)
+        int boostAmount = RarityUtils.GetLevelBoost(rarity);
+
+        // 2. Upgrade Existant
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
-            // On vérifie Data != null
             if (slot.modifierRunes[i] != null && slot.modifierRunes[i].Data == mod)
             {
-                slot.modifierRunes[i].LevelUp();
+                // ON AJOUTE LE BOOST AU LIEU DE JUSTE +1
+                slot.modifierRunes[i].IncreaseLevel(boostAmount);
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
             }
         }
 
-        // 3. Ajout dans un slot vide (CORRECTION ICI)
+        // 3. Ajout Nouveau
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
-            // On considère le slot vide si l'objet est null OU si sa Data est null
             if (slot.modifierRunes[i] == null || slot.modifierRunes[i].Data == null)
             {
-                slot.modifierRunes[i] = new Rune(mod, 1);
+                slot.modifierRunes[i] = new Rune(mod, boostAmount); // Commence niveau 1, 2, 3 ou 5
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
             }
         }
 
-        // 4. Remplacement forcé
+        // 4. Remplacement
         if (replaceIndex != -1)
         {
-            slot.modifierRunes[replaceIndex] = new Rune(mod, 1);
+            slot.modifierRunes[replaceIndex] = new Rune(mod, boostAmount);
             slot.RecalculateStats();
             OnInventoryUpdated?.Invoke();
             return true;

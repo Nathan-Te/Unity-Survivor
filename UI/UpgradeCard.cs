@@ -18,8 +18,10 @@ public class UpgradeCard : MonoBehaviour
         _data = data;
         _manager = manager;
 
-        string lvlSuffix = data.Level > 1 ? $" (Lvl {data.Level})" : "";
-        titleText.text = $"{data.Name} <size=70%>{data.Rarity}</size>";
+        int boost = RarityUtils.GetLevelBoost(data.Rarity);
+        string rarityText = data.Rarity.ToString();
+
+        titleText.text = $"{data.Name} <size=70%>+{boost} Lvl</size>";
         titleText.color = RarityUtils.GetColor(data.Rarity);
 
         RuneSO so = null;
@@ -29,7 +31,7 @@ public class UpgradeCard : MonoBehaviour
 
         if (so != null)
         {
-            descriptionText.text = so.GetLevelUpDescription(1, data.Rarity);
+            descriptionText.text = so.GetLevelUpDescription(1 + boost);
         }
 
         if (data.Icon != null)

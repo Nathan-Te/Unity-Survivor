@@ -10,8 +10,6 @@ public static class SpellBuilder
 
         SpellForm form = slot.formRune.AsForm;
         SpellEffect effect = slot.effectRune.AsEffect;
-        int formLvl = slot.formRune.Level;
-        int effectLvl = slot.effectRune.Level;
 
         // 1. Base (Forme) & Comportement
         def.Form = form;
@@ -19,11 +17,12 @@ public static class SpellBuilder
         def.Mode = form.targetingMode;
         def.RequiresLoS = form.requiresLineOfSight;
 
-        // --- CALCULS AVEC CROISSANCE & RARETÉ (FORM) ---
-        float formMult = slot.formRune.PowerMultiplier;
+        int formLvl = slot.formRune.Level;
+        int effectLvl = slot.effectRune.Level;
 
-        // Cooldown : La rareté accélère la réduction
-        float reduction = (form.cooldownReductionPerLevel * (formLvl - 1)) * formMult;
+        // --- CALCULS (SIMPLIFIÉS) ---
+        // Cooldown : Dépend uniquement du niveau
+        float reduction = form.cooldownReductionPerLevel * (formLvl - 1); // Plus de formMult
         float baseCooldown = Mathf.Max(0.1f, form.baseCooldown - reduction);
 
         // Count augmente par palier
@@ -39,11 +38,10 @@ public static class SpellBuilder
 
         // --- CALCULS AVEC CROISSANCE & RARETÉ (EFFECT) ---
         float effectMult = slot.effectRune.PowerMultiplier;
-        // Dégâts = Base + (Growth * Lvl)
-        float baseDamage = effect.baseDamage + (effect.damageGrowth * (effectLvl - 1));
-        // Dégâts : (Base + Growth) * Rareté
-        float finalBaseDmg = (effect.baseDamage + (effect.damageGrowth * (effectLvl - 1))) * effectMult;
-        float finalDmgMult = (effect.damageMultiplier + (effect.multiplierGrowth * (effectLvl - 1))) * effectMult;
+        // Dégâts
+        float baseDamage = effect.baseDamage + (effect.damageGrowth * (effectLvl - 1)); // Plus de effectMult
+        float damageMult = effect.damageMultiplier + (effect.multiplierGrowth * (effectLvl - 1));
+
         // Transfert des stats spéciales
         def.ChainCount = effect.baseChainCount;
         def.ChainRange = effect.chainRange;
@@ -69,7 +67,7 @@ public static class SpellBuilder
             if (mod.requiredTag != SpellTag.None && !form.tags.HasFlag(mod.requiredTag)) continue;
 
             // --- CALCULS AVEC CROISSANCE (MODIFIER) ---
-            float growth = (mod.damageMultGrowth * (modLvl - 1)) * modRarity;
+            float growth = mod.damageMultGrowth * (modLvl - 1); // Plus de modRarity
             float modDmg = mod.damageMult + growth;
 
             damageMultTotal *= modDmg;

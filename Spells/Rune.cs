@@ -5,19 +5,18 @@ public class Rune
 {
     public RuneSO Data;
     public int Level;
-    public Rarity Rarity; // NOUVEAU
+    // public Rarity Rarity; // SUPPRIMÉ : La rune n'a pas de rareté intrinsèque
 
-    // Constructeur mis à jour
-    public Rune(RuneSO data, int level = 1, Rarity rarity = Rarity.Common)
+    public Rune(RuneSO data, int level = 1)
     {
         Data = data;
         Level = level;
-        Rarity = rarity;
     }
 
-    public void LevelUp()
+    // NOUVEAU : On ajoute X niveaux d'un coup
+    public void IncreaseLevel(int amount)
     {
-        Level++;
+        Level += amount;
     }
 
     // Helpers
@@ -25,6 +24,5 @@ public class Rune
     public SpellEffect AsEffect => Data as SpellEffect;
     public SpellModifier AsModifier => Data as SpellModifier;
 
-    // Helper pour récupérer le multiplicateur actuel
-    public float PowerMultiplier => RarityUtils.GetMultiplier(Rarity);
+    // SUPPRIMÉ : PowerMultiplier n'existe plus, c'est le Level qui fait tout.
 }

@@ -39,11 +39,10 @@ public class SpellEffect : RuneSO // <-- Hérite de RuneSO
     [Header("Zone")]
     public float aoeRadius = 0f;
 
-    public override string GetLevelUpDescription(int nextLevel, Rarity rarity)
+    public override string GetLevelUpDescription(int targetLevel)
     {
-        float mult = RarityUtils.GetMultiplier(rarity);
-        float dmg = (baseDamage + (damageGrowth * (nextLevel - 1))) * mult;
-
-        return $"Dégâts : {dmg:F1} <color=grey>(Rareté x{mult})</color>";
+        // Calcul simple basé sur le niveau cible
+        float dmg = baseDamage + (damageGrowth * (targetLevel - 1));
+        return $"Dégâts (Lvl {targetLevel}) : {dmg:F1}";
     }
 }
