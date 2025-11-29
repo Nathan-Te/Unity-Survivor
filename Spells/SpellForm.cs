@@ -5,23 +5,28 @@ public class SpellForm : ScriptableObject
 {
     [Header("Identité")]
     public string formName;
-    public string description;
-    public Sprite icon; // Pour l'UI plus tard
-    public GameObject prefab; // Le visuel (Boule, Météore, etc.)
+    public GameObject prefab;
+    public Sprite icon;
+
+    // --- AJOUTER CECI ---
+    [Header("Stratégie de Ciblage")]
+    public TargetingMode targetingMode = TargetingMode.Nearest;
+    public bool requiresLineOfSight = true;
+    // --------------------
 
     [Header("Compatibilité")]
-    public SpellTag tags; // Ex: Projectile | SupportsPierce
+    public SpellTag tags;
 
     [Header("Pattern de Tir")]
     public float baseCooldown = 1f;
-    public int baseCount = 1;     // Nb projectiles (1 pour Bolt, 8 pour Nova)
-    public float baseSpread = 0f; // Dispersion en degrés (360 pour Nova)
+    public int baseCount = 1;
+    public float baseSpread = 0f;
 
     [Header("Spécifique Mouvement")]
-    public float baseSpeed = 20f; // Pour Bolt/Orbit
-    public float impactDelay = 0f; // Pour Smite (temps de chute)
-    public float baseDuration = 5f; // Pour Orbit (temps avant disparition)
+    public float baseSpeed = 20f;
+    public float impactDelay = 0f;
+    public float baseDuration = 5f;
 
     [Header("Équilibrage")]
-    [Range(0f, 1f)] public float procCoefficient = 1.0f; // 1.0 pour Bolt, 0.2 pour Nova
+    [Range(0f, 1f)] public float procCoefficient = 1.0f;
 }

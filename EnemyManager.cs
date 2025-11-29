@@ -167,15 +167,136 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    // (Gardez les méthodes GetTarget, GetEnemiesInRange, etc. ici, elles ne changent pas)
-    // Pour simplifier, j'ai omis le bloc de ciblage existant, NE LE SUPPRIMEZ PAS.
-    // ...
-    // ...
+    // --- SYSTÈME DE CIBLAGE (Le cerveau du SpellManager) ---
+
+    public Transform GetTarget(Vector3 sourcePos, float range, TargetingMode mode, float areaSize = 2f, bool checkVisibility = true)
+    {
+        switch (mode)
+        {
+            case TargetingMode.Nearest:
+                return GetNearestEnemy(sourcePos, range, checkVisibility);
+            case TargetingMode.HighestDensity:
+                return GetDensestCluster(sourcePos, range, areaSize, checkVisibility);
+            case TargetingMode.Random:
+                return GetRandomEnemy(sourcePos, range, checkVisibility);
+            default:
+                return null;
+        }
+    }
+
+    // 1. LE PLUS PROCHE
+    private Transform GetNearestEnemy(Vector3 sourcePos, float range, bool checkVisibility)
+    {
+        EnemyController nearest = null;
+        float minDistSqr = range * range;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            EnemyController enemy = _activeEnemies[i];
+            if (enemy == null) continue;
+
+            float distSqr = (enemy.transform.position - sourcePos).sqrMagnitude;
+            if (distSqr < minDistSqr)
+            {
+                if (checkVisibility && !IsVisible(sourcePos, enemy.transform.position)) continue;
+
+                minDistSqr = distSqr;
+                nearest = enemy;
+            }
+        }
+        return nearest != null ? nearest.transform : null;
+    }
+
+    // 2. LE PLUS GROS GROUPE
+    private Transform GetDensestCluster(Vector3 sourcePos, float range, float areaSize, bool checkVisibility)
+    {
+        // Réflexe de Survie : Si un ennemi est trop près (< 4m), on l'abat en priorité
+        Transform panicTarget = GetNearestEnemy(sourcePos, 4.0f, checkVisibility);
+        if (panicTarget != null) return panicTarget;
+
+        Transform bestTarget = null;
+        int maxNeighbors = -1;
+        float rangeSqr = range * range;
+        float areaSqr = areaSize * areaSize;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            EnemyController candidate = _activeEnemies[i];
+            if (candidate == null) continue;
+            if ((candidate.transform.position - sourcePos).sqrMagnitude > rangeSqr) continue;
+            if (checkVisibility && !IsVisible(sourcePos, candidate.transform.position)) continue;
+
+            int neighborCount = 0;
+            for (int j = 0; j < _activeEnemies.Count; j++)
+            {
+                if (i == j) continue;
+                if ((_activeEnemies[j].transform.position - candidate.transform.position).sqrMagnitude <= areaSqr)
+                    neighborCount++;
+            }
+
+            if (neighborCount > maxNeighbors)
+            {
+                maxNeighbors = neighborCount;
+                bestTarget = candidate.transform;
+            }
+        }
+        return bestTarget != null ? bestTarget : GetNearestEnemy(sourcePos, range, checkVisibility);
+    }
+
+    // 3. ALÉATOIRE
+    private Transform GetRandomEnemy(Vector3 sourcePos, float range, bool checkVisibility)
+    {
+        List<Transform> candidates = new List<Transform>();
+        float rangeSqr = range * range;
+
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] == null) continue;
+            if ((_activeEnemies[i].transform.position - sourcePos).sqrMagnitude <= rangeSqr)
+            {
+                if (!checkVisibility || IsVisible(sourcePos, _activeEnemies[i].transform.position))
+                    candidates.Add(_activeEnemies[i].transform);
+            }
+        }
+
+        if (candidates.Count > 0) return candidates[UnityEngine.Random.Range(0, candidates.Count)];
+        return null;
+    }
+
+    // --- UTILITAIRE : VUE & AOE ---
+
+    // Vérifie si un mur bloque la vue (La fonction manquante !)
+    private bool IsVisible(Vector3 start, Vector3 end)
+    {
+        // On s'assure que la destination est aussi surélevée pour éviter de tirer dans le sol
+        Vector3 targetPoint = new Vector3(end.x, start.y, end.z);
+        Vector3 dir = targetPoint - start;
+        float dist = dir.magnitude;
+
+        // Si on touche un obstacle
+        if (Physics.Raycast(start, dir.normalized, dist, obstacleLayer))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    // Pour les explosions (AOE)
+    public List<EnemyController> GetEnemiesInRange(Vector3 center, float radius)
+    {
+        List<EnemyController> results = new List<EnemyController>();
+        float radiusSqr = radius * radius;
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] == null) continue;
+            if ((_activeEnemies[i].transform.position - center).sqrMagnitude <= radiusSqr)
+                results.Add(_activeEnemies[i]);
+        }
+        return results;
+    }
 
     // Méthodes helpers nécessaires (copiées/collées de l'ancienne version)
     public bool TryGetEnemyByCollider(Collider col, out EnemyController enemy) => _colliderCache.TryGetValue(col.GetInstanceID(), out enemy);
-    public List<EnemyController> GetEnemiesInRange(Vector3 c, float r) { /* ... Code Existant ... */ return new List<EnemyController>(); } // Placeholder pour compilation
-    public Transform GetTarget(Vector3 s, float r, TargetingMode m, float a, bool c) { /* ... Code Existant ... */ return null; } // Placeholder
 
     private void OnDestroy()
     {

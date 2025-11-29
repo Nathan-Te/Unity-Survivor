@@ -4,7 +4,6 @@ using UnityEngine;
 public class SpellManager : MonoBehaviour
 {
     [Header("Inventaire Actif")]
-    // On remplace le simple 'startingSpell' par une liste
     [SerializeField] private List<SpellSlot> activeSlots = new List<SpellSlot>();
 
     private Transform _playerTransform;
@@ -16,11 +15,10 @@ public class SpellManager : MonoBehaviour
             _playerTransform = PlayerController.Instance.transform;
         }
 
-        // Initialisation des cooldowns (pour éviter que tout parte exactement à la frame 0)
-        // Optionnel : on pourrait décaler légèrement les tirs pour éviter un lag spike
         foreach (var slot in activeSlots)
         {
-            slot.currentCooldown = 0.5f; // Petit délai au démarrage
+            slot.ForceInit();
+            slot.currentCooldown = 0.5f;
         }
     }
 
@@ -28,7 +26,6 @@ public class SpellManager : MonoBehaviour
     {
         if (_playerTransform == null) return;
 
-        // On gère chaque slot indépendamment
         for (int i = 0; i < activeSlots.Count; i++)
         {
             ProcessSlot(activeSlots[i]);
@@ -37,42 +34,44 @@ public class SpellManager : MonoBehaviour
 
     private void ProcessSlot(SpellSlot slot)
     {
-        if (slot.spellData == null) return;
+        if (slot.Definition == null) return;
 
         slot.currentCooldown -= Time.deltaTime;
 
         if (slot.currentCooldown <= 0f)
         {
-            // On passe le 'spellData' spécifique du slot à la tentative d'attaque
-            bool attacked = AttemptAttack(slot.spellData);
+            // CORRECTION : On passe bien une SpellDefinition
+            bool attacked = AttemptAttack(slot.Definition);
 
             if (attacked)
             {
-                slot.currentCooldown = slot.spellData.cooldown;
+                // CORRECTION : Majuscule à Cooldown
+                slot.currentCooldown = slot.Definition.Cooldown;
             }
         }
     }
 
-    private bool AttemptAttack(SpellData spell)
+    // CORRECTION : Le paramètre est SpellDefinition, plus SpellData
+    private bool AttemptAttack(SpellDefinition def)
     {
         Vector3 targetPos = Vector3.zero;
         bool hasTarget = false;
 
-        // MODE MANUEL (Priorité absolue)
         if (PlayerController.Instance.IsManualAiming)
         {
             targetPos = PlayerController.Instance.MouseWorldPosition;
             hasTarget = true;
         }
-        // MODE AUTO (Selon la stratégie du sort)
         else
         {
+            Vector3 scanOrigin = _playerTransform.position + Vector3.up;
+
             Transform target = EnemyManager.Instance.GetTarget(
-                _playerTransform.position,
-                spell.range,
-                spell.targetingMode,
-                spell.explosionRadius,
-                spell.requiresLineOfSight
+                scanOrigin,
+                def.Range,
+                def.Mode,
+                def.Effect.aoeRadius,
+                def.RequiresLoS
             );
 
             if (target != null)
@@ -84,32 +83,47 @@ public class SpellManager : MonoBehaviour
 
         if (hasTarget)
         {
-            Fire(targetPos, spell);
+            Fire(targetPos, def);
             return true;
         }
         return false;
     }
 
-    private void Fire(Vector3 targetPos, SpellData spell)
+    private void Fire(Vector3 targetPos, SpellDefinition def)
     {
-        Vector3 dir = (targetPos - _playerTransform.position).normalized;
-        dir.y = 0;
+        Vector3 dirToTarget = (targetPos - _playerTransform.position).normalized;
+        dirToTarget.y = 0;
 
-        // Petite variation de spawn pour éviter que les projectiles se chevauchent trop
-        Vector3 spawnPos = _playerTransform.position + Vector3.up + dir * 0.5f;
+        int count = def.Count;
+        float spread = def.Form.baseSpread;
 
-        GameObject p = ProjectilePool.Instance.Get(spell.projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+        float angleStep = count > 1 ? spread / (count - 1) : 0;
+        float startAngle = count > 1 ? -spread / 2f : 0;
 
-        if (p.TryGetComponent<ProjectileController>(out var ctrl))
+        for (int i = 0; i < count; i++)
         {
-            // On initialise avec les données DU SLOT (pas un global)
-            ctrl.Initialize(spell, dir);
+            float currentAngle = startAngle + (angleStep * i);
+            Quaternion rotation = Quaternion.Euler(0, currentAngle, 0);
+            Vector3 finalDir = rotation * dirToTarget;
+
+            Vector3 spawnPos = _playerTransform.position + Vector3.up + finalDir * 0.5f;
+
+            GameObject p = ProjectilePool.Instance.Get(def.Form.prefab, spawnPos, Quaternion.LookRotation(finalDir));
+
+            if (p.TryGetComponent<ProjectileController>(out var ctrl))
+            {
+                ctrl.Initialize(def, finalDir);
+            }
         }
     }
 
-    // Méthode publique pour le futur système de Level Up
+    // --- CORRECTION TEMPORAIRE : On commente AddSpell ---
+    // Cette méthode ne peut plus prendre SpellData. Il faudra créer une méthode
+    // qui prend (Form, Effect, Mods) plus tard.
+    /*
     public void AddSpell(SpellData newSpell)
     {
         activeSlots.Add(new SpellSlot(newSpell));
     }
+    */
 }
