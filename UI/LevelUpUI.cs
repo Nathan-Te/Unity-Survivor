@@ -132,7 +132,7 @@ public class LevelUpUI : MonoBehaviour
             if (sm.CanAddSpell())
             {
                 // Cas 1 : Il y a de la place -> Ajout direct
-                sm.AddSpell(upgrade.TargetForm);
+                sm.AddSpell(upgrade.TargetForm, upgrade.Rarity);
                 EndLevelUp();
             }
             else
@@ -274,13 +274,14 @@ public class LevelUpUI : MonoBehaviour
             // Tirage aléatoire pondéré (exemple simple)
             float r = Random.value;
             UpgradeData candidate = null;
+            Rarity randomRarity = RarityUtils.GetRandomRarity();
 
             if (r < 0.2f && availableSpells.Count > 0) // 20% Spell
-                candidate = new UpgradeData(availableSpells[Random.Range(0, availableSpells.Count)]);
+                candidate = new UpgradeData(availableSpells[Random.Range(0, availableSpells.Count)], randomRarity);
             else if (r < 0.5f && availableEffects.Count > 0) // 30% Effect
-                candidate = new UpgradeData(availableEffects[Random.Range(0, availableEffects.Count)]);
+                candidate = new UpgradeData(availableEffects[Random.Range(0, availableEffects.Count)], randomRarity);
             else if (availableModifiers.Count > 0) // 50% Modifier
-                candidate = new UpgradeData(availableModifiers[Random.Range(0, availableModifiers.Count)]);
+                candidate = new UpgradeData(availableModifiers[Random.Range(0, availableModifiers.Count)], randomRarity);
 
             if (candidate != null)
             {

@@ -99,20 +99,18 @@ public class SpellManager : MonoBehaviour
 
     public bool CanAddSpell() => activeSlots.Count < maxSpellSlots;
 
-    public void AddSpell(SpellForm form)
+    public void AddSpell(SpellForm form, Rarity rarity = Rarity.Common)
     {
-        if (!CanAddSpell()) return; // Sécurité
-
         SpellSlot newSlot = new SpellSlot();
-        newSlot.formRune = new Rune(form, 1);
+
+        newSlot.formRune = new Rune(form, 1, rarity); // <--- RARETÉ
 
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
-        if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
+        // L'effet par défaut est toujours Commun pour commencer
+        newSlot.effectRune = new Rune(defaultEffect, 1, Rarity.Common);
 
-        newSlot.effectRune = new Rune(defaultEffect, 1);
         newSlot.ForceInit();
         activeSlots.Add(newSlot);
-
         OnInventoryUpdated?.Invoke();
     }
 
@@ -161,7 +159,7 @@ public class SpellManager : MonoBehaviour
         OnInventoryUpdated?.Invoke();
     }
 
-    public bool TryApplyModifierToSlot(SpellModifier mod, int slotIndex, int replaceIndex = -1)
+    public bool TryApplyModifierToSlot(SpellModifier mod, int slotIndex, int replaceIndex = -1, Rarity rarity = Rarity.Common)
     {
         if (slotIndex < 0 || slotIndex >= activeSlots.Count) return false;
         SpellSlot slot = activeSlots[slotIndex];

@@ -30,8 +30,13 @@ public class SpellForm : RuneSO // <-- Hérite de RuneSO
     public float baseDuration = 5f;
     [Range(0f, 1f)] public float procCoefficient = 1.0f;
 
-    public override string GetLevelUpDescription(int nextLevel)
+    public override string GetLevelUpDescription(int nextLevel, Rarity rarity)
     {
-        return $"Cooldown réduit de {cooldownReductionPerLevel * (nextLevel - 1):F2}s total.";
+        // Pour le Cooldown, on divise souvent par la rareté (plus rare = plus rapide)
+        // ou on multiplie la réduction.
+        float mult = RarityUtils.GetMultiplier(rarity);
+        float currentCdReduc = cooldownReductionPerLevel * (nextLevel - 1) * mult;
+
+        return $"Cooldown réduit de {currentCdReduc:F2}s <color=grey>(x{mult})</color>";
     }
 }

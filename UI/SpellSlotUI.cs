@@ -11,6 +11,7 @@ public class SpellSlotUI : MonoBehaviour
     [SerializeField] private Image[] modIcons; // Assure-toi d'avoir lié ces images dans le prefab
 
     [SerializeField] private Button clickButton;
+    [SerializeField] private TextMeshProUGUI formLevelText;
 
     private int _slotIndex;
     private LevelUpUI _levelUpManager;
@@ -26,6 +27,7 @@ public class SpellSlotUI : MonoBehaviour
         {
             formIcon.sprite = slot.formRune.Data.icon;
             formIcon.enabled = true;
+            formLevelText.text = $"Lvl {slot.formRune.Level}";
         }
         else formIcon.enabled = false;
 

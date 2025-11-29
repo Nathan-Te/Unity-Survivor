@@ -3,14 +3,16 @@ using UnityEngine;
 [System.Serializable]
 public class Rune
 {
-    public RuneSO Data; // La donnée statique (ScriptableObject)
-    public int Level;   // La donnée dynamique
+    public RuneSO Data;
+    public int Level;
+    public Rarity Rarity; // NOUVEAU
 
-    // Constructeur
-    public Rune(RuneSO data, int level = 1)
+    // Constructeur mis à jour
+    public Rune(RuneSO data, int level = 1, Rarity rarity = Rarity.Common)
     {
         Data = data;
         Level = level;
+        Rarity = rarity;
     }
 
     public void LevelUp()
@@ -18,8 +20,11 @@ public class Rune
         Level++;
     }
 
-    // Helpers de Cast pour récupérer le bon type facilement
+    // Helpers
     public SpellForm AsForm => Data as SpellForm;
     public SpellEffect AsEffect => Data as SpellEffect;
     public SpellModifier AsModifier => Data as SpellModifier;
+
+    // Helper pour récupérer le multiplicateur actuel
+    public float PowerMultiplier => RarityUtils.GetMultiplier(Rarity);
 }

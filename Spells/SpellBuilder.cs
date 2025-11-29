@@ -19,9 +19,12 @@ public static class SpellBuilder
         def.Mode = form.targetingMode;
         def.RequiresLoS = form.requiresLineOfSight;
 
-        // --- CALCULS AVEC CROISSANCE (FORM) ---
-        // Cooldown réduit par niveau
-        float baseCooldown = Mathf.Max(0.1f, form.baseCooldown - (form.cooldownReductionPerLevel * (formLvl - 1)));
+        // --- CALCULS AVEC CROISSANCE & RARETÉ (FORM) ---
+        float formMult = slot.formRune.PowerMultiplier;
+
+        // Cooldown : La rareté accélère la réduction
+        float reduction = (form.cooldownReductionPerLevel * (formLvl - 1)) * formMult;
+        float baseCooldown = Mathf.Max(0.1f, form.baseCooldown - reduction);
 
         // Count augmente par palier
         int extraCount = (formLvl - 1) / form.countIncreaseEveryXLevels; // Division entière
@@ -34,12 +37,13 @@ public static class SpellBuilder
 
         def.Range = 20f; // Ou une valeur dans Form
 
-        // --- CALCULS AVEC CROISSANCE (EFFECT) ---
+        // --- CALCULS AVEC CROISSANCE & RARETÉ (EFFECT) ---
+        float effectMult = slot.effectRune.PowerMultiplier;
         // Dégâts = Base + (Growth * Lvl)
         float baseDamage = effect.baseDamage + (effect.damageGrowth * (effectLvl - 1));
-        // Multiplicateur = Base + (Growth * Lvl)
-        float effectMult = effect.damageMultiplier + (effect.multiplierGrowth * (effectLvl - 1));
-
+        // Dégâts : (Base + Growth) * Rareté
+        float finalBaseDmg = (effect.baseDamage + (effect.damageGrowth * (effectLvl - 1))) * effectMult;
+        float finalDmgMult = (effect.damageMultiplier + (effect.multiplierGrowth * (effectLvl - 1))) * effectMult;
         // Transfert des stats spéciales
         def.ChainCount = effect.baseChainCount;
         def.ChainRange = effect.chainRange;
@@ -58,14 +62,15 @@ public static class SpellBuilder
             if (modRune == null || modRune.AsModifier == null) continue;
 
             SpellModifier mod = modRune.AsModifier;
+            float modRarity = modRune.PowerMultiplier;
             int modLvl = modRune.Level;
 
             // Vérification Tag
             if (mod.requiredTag != SpellTag.None && !form.tags.HasFlag(mod.requiredTag)) continue;
 
             // --- CALCULS AVEC CROISSANCE (MODIFIER) ---
-            // Exemple : Dégâts augmente avec le niveau du mod
-            float modDmg = mod.damageMult + (mod.damageMultGrowth * (modLvl - 1));
+            float growth = (mod.damageMultGrowth * (modLvl - 1)) * modRarity;
+            float modDmg = mod.damageMult + growth;
 
             damageMultTotal *= modDmg;
             cooldownMult *= mod.cooldownMult;

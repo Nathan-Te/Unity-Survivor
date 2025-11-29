@@ -25,8 +25,11 @@ public class SpellModifier : RuneSO // <-- Hérite de RuneSO
     public float addSpread = 0f;
     public bool enableHoming;
 
-    public override string GetLevelUpDescription(int nextLevel)
+    public override string GetLevelUpDescription(int nextLevel, Rarity rarity)
     {
-        return $"Boost Dégâts amélioré de {damageMultGrowth * 100}%";
+        float mult = RarityUtils.GetMultiplier(rarity);
+        float growth = damageMultGrowth * (nextLevel - 1) * mult;
+
+        return $"Boost Dégâts +{growth * 100:F0}% <color=grey>(x{mult})</color>";
     }
 }

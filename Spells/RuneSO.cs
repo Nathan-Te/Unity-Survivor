@@ -13,5 +13,5 @@ public abstract class RuneSO : ScriptableObject
     public abstract RuneType Type { get; }
 
     // Pour l'affichage dans le menu d'upgrade
-    public abstract string GetLevelUpDescription(int nextLevel);
+    public abstract string GetLevelUpDescription(int nextLevel, Rarity rarity);
 }
