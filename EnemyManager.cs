@@ -51,6 +51,17 @@ public class EnemyManager : MonoBehaviour
     {
         if (playerTransform == null || _activeEnemies.Count == 0) return;
 
+        // --- CORRECTION : Synchronisation des Vitesses ---
+        // On met à jour les données du Job avec les valeurs actuelles des scripts
+        // (au cas où un Slow ou un Frenzy a été appliqué)
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] != null)
+            {
+                _moveSpeeds[i] = _activeEnemies[i].currentSpeed;
+            }
+        }
+
         int requiredSize = _activeEnemies.Count * 3;
         if (!_rayCommands.IsCreated || _currentCapacity != requiredSize / 3)
         {

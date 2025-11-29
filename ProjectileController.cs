@@ -15,10 +15,12 @@ public class ProjectileController : MonoBehaviour
 
     // Variables pour Orbit
     private float _currentAngle;
-    private float _orbitRadius = 2.0f; // Distance du joueur
     private int _index;
     private int _totalCount;
     private float _orbitTimer;
+
+    // --- CORRECTION DURATION ---
+    private float _currentDuration;
 
     public void Initialize(SpellDefinition def, Vector3 direction, int index = 0, int totalCount = 1)
     {
@@ -27,6 +29,9 @@ public class ProjectileController : MonoBehaviour
         _startPosition = transform.position;
         _hitCount = 0;
         _isHostile = false;
+
+        // On initialise le timer local
+        _currentDuration = def.Duration;
 
         // Stockage pour la logique Orbit
         _index = index;
@@ -60,7 +65,6 @@ public class ProjectileController : MonoBehaviour
 
     public void InitializeEnemyProjectile(float damage, GameObject sourcePrefab)
     {
-        // On crée une définition "fake" pour l'ennemi pour garder la compatibilité
         _def = new SpellDefinition();
         _def.Damage = damage;
         _def.Speed = 10f;
@@ -132,9 +136,9 @@ public class ProjectileController : MonoBehaviour
         _orbitTimer += Time.deltaTime;
         UpdateOrbitPosition();
 
-        // Durée de vie
-        _def.Duration -= Time.deltaTime;
-        if (_def.Duration <= 0f) Despawn();
+        // CORRECTION : On utilise la variable locale
+        _currentDuration -= Time.deltaTime;
+        if (_currentDuration <= 0f) Despawn();
     }
 
     private void UpdateOrbitPosition()
@@ -158,7 +162,6 @@ public class ProjectileController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Pour le Smite, on ignore les collisions physiques avant l'explosion du timer
         if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite)) return;
 
         // GESTION ENNEMIE (Hostile)
@@ -185,12 +188,12 @@ public class ProjectileController : MonoBehaviour
             ApplyHit(enemy);
             _hitCount++;
 
-            // Pierce check : Si on a touché plus d'ennemis que permis
-            // Pour AOE (Explosion), on despawn généralement au premier impact
+            // Pierce check
             if (_def.Effect.aoeRadius > 0)
             {
                 Despawn();
             }
+            // CORRECTION : Le Pierce doit être strict (> permet de toucher Pierce + 1 ennemis)
             else if (_hitCount > _def.Pierce)
             {
                 Despawn();
@@ -198,7 +201,6 @@ public class ProjectileController : MonoBehaviour
         }
         else if (isObstacle)
         {
-            // Explosion murale ?
             if (_def.Effect.aoeRadius > 0) ApplyAreaDamage(transform.position);
             Despawn();
         }
@@ -218,9 +220,7 @@ public class ProjectileController : MonoBehaviour
 
     private void ApplyAreaDamage(Vector3 center)
     {
-        // Utilise le rayon de l'effet, ou une valeur par défaut pour Smite
         float radius = _def.Effect.aoeRadius > 0 ? _def.Effect.aoeRadius : 3f;
-
         var enemies = EnemyManager.Instance.GetEnemiesInRange(center, radius);
         foreach (var e in enemies) ApplyDamage(e);
     }
@@ -229,17 +229,9 @@ public class ProjectileController : MonoBehaviour
     {
         enemy.TakeDamage(_def.Damage);
 
-        // --- Application des Status ---
-        if (_def.Effect.applyBurn)
-        {
-            enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
-        }
-        if (_def.Effect.applySlow)
-        {
-            enemy.ApplySlow(0.5f, 2f);
-        }
+        if (_def.Effect.applyBurn) enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
+        if (_def.Effect.applySlow) enemy.ApplySlow(0.5f, 2f);
 
-        // Knockback
         if (_def.Effect.knockbackForce > 0 && enemy.TryGetComponent<Rigidbody>(out var rb))
         {
             Vector3 pushDir = (enemy.transform.position - transform.position).normalized;

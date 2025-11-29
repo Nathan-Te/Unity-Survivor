@@ -9,11 +9,9 @@ public class SpellForm : ScriptableObject
     public GameObject prefab;
     public Sprite icon;
 
-    // --- AJOUTER CECI ---
     [Header("Stratégie de Ciblage")]
     public TargetingMode targetingMode = TargetingMode.Nearest;
     public bool requiresLineOfSight = true;
-    // --------------------
 
     [Header("Compatibilité")]
     public SpellTag tags;
@@ -21,6 +19,7 @@ public class SpellForm : ScriptableObject
     [Header("Pattern de Tir")]
     public float baseCooldown = 1f;
     public int baseCount = 1;
+    public int basePierce = 0; // <--- AJOUTÉ
     public float baseSpread = 0f;
 
     [Header("Spécifique Mouvement")]
