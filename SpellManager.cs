@@ -189,5 +189,29 @@ public class SpellManager : MonoBehaviour
         return false; // Inventaire plein, il faut demander le remplacement
     }
 
+    // Cherche si le joueur possède déjà cette Rune (SO) active dans un slot
+    // Retourne la Rune dynamique si trouvée, sinon null.
+    public Rune FindActiveRune(RuneSO data)
+    {
+        foreach (var slot in activeSlots)
+        {
+            // Vérif Forme
+            if (slot.formRune != null && slot.formRune.Data == data)
+                return slot.formRune;
+
+            // Vérif Effet
+            if (slot.effectRune != null && slot.effectRune.Data == data)
+                return slot.effectRune;
+
+            // Vérif Modifiers
+            foreach (var modRune in slot.modifierRunes)
+            {
+                if (modRune != null && modRune.Data == data)
+                    return modRune;
+            }
+        }
+        return null; // Pas trouvée (Nouveau)
+    }
+
     public List<SpellSlot> GetSlots() => activeSlots;
 }

@@ -279,8 +279,10 @@ public class EnemyManager : MonoBehaviour
     // Vérifie si un mur bloque la vue (La fonction manquante !)
     private bool IsVisible(Vector3 start, Vector3 end)
     {
-        // On s'assure que la destination est aussi surélevée pour éviter de tirer dans le sol
+        // CORRECTION : On vise le torse de l'ennemi, pas ses pieds !
+        // On prend la hauteur Y du départ (qui est déjà +1m grâce au SpellManager)
         Vector3 targetPoint = new Vector3(end.x, start.y, end.z);
+
         Vector3 dir = targetPoint - start;
         float dist = dir.magnitude;
 

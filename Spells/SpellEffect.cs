@@ -39,12 +39,29 @@ public class SpellEffect : RuneSO
     [Header("Zone")]
     public float aoeRadius = 0f;
 
-    // IMPLEMENTATION
-    public override string GetLevelUpDescription(int level)
+    public override string GetDescription(Rune currentRune, Rarity rarity)
     {
-        float dmg = baseDamage + (damageGrowth * (level - 1));
-        // float mult = damageMultiplier + (multiplierGrowth * (level - 1)); // Si tu veux afficher le mult aussi
+        int currentLvl = currentRune != null ? currentRune.Level : 1;
+        int boost = RarityUtils.GetLevelBoost(rarity);
+        int nextLvl = currentLvl + boost;
 
-        return $"Dégâts de base : {dmg:F1}";
+        float curDmg = baseDamage + (damageGrowth * (currentLvl - 1));
+        float nextDmg = baseDamage + (damageGrowth * (nextLvl - 1));
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        // Affiche l'élément en couleur
+        string hexColor = ColorUtility.ToHtmlStringRGB(tintColor);
+        sb.AppendLine($"<color=#{hexColor}>{element}</color> : {description}");
+        sb.AppendLine();
+
+        sb.AppendLine(FormatStat("Dégâts de Base", curDmg, nextDmg));
+
+        // Affichage conditionnel des propriétés spéciales
+        if (applyBurn) sb.AppendLine("- Applique Brûlure");
+        if (applySlow) sb.AppendLine("- Applique Ralentissement");
+        if (baseChainCount > 0) sb.AppendLine($"\nChaîne : {baseChainCount} rebonds");
+
+        return sb.ToString();
     }
 }

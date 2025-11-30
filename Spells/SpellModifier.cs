@@ -25,14 +25,28 @@ public class SpellModifier : RuneSO
     public float addSpread = 0f;
     public bool enableHoming;
 
-    // IMPLEMENTATION
-    public override string GetLevelUpDescription(int level)
+    public override string GetDescription(Rune currentRune, Rarity rarity)
     {
-        // Exemple pour les dégâts
-        float growth = damageMultGrowth * (level - 1);
-        float totalMult = damageMult + growth;
+        int currentLvl = currentRune != null ? currentRune.Level : 1;
+        int boost = RarityUtils.GetLevelBoost(rarity);
+        int nextLvl = currentLvl + boost;
 
-        // On affiche en pourcentage (x1.5 = +50%)
-        return $"Puissance : x{totalMult:F2}";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine(description);
+        sb.AppendLine();
+
+        // On affiche seulement les stats pertinentes (qui changent)
+        if (damageMult != 1f || damageMultGrowth > 0)
+        {
+            float cur = damageMult + (damageMultGrowth * (currentLvl - 1));
+            float next = damageMult + (damageMultGrowth * (nextLvl - 1));
+            sb.AppendLine(FormatStat("Puissance", cur, next, "x"));
+        }
+
+        if (addCount > 0) sb.AppendLine($"+{addCount} Projectiles");
+        if (addPierce > 0) sb.AppendLine($"+{addPierce} Pierce");
+        if (enableHoming) sb.AppendLine("Guidage Activé");
+
+        return sb.ToString();
     }
 }

@@ -4,11 +4,8 @@ using UnityEngine;
 [System.Serializable]
 public class SpellSlot
 {
-    // On remplace les types directs par la classe Rune
     public Rune formRune;
     public Rune effectRune;
-
-    // Liste fixe de 2 modificateurs (null si vide)
     public Rune[] modifierRunes = new Rune[2];
 
     private SpellDefinition _cachedDefinition;
@@ -25,11 +22,32 @@ public class SpellSlot
 
     public void RecalculateStats()
     {
-        // On vérifie que les runes existent et contiennent les bonnes données
+        // --- SÉCURITÉ ANTI-CRASH (Fix du TotalPower à 0) ---
+        // Si une rune a été créée via l'Inspecteur avant l'ajout du champ TotalPower,
+        // Unity l'a mis à 0. On force la valeur par défaut (1.0) ici.
+
+        if (formRune != null && formRune.TotalPower <= 0.1f)
+            formRune.TotalPower = 1.0f;
+
+        if (effectRune != null && effectRune.TotalPower <= 0.1f)
+            effectRune.TotalPower = 1.0f;
+
+        if (modifierRunes != null)
+        {
+            foreach (var mod in modifierRunes)
+            {
+                if (mod != null && mod.Data != null && mod.TotalPower <= 0.1f)
+                {
+                    mod.TotalPower = 1.0f;
+                }
+            }
+        }
+        // -----------------------------------------------------
+
         if (formRune != null && formRune.AsForm != null &&
             effectRune != null && effectRune.AsEffect != null)
         {
-            _cachedDefinition = SpellBuilder.Build(this); // On passe 'this' (le slot entier) au Builder
+            _cachedDefinition = SpellBuilder.Build(this);
         }
         else
         {
@@ -39,21 +57,19 @@ public class SpellSlot
 
     public void ForceInit() => RecalculateStats();
 
-    // --- GESTION DES MODIFICATEURS ---
-
+    // ... (Le reste de la classe TryAddModifier / ReplaceModifier reste inchangé)
     public bool TryAddModifier(Rune newModRune)
     {
-        // 1. Chercher un slot vide
         for (int i = 0; i < modifierRunes.Length; i++)
         {
-            if (modifierRunes[i] == null)
+            if (modifierRunes[i] == null || modifierRunes[i].Data == null)
             {
                 modifierRunes[i] = newModRune;
                 RecalculateStats();
                 return true;
             }
         }
-        return false; // Pas de place
+        return false;
     }
 
     public void ReplaceModifier(int index, Rune newModRune)

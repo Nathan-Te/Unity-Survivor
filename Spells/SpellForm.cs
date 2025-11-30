@@ -30,20 +30,42 @@ public class SpellForm : RuneSO
     public float baseDuration = 5f;
     [Range(0f, 1f)] public float procCoefficient = 1.0f;
 
-    // IMPLEMENTATION
-    public override string GetLevelUpDescription(int level)
+    public override string GetDescription(Rune currentRune, Rarity rarity)
     {
-        // Calcul Cooldown
-        float reduction = cooldownReductionPerLevel * (level - 1);
-        float finalCd = Mathf.Max(0.1f, baseCooldown - reduction);
+        int currentLvl = currentRune != null ? currentRune.Level : 1;
+        int boost = RarityUtils.GetLevelBoost(rarity);
+        int nextLvl = currentLvl + boost;
 
-        // Calcul Count (tous les X niveaux)
-        int extraCount = (level - 1) / Mathf.Max(1, countIncreaseEveryXLevels);
-        int finalCount = baseCount + extraCount;
+        // Calcul Actuel
+        float curCd = GetCooldownAtLevel(currentLvl);
+        int curCount = GetCountAtLevel(currentLvl);
 
-        string desc = $"Cooldown : {finalCd:F2}s";
-        if (extraCount > 0) desc += $"\nProjectiles : {finalCount}";
+        // Calcul Futur
+        float nextCd = GetCooldownAtLevel(nextLvl);
+        int nextCount = GetCountAtLevel(nextLvl);
 
-        return desc;
+        // Construction du texte
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine(description); // La description textuelle de base
+        sb.AppendLine();
+        sb.AppendLine(FormatStat("Cooldown", curCd, nextCd, "s"));
+
+        if (nextCount != curCount || baseCount > 1)
+            sb.AppendLine(FormatIntStat("Projectiles", curCount, nextCount));
+
+        return sb.ToString();
+    }
+
+    // Helpers de calcul (similaires à SpellBuilder) pour éviter la duplication
+    private float GetCooldownAtLevel(int lvl)
+    {
+        float reduction = cooldownReductionPerLevel * (lvl - 1);
+        return Mathf.Max(0.1f, baseCooldown - reduction);
+    }
+
+    private int GetCountAtLevel(int lvl)
+    {
+        int extra = (lvl - 1) / Mathf.Max(1, countIncreaseEveryXLevels);
+        return baseCount + extra;
     }
 }
