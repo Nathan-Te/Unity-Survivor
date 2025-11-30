@@ -26,10 +26,10 @@ public class EnemyManager : MonoBehaviour
     private List<EnemyController> _activeEnemies = new List<EnemyController>();
     private TransformAccessArray _transformAccessArray;
 
-    // NOUVEAUX TABLEAUX DE DONNÉES
+    // Tableaux de données pour le Job
     private NativeList<float> _moveSpeeds;
-    private NativeList<float> _stopDistances; // Distance d'arrêt
-    private NativeList<float> _fleeDistances; // Distance de fuite
+    private NativeList<float> _stopDistances;
+    private NativeList<float> _fleeDistances;
 
     private NativeArray<RaycastCommand> _rayCommands;
     private NativeArray<RaycastHit> _rayResults;
@@ -42,8 +42,8 @@ public class EnemyManager : MonoBehaviour
     {
         Instance = this;
         _moveSpeeds = new NativeList<float>(Allocator.Persistent);
-        _stopDistances = new NativeList<float>(Allocator.Persistent); // Nouveau
-        _fleeDistances = new NativeList<float>(Allocator.Persistent); // Nouveau
+        _stopDistances = new NativeList<float>(Allocator.Persistent);
+        _fleeDistances = new NativeList<float>(Allocator.Persistent);
         _transformAccessArray = new TransformAccessArray(0);
     }
 
@@ -51,37 +51,21 @@ public class EnemyManager : MonoBehaviour
     {
         if (playerTransform == null || _activeEnemies.Count == 0) return;
 
-        // --- CORRECTION : Synchronisation des Vitesses ---
-        // On met à jour les données du Job avec les valeurs actuelles des scripts
-        // (au cas où un Slow ou un Frenzy a été appliqué)
-        for (int i = 0; i < _activeEnemies.Count; i++)
-        {
-            if (_activeEnemies[i] != null)
-            {
-                _moveSpeeds[i] = _activeEnemies[i].currentSpeed;
-            }
-        }
+        SyncDataForJob();
+        EnsureBufferSize();
 
-        int requiredSize = _activeEnemies.Count * 3;
-        if (!_rayCommands.IsCreated || _currentCapacity != requiredSize / 3)
-        {
-            ResizeBuffers(requiredSize);
-        }
-
-        // 1. Raycasts (Inchangé)
+        // 1. Raycasts
         PrepareRaycasts();
         JobHandle rayHandle = RaycastCommand.ScheduleBatch(_rayCommands, _rayResults, 10);
 
-        // 2. Mouvement (Avec logique de Fuite/Arrêt)
+        // 2. Mouvement
         MoveEnemiesJob moveJob = new MoveEnemiesJob
         {
             PlayerPosition = playerTransform.position,
             DeltaTime = Time.deltaTime,
-
             MoveSpeeds = _moveSpeeds.AsArray(),
-            StopDistances = _stopDistances.AsArray(), // Passer les données
-            FleeDistances = _fleeDistances.AsArray(), // Passer les données
-
+            StopDistances = _stopDistances.AsArray(),
+            FleeDistances = _fleeDistances.AsArray(),
             RayResults = _rayResults,
             PreviousDirections = _previousDirections,
             AvoidanceWeight = separationWeight,
@@ -93,16 +77,34 @@ public class EnemyManager : MonoBehaviour
         moveHandle.Complete();
     }
 
-    private void ResizeBuffers(int requiredSize)
-    {
-        if (_rayCommands.IsCreated) _rayCommands.Dispose();
-        if (_rayResults.IsCreated) _rayResults.Dispose();
-        if (_previousDirections.IsCreated) _previousDirections.Dispose();
+    // --- HELPERS PRIVÉS (Organisation) ---
 
-        _rayCommands = new NativeArray<RaycastCommand>(requiredSize, Allocator.Persistent);
-        _rayResults = new NativeArray<RaycastHit>(requiredSize, Allocator.Persistent);
-        _previousDirections = new NativeArray<float3>(requiredSize / 3, Allocator.Persistent);
-        _currentCapacity = requiredSize / 3;
+    private void SyncDataForJob()
+    {
+        // Synchronisation des vitesses (pour gérer Slow/Frenzy)
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] != null)
+            {
+                _moveSpeeds[i] = _activeEnemies[i].currentSpeed;
+            }
+        }
+    }
+
+    private void EnsureBufferSize()
+    {
+        int requiredSize = _activeEnemies.Count * 3;
+        if (!_rayCommands.IsCreated || _currentCapacity != requiredSize / 3)
+        {
+            if (_rayCommands.IsCreated) _rayCommands.Dispose();
+            if (_rayResults.IsCreated) _rayResults.Dispose();
+            if (_previousDirections.IsCreated) _previousDirections.Dispose();
+
+            _rayCommands = new NativeArray<RaycastCommand>(requiredSize, Allocator.Persistent);
+            _rayResults = new NativeArray<RaycastHit>(requiredSize, Allocator.Persistent);
+            _previousDirections = new NativeArray<float3>(requiredSize / 3, Allocator.Persistent);
+            _currentCapacity = requiredSize / 3;
+        }
     }
 
     private void PrepareRaycasts()
@@ -124,14 +126,14 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
+    // --- API PUBLIQUE ---
+
     public void DebugKillAllEnemies()
     {
-        // On boucle à l'envers car la liste va rétrécir à chaque suppression
         for (int i = _activeEnemies.Count - 1; i >= 0; i--)
         {
             if (_activeEnemies[i] != null)
             {
-                // On simule des dégâts infinis pour déclencher la mort propre (Drop XP + Pool)
                 _activeEnemies[i].TakeDamage(99999f);
             }
         }
@@ -144,10 +146,9 @@ public class EnemyManager : MonoBehaviour
             _activeEnemies.Add(enemy);
             _transformAccessArray.Add(enemy.transform);
 
-            // On enregistre les stats de comportement
             _moveSpeeds.Add(enemy.currentSpeed);
-            _stopDistances.Add(enemy.Data.stopDistance); // Nouveau
-            _fleeDistances.Add(enemy.Data.fleeDistance); // Nouveau
+            _stopDistances.Add(enemy.Data.stopDistance);
+            _fleeDistances.Add(enemy.Data.fleeDistance);
 
             if (col != null) _colliderCache.TryAdd(col.GetInstanceID(), enemy);
         }
@@ -164,137 +165,22 @@ public class EnemyManager : MonoBehaviour
             {
                 _activeEnemies[index] = _activeEnemies[last];
                 _moveSpeeds[index] = _moveSpeeds[last];
-                _stopDistances[index] = _stopDistances[last]; // Nouveau
-                _fleeDistances[index] = _fleeDistances[last]; // Nouveau
+                _stopDistances[index] = _stopDistances[last];
+                _fleeDistances[index] = _fleeDistances[last];
             }
 
             _activeEnemies.RemoveAt(last);
             _moveSpeeds.RemoveAtSwapBack(last);
-            _stopDistances.RemoveAtSwapBack(last); // Nouveau
-            _fleeDistances.RemoveAtSwapBack(last); // Nouveau
+            _stopDistances.RemoveAtSwapBack(last);
+            _fleeDistances.RemoveAtSwapBack(last);
             _transformAccessArray.RemoveAtSwapBack(index);
 
             if (col != null) _colliderCache.Remove(col.GetInstanceID());
         }
     }
 
-    // --- SYSTÈME DE CIBLAGE (Le cerveau du SpellManager) ---
+    public bool TryGetEnemyByCollider(Collider col, out EnemyController enemy) => _colliderCache.TryGetValue(col.GetInstanceID(), out enemy);
 
-    public Transform GetTarget(Vector3 sourcePos, float range, TargetingMode mode, float areaSize = 2f, bool checkVisibility = true)
-    {
-        switch (mode)
-        {
-            case TargetingMode.Nearest:
-                return GetNearestEnemy(sourcePos, range, checkVisibility);
-            case TargetingMode.HighestDensity:
-                return GetDensestCluster(sourcePos, range, areaSize, checkVisibility);
-            case TargetingMode.Random:
-                return GetRandomEnemy(sourcePos, range, checkVisibility);
-            default:
-                return null;
-        }
-    }
-
-    // 1. LE PLUS PROCHE
-    private Transform GetNearestEnemy(Vector3 sourcePos, float range, bool checkVisibility)
-    {
-        EnemyController nearest = null;
-        float minDistSqr = range * range;
-
-        for (int i = 0; i < _activeEnemies.Count; i++)
-        {
-            EnemyController enemy = _activeEnemies[i];
-            if (enemy == null) continue;
-
-            float distSqr = (enemy.transform.position - sourcePos).sqrMagnitude;
-            if (distSqr < minDistSqr)
-            {
-                if (checkVisibility && !IsVisible(sourcePos, enemy.transform.position)) continue;
-
-                minDistSqr = distSqr;
-                nearest = enemy;
-            }
-        }
-        return nearest != null ? nearest.transform : null;
-    }
-
-    // 2. LE PLUS GROS GROUPE
-    private Transform GetDensestCluster(Vector3 sourcePos, float range, float areaSize, bool checkVisibility)
-    {
-        // Réflexe de Survie : Si un ennemi est trop près (< 4m), on l'abat en priorité
-        Transform panicTarget = GetNearestEnemy(sourcePos, 4.0f, checkVisibility);
-        if (panicTarget != null) return panicTarget;
-
-        Transform bestTarget = null;
-        int maxNeighbors = -1;
-        float rangeSqr = range * range;
-        float areaSqr = areaSize * areaSize;
-
-        for (int i = 0; i < _activeEnemies.Count; i++)
-        {
-            EnemyController candidate = _activeEnemies[i];
-            if (candidate == null) continue;
-            if ((candidate.transform.position - sourcePos).sqrMagnitude > rangeSqr) continue;
-            if (checkVisibility && !IsVisible(sourcePos, candidate.transform.position)) continue;
-
-            int neighborCount = 0;
-            for (int j = 0; j < _activeEnemies.Count; j++)
-            {
-                if (i == j) continue;
-                if ((_activeEnemies[j].transform.position - candidate.transform.position).sqrMagnitude <= areaSqr)
-                    neighborCount++;
-            }
-
-            if (neighborCount > maxNeighbors)
-            {
-                maxNeighbors = neighborCount;
-                bestTarget = candidate.transform;
-            }
-        }
-        return bestTarget != null ? bestTarget : GetNearestEnemy(sourcePos, range, checkVisibility);
-    }
-
-    // 3. ALÉATOIRE
-    private Transform GetRandomEnemy(Vector3 sourcePos, float range, bool checkVisibility)
-    {
-        List<Transform> candidates = new List<Transform>();
-        float rangeSqr = range * range;
-
-        for (int i = 0; i < _activeEnemies.Count; i++)
-        {
-            if (_activeEnemies[i] == null) continue;
-            if ((_activeEnemies[i].transform.position - sourcePos).sqrMagnitude <= rangeSqr)
-            {
-                if (!checkVisibility || IsVisible(sourcePos, _activeEnemies[i].transform.position))
-                    candidates.Add(_activeEnemies[i].transform);
-            }
-        }
-
-        if (candidates.Count > 0) return candidates[UnityEngine.Random.Range(0, candidates.Count)];
-        return null;
-    }
-
-    // --- UTILITAIRE : VUE & AOE ---
-
-    // Vérifie si un mur bloque la vue (La fonction manquante !)
-    private bool IsVisible(Vector3 start, Vector3 end)
-    {
-        // CORRECTION : On vise le torse de l'ennemi, pas ses pieds !
-        // On prend la hauteur Y du départ (qui est déjà +1m grâce au SpellManager)
-        Vector3 targetPoint = new Vector3(end.x, start.y, end.z);
-
-        Vector3 dir = targetPoint - start;
-        float dist = dir.magnitude;
-
-        // Si on touche un obstacle
-        if (Physics.Raycast(start, dir.normalized, dist, obstacleLayer))
-        {
-            return false;
-        }
-        return true;
-    }
-
-    // Pour les explosions (AOE)
     public List<EnemyController> GetEnemiesInRange(Vector3 center, float radius)
     {
         List<EnemyController> results = new List<EnemyController>();
@@ -308,8 +194,21 @@ public class EnemyManager : MonoBehaviour
         return results;
     }
 
-    // Méthodes helpers nécessaires (copiées/collées de l'ancienne version)
-    public bool TryGetEnemyByCollider(Collider col, out EnemyController enemy) => _colliderCache.TryGetValue(col.GetInstanceID(), out enemy);
+    // DÉLÉGATION AU TARGETING SYSTEM
+    public Transform GetTarget(Vector3 sourcePos, float range, TargetingMode mode, float areaSize = 2f, bool checkVisibility = true)
+    {
+        switch (mode)
+        {
+            case TargetingMode.Nearest:
+                return TargetingUtils.GetNearestEnemy(_activeEnemies, sourcePos, range, checkVisibility, obstacleLayer);
+            case TargetingMode.HighestDensity:
+                return TargetingUtils.GetDensestCluster(_activeEnemies, sourcePos, range, areaSize, checkVisibility, obstacleLayer);
+            case TargetingMode.Random:
+                return TargetingUtils.GetRandomEnemy(_activeEnemies, sourcePos, range, checkVisibility, obstacleLayer);
+            default:
+                return null;
+        }
+    }
 
     private void OnDestroy()
     {
@@ -323,7 +222,6 @@ public class EnemyManager : MonoBehaviour
     }
 }
 
-// --- JOB DE MOUVEMENT MIS À JOUR ---
 [BurstCompile]
 public struct MoveEnemiesJob : IJobParallelForTransform
 {
@@ -334,8 +232,8 @@ public struct MoveEnemiesJob : IJobParallelForTransform
     public float AvoidanceBlendSpeed;
 
     [ReadOnly] public NativeArray<float> MoveSpeeds;
-    [ReadOnly] public NativeArray<float> StopDistances; // Nouveau
-    [ReadOnly] public NativeArray<float> FleeDistances; // Nouveau
+    [ReadOnly] public NativeArray<float> StopDistances;
+    [ReadOnly] public NativeArray<float> FleeDistances;
     [ReadOnly] public NativeArray<RaycastHit> RayResults;
     public NativeArray<float3> PreviousDirections;
 
@@ -351,25 +249,19 @@ public struct MoveEnemiesJob : IJobParallelForTransform
         float stopDist = StopDistances[index];
         float fleeDist = FleeDistances[index];
 
-        // --- LOGIQUE DE COMPORTEMENT (Melee / Range / Flee) ---
         float3 behaviorDir = dirToPlayer;
         float currentSpeedMultiplier = 1f;
 
-        // Si on est trop près (Zone de Fuite)
         if (fleeDist > 0 && distanceToPlayerSqr < (fleeDist * fleeDist))
         {
-            behaviorDir = -dirToPlayer; // On inverse la direction (FUITE)
+            behaviorDir = -dirToPlayer;
         }
-        // Si on est à bonne distance (Zone d'Arrêt pour tirer)
         else if (stopDist > 0 && distanceToPlayerSqr < (stopDist * stopDist))
         {
-            behaviorDir = float3.zero; // On s'arrête
+            behaviorDir = float3.zero;
             currentSpeedMultiplier = 0f;
         }
-        // Sinon : On avance vers le joueur (Comportement par défaut)
 
-        // --- STEERING (Obstacles) ---
-        // (Uniquement si on bouge)
         float3 finalDirection = behaviorDir;
 
         if (currentSpeedMultiplier > 0.01f)
@@ -383,8 +275,6 @@ public struct MoveEnemiesJob : IJobParallelForTransform
             {
                 float3 right = transform.rotation * new float3(1, 0, 0);
                 float3 left = transform.rotation * new float3(-1, 0, 0);
-
-                // Logique simplifiée d'évitement
                 float3 nudge = float3.zero;
                 if (hitCenter) nudge = (index % 2 == 0) ? right : left;
                 if (hitLeft) nudge += right;
@@ -394,14 +284,12 @@ public struct MoveEnemiesJob : IJobParallelForTransform
             }
         }
 
-        // Lissage
         if (math.lengthsq(PreviousDirections[index]) > 0.01f)
         {
             finalDirection = math.normalize(math.lerp(PreviousDirections[index], finalDirection, AvoidanceBlendSpeed * DeltaTime));
         }
         PreviousDirections[index] = finalDirection;
 
-        // Application
         transform.position += (Vector3)(finalDirection * MoveSpeeds[index] * currentSpeedMultiplier * DeltaTime);
 
         if (math.lengthsq(finalDirection) > 0.01f)
