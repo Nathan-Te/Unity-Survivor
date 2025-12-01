@@ -5,7 +5,6 @@ using TMPro;
 
 public class LevelUpUI : MonoBehaviour
 {
-    // ... (Variables inchangées : Panels, Boutons, Prefabs...) ...
     [Header("Panneaux")]
     [SerializeField] private GameObject draftPanel;
     [SerializeField] private GameObject inventoryPanel;
@@ -38,13 +37,14 @@ public class LevelUpUI : MonoBehaviour
     private int _targetSlotIndex;
     private bool _isBanMode = false;
 
-    // ... (Start, UpdateDraftButtons, OnReroll, OnBan inchangés) ...
     private void Start()
     {
         if (LevelManager.Instance != null) LevelManager.Instance.OnLevelUp.AddListener(StartLevelUpSequence);
+
         draftPanel.SetActive(false);
         inventoryPanel.SetActive(false);
         if (modifierReplacePanel) modifierReplacePanel.SetActive(false);
+        instructionText.gameObject.SetActive(false);
 
         rerollButton.onClick.AddListener(OnRerollClicked);
         banButton.onClick.AddListener(OnBanModeClicked);
@@ -100,7 +100,7 @@ public class LevelUpUI : MonoBehaviour
     {
         _isBanMode = !_isBanMode;
         UpdateDraftButtons();
-        instructionText.text = _isBanMode ? "BANNISSEMENT" : "LEVEL UP !";
+        instructionText.text = _isBanMode ? "BANNISSEMENT : Cliquez sur une carte" : "LEVEL UP ! Choisissez une récompense";
     }
 
     public void SelectUpgrade(UpgradeData upgrade)
@@ -115,31 +115,34 @@ public class LevelUpUI : MonoBehaviour
         _pendingUpgrade = upgrade;
         SpellManager sm = FindFirstObjectByType<SpellManager>();
 
+        // 1. Stat Passive (Immédiat)
         if (upgrade.Type == UpgradeType.StatBoost)
         {
             float val = upgrade.UpgradeDefinition.Stats.StatValue;
             PlayerStats.Instance.ApplyUpgrade(upgrade.TargetStat.targetStat, val);
             EndLevelUp();
         }
+        // 2. Nouveau Sort (Forme)
         else if (upgrade.Type == UpgradeType.NewSpell)
         {
-            // LOGIQUE MODIFIÉE : On ne fait l'ajout auto QUE si on ne l'a pas déjà
-            // ET qu'il y a de la place.
             bool hasDuplicate = sm.HasForm((SpellForm)upgrade.TargetRuneSO);
+            bool hasSpace = sm.CanAddSpell();
 
-            if (sm.CanAddSpell() && !hasDuplicate)
+            // Cas A : On ne l'a pas ET il y a de la place -> Ajout Auto
+            if (!hasDuplicate && hasSpace)
             {
                 sm.AddNewSpellWithUpgrade((SpellForm)upgrade.TargetRuneSO, upgrade.UpgradeDefinition);
                 EndLevelUp();
             }
+            // Cas B : On l'a déjà OU Inventaire plein -> On donne le choix (Targeting)
             else
             {
-                // Si on l'a déjà OU si c'est plein -> On doit choisir (Upgrade ou Nouveau Slot)
                 ShowTargetingPhase();
-                if (hasDuplicate) instructionText.text = "Doublon ! Améliorer l'existant ou Créer un nouveau ?";
+                if (hasDuplicate) instructionText.text = "Doublon ! Cliquez sur le sort pour l'améliorer, ou un slot vide pour dupliquer.";
                 else instructionText.text = "Inventaire Plein ! Remplacer quel sort ?";
             }
         }
+        // 3. Modif / Effet -> Toujours cibler
         else
         {
             ShowTargetingPhase();
@@ -151,31 +154,24 @@ public class LevelUpUI : MonoBehaviour
         draftPanel.SetActive(false);
         inventoryPanel.SetActive(true);
 
-        // Texte contextuel
-        if (_pendingUpgrade.Type == UpgradeType.NewSpell) instructionText.text = "Choisir un emplacement";
-        else instructionText.text = $"Appliquer {_pendingUpgrade.Name} sur ?";
+        if (instructionText.text == "LEVEL UP ! Choisissez une récompense")
+            instructionText.text = $"Appliquer {_pendingUpgrade.Name} sur ?";
 
         foreach (Transform child in inventoryContainer) Destroy(child.gameObject);
 
         SpellManager sm = FindFirstObjectByType<SpellManager>();
         List<SpellSlot> slots = sm.GetSlots();
 
-        // ON BOUCLE SUR TOUS LES SLOTS POSSIBLES (Ex: 0 à 3)
+        // On affiche tous les slots (occupés + vides) jusqu'au Max
         for (int i = 0; i < sm.MaxSlots; i++)
         {
             GameObject obj = Instantiate(slotPrefab, inventoryContainer);
             if (obj.TryGetComponent<SpellSlotUI>(out var ui))
             {
                 if (i < slots.Count)
-                {
-                    // Slot Occupé
                     ui.Initialize(slots[i], i, this);
-                }
                 else
-                {
-                    // Slot Vide
                     ui.InitializeEmpty(i, this);
-                }
             }
         }
     }
@@ -189,10 +185,10 @@ public class LevelUpUI : MonoBehaviour
         bool isOccupied = slotIndex < slots.Count;
         SpellSlot slot = isOccupied ? slots[slotIndex] : null;
 
-        // --- CAS 1 : C'EST UNE FORME (SORT) ---
+        // CAS A : GESTION DES SORT (FORMES)
         if (_pendingUpgrade.Type == UpgradeType.NewSpell)
         {
-            // A. Clic sur un Slot Vide -> Création
+            // 1. Clic sur slot vide -> Création
             if (!isOccupied)
             {
                 sm.AddNewSpellWithUpgrade((SpellForm)_pendingUpgrade.TargetRuneSO, _pendingUpgrade.UpgradeDefinition);
@@ -200,55 +196,50 @@ public class LevelUpUI : MonoBehaviour
                 return;
             }
 
-            // B. Clic sur un Slot Occupé
+            // 2. Clic sur un Slot Occupé
             // Si c'est la même forme -> UPGRADE
             if (slot.formRune.Data == _pendingUpgrade.TargetRuneSO)
             {
-                // On applique l'upgrade sur la forme existante
-                // Note : Il faut une méthode publique sur SpellManager pour ça
-                // sm.UpgradeSpecificSlotForm(slotIndex, def);
-                // Pour simplifier, on réutilise UpgradeExistingForm si on est sûr du slot, 
-                // ou on fait l'upgrade manuellement ici via Rune.
+                // CORRECTION : On passe par le Manager pour qu'il notifie l'UI
+                sm.UpgradeSpellAtSlot(slotIndex, _pendingUpgrade.UpgradeDefinition);
 
-                slot.formRune.ApplyUpgrade(_pendingUpgrade.UpgradeDefinition);
-                slot.RecalculateStats();
                 EndLevelUp();
             }
+            // 3. Clic sur slot occupé par AUTRE forme -> REMPLACEMENT
             else
             {
-                // Si forme différente -> REMPLACEMENT
                 sm.ReplaceSpell((SpellForm)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
                 EndLevelUp();
             }
         }
-
-        // --- CAS 2 : C'EST UN EFFET OU MODIFICATEUR ---
-        else if (isOccupied) // On ne peut pas mettre un mod sur un slot vide
+        // CAS B : EFFET
+        else if (_pendingUpgrade.Type == UpgradeType.Effect && isOccupied)
         {
-            if (_pendingUpgrade.Type == UpgradeType.Effect)
+            sm.ApplyEffectToSlot((SpellEffect)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
+            EndLevelUp();
+        }
+        // CAS C : MODIFICATEUR
+        else if (_pendingUpgrade.Type == UpgradeType.Modifier && isOccupied)
+        {
+            bool success = sm.TryApplyModifierToSlot((SpellModifier)_pendingUpgrade.TargetRuneSO, slotIndex, -1, _pendingUpgrade.UpgradeDefinition);
+
+            if (success)
             {
-                sm.ApplyEffectToSlot((SpellEffect)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
                 EndLevelUp();
             }
-            else if (_pendingUpgrade.Type == UpgradeType.Modifier)
+            else
             {
-                bool success = sm.TryApplyModifierToSlot((SpellModifier)_pendingUpgrade.TargetRuneSO, slotIndex, -1, _pendingUpgrade.UpgradeDefinition);
-                if (success) EndLevelUp();
-                else
+                // Vérif Incompatibilité
+                if (_pendingUpgrade.TargetModifier.requiredTag != SpellTag.None &&
+                    !slot.formRune.AsForm.tags.HasFlag(_pendingUpgrade.TargetModifier.requiredTag))
                 {
-                    if (_pendingUpgrade.TargetModifier.requiredTag != SpellTag.None &&
-                   !slot.formRune.AsForm.tags.HasFlag(_pendingUpgrade.TargetModifier.requiredTag))
-                    {
-                        instructionText.text = "Incompatible !";
-                        return;
-                    }
-                    ShowReplaceMenu(slot);
+                    instructionText.text = "Incompatible avec cette forme !";
+                    return;
                 }
+                ShowReplaceMenu(slot);
             }
         }
     }
-
-    // ... (ShowReplaceMenu, EndLevelUp, GenerateOptions inchangés sauf retrait du SetAsUpgrade) ...
 
     private void ShowReplaceMenu(SpellSlot slot)
     {
@@ -296,6 +287,7 @@ public class LevelUpUI : MonoBehaviour
     {
         List<UpgradeData> picks = new List<UpgradeData>();
         int attempts = 0;
+
         while (picks.Count < count && attempts < 100)
         {
             attempts++;
@@ -317,8 +309,8 @@ public class LevelUpUI : MonoBehaviour
                 if (LevelManager.Instance.IsRuneBanned(candidate.Name)) continue;
                 if (picks.Exists(x => x.TargetRuneSO == candidate.TargetRuneSO)) continue;
 
-                // SUPPRESSION DU BLOC "SetAsUpgrade" ICI
-                // On veut que ça reste une carte "Nouveau Sort" pour permettre le choix
+                // CORRECTION : On supprime la conversion automatique en SpellUpgrade ici
+                // pour laisser le choix au joueur dans SelectUpgrade.
 
                 picks.Add(candidate);
             }

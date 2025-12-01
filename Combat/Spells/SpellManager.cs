@@ -213,41 +213,59 @@ public class SpellManager : MonoBehaviour
 
         if (mod.requiredTag != SpellTag.None && !slot.formRune.AsForm.tags.HasFlag(mod.requiredTag)) return false;
 
-        // A. Upgrade Existant
+        // A. Upgrade Existant (On garde le niveau et on monte)
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
             if (slot.modifierRunes[i] != null && slot.modifierRunes[i].Data == mod)
             {
-                slot.modifierRunes[i].ApplyUpgrade(upgradeDef);
+                slot.modifierRunes[i].ApplyUpgrade(upgradeDef); // Level ++
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
             }
         }
 
-        // B. Ajout Nouveau (Slot vide)
+        // B. Ajout Nouveau (Slot vide) -> Start Level 1
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
             if (slot.modifierRunes[i] == null || slot.modifierRunes[i].Data == null)
             {
                 slot.modifierRunes[i] = new Rune(mod);
-                slot.modifierRunes[i].InitializeWithStats(upgradeDef); // Ici aussi
+                slot.modifierRunes[i].InitializeWithStats(upgradeDef); // Level 1
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
             }
         }
 
-        // C. Remplacement Forcé
+        // C. Remplacement Forcé -> Start Level 1
         if (replaceIndex != -1 && replaceIndex < slot.modifierRunes.Length)
         {
             slot.modifierRunes[replaceIndex] = new Rune(mod);
-            slot.modifierRunes[replaceIndex].ApplyUpgrade(upgradeDef);
+            slot.modifierRunes[replaceIndex].InitializeWithStats(upgradeDef); // <--- CORRECTION ICI (C'était ApplyUpgrade)
             slot.RecalculateStats();
             OnInventoryUpdated?.Invoke();
             return true;
         }
 
         return false; // Inventaire plein
+    }
+
+    // 6. UPGRADE SLOT SPÉCIFIQUE (Forme)
+    // Appelée par l'UI quand on clique sur un slot contenant déjà la même forme
+    public void UpgradeSpellAtSlot(int slotIndex, RuneDefinition upgradeDef)
+    {
+        if (slotIndex < 0 || slotIndex >= activeSlots.Count) return;
+
+        SpellSlot slot = activeSlots[slotIndex];
+
+        if (slot.formRune != null)
+        {
+            slot.formRune.ApplyUpgrade(upgradeDef);
+            slot.RecalculateStats();
+
+            // C'est la ligne clé qui manquait : on notifie l'UI !
+            OnInventoryUpdated?.Invoke();
+        }
     }
 }
