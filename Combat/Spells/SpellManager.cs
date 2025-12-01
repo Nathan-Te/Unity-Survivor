@@ -6,6 +6,7 @@ public class SpellManager : MonoBehaviour
 {
     [Header("Config")]
     [SerializeField] private int maxSpellSlots = 4;
+    public int MaxSlots => maxSpellSlots;
 
     [Header("Inventaire Actif")]
     [SerializeField] private List<SpellSlot> activeSlots = new List<SpellSlot>();
@@ -135,7 +136,7 @@ public class SpellManager : MonoBehaviour
         SpellSlot newSlot = new SpellSlot();
 
         newSlot.formRune = new Rune(form); // Niveau 1
-        newSlot.formRune.ApplyUpgrade(upgradeDef); // Application stats piochées
+        newSlot.formRune.InitializeWithStats(upgradeDef); // Application stats piochées
 
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
         if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
@@ -168,7 +169,7 @@ public class SpellManager : MonoBehaviour
         SpellSlot slot = activeSlots[slotIndex];
 
         slot.formRune = new Rune(newForm);
-        slot.formRune.ApplyUpgrade(upgradeDef);
+        slot.formRune.InitializeWithStats(upgradeDef);
 
         // Reset Effet et Mods pour éviter les conflits
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
@@ -197,7 +198,7 @@ public class SpellManager : MonoBehaviour
         {
             // Si c'est un nouveau, on remplace et on applique l'upgrade
             slot.effectRune = new Rune(effectSO);
-            slot.effectRune.ApplyUpgrade(upgradeDef);
+            slot.effectRune.InitializeWithStats(upgradeDef);
         }
 
         slot.RecalculateStats();
@@ -227,11 +228,10 @@ public class SpellManager : MonoBehaviour
         // B. Ajout Nouveau (Slot vide)
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
-            // On vérifie si le slot est vide (null ou Data null)
             if (slot.modifierRunes[i] == null || slot.modifierRunes[i].Data == null)
             {
                 slot.modifierRunes[i] = new Rune(mod);
-                slot.modifierRunes[i].ApplyUpgrade(upgradeDef);
+                slot.modifierRunes[i].InitializeWithStats(upgradeDef); // Ici aussi
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;

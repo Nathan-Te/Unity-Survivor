@@ -24,6 +24,14 @@ public class Rune
         // leurs valeurs de base sont dans les champs float du SO (baseDamage, etc.)
     }
 
+    // Appelé pour une nouvelle rune (Niveau 1, mais avec les stats bonus de la carte)
+    public void InitializeWithStats(RuneDefinition upgradeDef)
+    {
+        // On n'incrémente PAS le niveau ici
+        AccumulatedStats += upgradeDef.Stats;
+    }
+
+    // Appelé pour un Level Up
     public void ApplyUpgrade(RuneDefinition upgradeDef)
     {
         Level++;

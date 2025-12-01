@@ -5,50 +5,39 @@ public class ProjectileController : MonoBehaviour
     private SpellDefinition _def;
     private GameObject _sourcePrefab;
 
-    private Vector3 _startPosition;
+    // Stratégie active (Pattern Strategy)
+    private IMotionStrategy _motionStrategy;
+
     private int _hitCount;
     private bool _isHostile;
-
-    // Variables Smite
-    private float _delayTimer;
-    private bool _hasImpacted;
-
-    // Variables Orbit
-    private int _index;
-    private int _totalCount;
-    private float _orbitTimer;
-    private float _currentDuration; // Timer local
 
     public void Initialize(SpellDefinition def, Vector3 direction, int index = 0, int totalCount = 1)
     {
         _def = def;
         _sourcePrefab = def.Form.prefab;
-        _startPosition = transform.position;
         _hitCount = 0;
         _isHostile = false;
 
-        _currentDuration = def.Duration;
-
-        _index = index;
-        _totalCount = totalCount;
-        _orbitTimer = 0f;
-
+        // 1. Choix de la Stratégie
         if (_def.Form.tags.HasFlag(SpellTag.Smite))
         {
-            _delayTimer = _def.Form.impactDelay;
-            _hasImpacted = false;
+            _motionStrategy = new SmiteMotion(_def.Form.impactDelay);
+            // On n'oriente pas le Smite, il est fixe au sol là où il a spawn
         }
         else if (_def.Form.tags.HasFlag(SpellTag.Orbit))
         {
-            UpdateOrbitPosition();
+            _motionStrategy = new OrbitMotion(_def.Duration, _def.Speed, index, totalCount);
+            // Position initiale immédiate pour éviter le glitch visuel
+            _motionStrategy.Update(this, 0f);
         }
         else
         {
             transform.forward = direction;
+            _motionStrategy = new LinearMotion(transform.position, _def.Range, _def.Speed, _def.IsHoming, false);
         }
 
+        // 2. Visuels
         transform.localScale = Vector3.one * def.Size;
-
         if (def.Effect.tintColor != Color.white)
         {
             var renderer = GetComponentInChildren<Renderer>();
@@ -64,88 +53,52 @@ public class ProjectileController : MonoBehaviour
         _def.Range = 30f;
         _def.Pierce = 0;
         _def.Effect = ScriptableObject.CreateInstance<SpellEffect>();
+
         _sourcePrefab = sourcePrefab;
         _isHostile = true;
+        _hitCount = 0;
+
+        // Mouvement linéaire simple pour l'ennemi
+        transform.forward = transform.forward; // Déjà orienté par l'ennemi
+        _motionStrategy = new LinearMotion(transform.position, 30f, 10f, false, true);
     }
 
     private void Update()
     {
-        if (_def == null) return;
-
-        if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite))
+        if (_motionStrategy != null)
         {
-            HandleSmiteBehavior();
+            _motionStrategy.Update(this, Time.deltaTime);
         }
-        else if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Orbit))
+    }
+
+    // --- LOGIQUE PUBLIQUE POUR LES STRATÉGIES ---
+
+    public void TriggerSmiteExplosion()
+    {
+        ApplyAreaDamage(transform.position);
+        Despawn();
+    }
+
+    public void Despawn()
+    {
+        if (ProjectilePool.Instance != null)
         {
-            HandleOrbitBehavior();
+            ProjectilePool.Instance.ReturnToPool(gameObject, _sourcePrefab);
         }
         else
         {
-            HandleStandardProjectile();
+            Destroy(gameObject);
         }
     }
 
-    private void HandleStandardProjectile()
-    {
-        float moveDistance = _def.Speed * Time.deltaTime;
-        transform.Translate(Vector3.forward * moveDistance);
-
-        if (_def.IsHoming && !_isHostile)
-        {
-            Transform target = EnemyManager.Instance.GetTarget(transform.position, 10f, TargetingMode.Nearest, 0, false);
-            if (target != null)
-            {
-                Vector3 dir = (target.position - transform.position).normalized;
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 5f * Time.deltaTime);
-            }
-        }
-
-        if (Vector3.Distance(_startPosition, transform.position) >= _def.Range) Despawn();
-    }
-
-    private void HandleSmiteBehavior()
-    {
-        if (_hasImpacted) return;
-
-        _delayTimer -= Time.deltaTime;
-        if (_delayTimer <= 0f)
-        {
-            _hasImpacted = true;
-            ApplyAreaDamage(transform.position);
-            Despawn();
-        }
-    }
-
-    private void HandleOrbitBehavior()
-    {
-        if (PlayerController.Instance == null) return;
-
-        _orbitTimer += Time.deltaTime;
-        UpdateOrbitPosition();
-
-        _currentDuration -= Time.deltaTime;
-        if (_currentDuration <= 0f) Despawn();
-    }
-
-    private void UpdateOrbitPosition()
-    {
-        if (PlayerController.Instance == null) return;
-
-        float angleSeparation = 360f / _totalCount;
-        float baseAngle = angleSeparation * _index;
-        float currentRotation = _orbitTimer * _def.Speed * 40f;
-
-        float finalAngleRad = (baseAngle + currentRotation) * Mathf.Deg2Rad;
-        Vector3 offset = new Vector3(Mathf.Cos(finalAngleRad), 0, Mathf.Sin(finalAngleRad)) * 2.0f;
-
-        transform.position = PlayerController.Instance.transform.position + Vector3.up + offset;
-    }
+    // --- COLLISIONS ---
 
     private void OnTriggerEnter(Collider other)
     {
+        // Smite ignore les triggers physiques (c'est le Timer qui déclenche)
         if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite)) return;
 
+        // GESTION HOSTILE
         if (_isHostile)
         {
             if (other.TryGetComponent<PlayerController>(out var player))
@@ -160,6 +113,7 @@ public class ProjectileController : MonoBehaviour
             return;
         }
 
+        // GESTION JOUEUR
         bool isEnemy = EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy);
         bool isObstacle = !isEnemy && other.gameObject.layer == LayerMask.NameToLayer("Obstacle");
 
@@ -168,9 +122,10 @@ public class ProjectileController : MonoBehaviour
             ApplyHit(enemy);
             _hitCount++;
 
+            // Logique Pierce / AOE
             if (_def.Effect.aoeRadius > 0)
             {
-                Despawn();
+                Despawn(); // Les AOE explosent au premier contact
             }
             else if (_hitCount > _def.Pierce)
             {
@@ -201,6 +156,8 @@ public class ProjectileController : MonoBehaviour
         float radius = _def.Effect.aoeRadius > 0 ? _def.Effect.aoeRadius : 3f;
         var enemies = EnemyManager.Instance.GetEnemiesInRange(center, radius);
         foreach (var e in enemies) ApplyDamage(e);
+
+        // TODO: Instantiate VFX Explosion
     }
 
     private void ApplyDamage(EnemyController enemy)
@@ -210,7 +167,6 @@ public class ProjectileController : MonoBehaviour
         if (_def.Effect.applyBurn) enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
         if (_def.Effect.applySlow) enemy.ApplySlow(0.5f, 2f);
 
-        // CORRECTION ICI : On utilise _def.Knockback (calculé) au lieu de Effect.knockbackForce (base)
         if (_def.Knockback > 0 && enemy.TryGetComponent<Rigidbody>(out var rb))
         {
             Vector3 pushDir = (enemy.transform.position - transform.position).normalized;
@@ -221,7 +177,8 @@ public class ProjectileController : MonoBehaviour
         bool isFatal = (enemy.currentHp - _def.Damage) <= 0;
         if (isFatal && _def.MinionChance > 0 && _def.MinionPrefab != null)
         {
-            if (Random.value <= _def.MinionChance) Instantiate(_def.MinionPrefab, enemy.transform.position, Quaternion.identity);
+            if (Random.value <= _def.MinionChance)
+                Instantiate(_def.MinionPrefab, enemy.transform.position, Quaternion.identity);
         }
 
         if (_def.ChainCount > 0) HandleChainReaction(enemy);
@@ -229,6 +186,7 @@ public class ProjectileController : MonoBehaviour
 
     private void HandleChainReaction(EnemyController currentTarget)
     {
+        // Logique Chain inchangée, je la remets pour que le script soit complet
         var candidates = EnemyManager.Instance.GetEnemiesInRange(transform.position, _def.ChainRange);
         EnemyController bestCandidate = null;
         float closestDistSqr = float.MaxValue;
@@ -236,7 +194,6 @@ public class ProjectileController : MonoBehaviour
         foreach (var candidate in candidates)
         {
             if (candidate == currentTarget || candidate.currentHp <= 0) continue;
-
             float dSqr = (candidate.transform.position - currentTarget.transform.position).sqrMagnitude;
             if (dSqr < closestDistSqr)
             {
@@ -248,7 +205,7 @@ public class ProjectileController : MonoBehaviour
         if (bestCandidate != null)
         {
             SpellDefinition chainDef = new SpellDefinition();
-            // Clone manuel rapide
+            // Copie manuelle simple
             chainDef.Form = _def.Form;
             chainDef.Effect = _def.Effect;
             chainDef.Speed = _def.Speed;
@@ -268,18 +225,6 @@ public class ProjectileController : MonoBehaviour
             {
                 ctrl.Initialize(chainDef, dir);
             }
-        }
-    }
-
-    private void Despawn()
-    {
-        if (ProjectilePool.Instance != null)
-        {
-            ProjectilePool.Instance.ReturnToPool(gameObject, _sourcePrefab);
-        }
-        else
-        {
-            Destroy(gameObject);
         }
     }
 }
