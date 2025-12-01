@@ -11,17 +11,21 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float maxHp = 100f;
     [SerializeField] private float _currentHp;
 
+    // --- NOUVEAU : Variables internes pour les stats ---
+    private float _baseMoveSpeed;
+    private float _regenPerSec = 0f;
+    private float _armor = 0f;
+
     [Header("Interaction Ennemis")]
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float hitRadius = 1.0f;
     [SerializeField] private float slowFactor = 0.5f;
     [SerializeField] private LayerMask groundMask;
-    
+
     private bool _isGodMode = false;
 
-    // --- NOUVEAU : Gestion de la visée ---
     public bool IsManualAiming { get; private set; }
-    public Vector3 MouseWorldPosition { get; private set; } // Pour que le SpellManager sache où on vise
+    public Vector3 MouseWorldPosition { get; private set; }
 
     private CharacterController _controller;
     private Camera _mainCamera;
@@ -34,6 +38,9 @@ public class PlayerController : MonoBehaviour
         _controller = GetComponent<CharacterController>();
         _mainCamera = Camera.main;
         _currentHp = maxHp;
+
+        // On sauvegarde la vitesse définie dans l'éditeur comme "Base"
+        _baseMoveSpeed = moveSpeed;
     }
 
     private void Update()
@@ -43,7 +50,7 @@ public class PlayerController : MonoBehaviour
         float v = Input.GetAxisRaw("Vertical");
         _moveInput = new Vector2(h, v);
 
-        // 2. Input Visée (Clic Droit maintenu pour viser, sinon Auto)
+        // 2. Input Visée
         if (Input.GetMouseButtonDown(1))
         {
             IsManualAiming = !IsManualAiming;
@@ -56,7 +63,34 @@ public class PlayerController : MonoBehaviour
         // 4. Mouvements & Rotation
         HandleMovement(currentSpeed);
         HandleRotation();
+
+        // --- NOUVEAU : Régénération de PV ---
+        if (_regenPerSec > 0 && _currentHp < maxHp)
+        {
+            _currentHp += _regenPerSec * Time.deltaTime;
+            _currentHp = Mathf.Min(_currentHp, maxHp);
+        }
     }
+
+    // --- NOUVEAU : Méthodes de modification des Stats ---
+
+    public void ModifySpeed(float percentAdd)
+    {
+        // Exemple : Base 8 * (1 + 10) = 88
+        moveSpeed = _baseMoveSpeed * (1.0f + percentAdd);
+        Debug.Log($"Vitesse modifiée : {moveSpeed} (Base: {_baseMoveSpeed} + {percentAdd * 100}%)");
+    }
+
+    public void ModifyMaxHealth(float flatAdd)
+    {
+        maxHp += flatAdd;
+        _currentHp += flatAdd; // On soigne du montant ajouté pour ne pas laisser un trou
+    }
+
+    public void ModifyRegen(float flatAdd) => _regenPerSec += flatAdd;
+    public void ModifyArmor(float flatAdd) => _armor += flatAdd;
+
+    // ---------------------------------------------------
 
     private void CheckEnemyContact(ref float currentMoveSpeed)
     {
@@ -92,9 +126,12 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        if (_isGodMode) return; // <--- LE HOOK EST ICI
+        if (_isGodMode) return;
 
-        _currentHp -= amount;
+        // Application de l'armure
+        float reducedDamage = Mathf.Max(0f, amount - _armor);
+
+        _currentHp -= reducedDamage;
         if (_currentHp <= 0)
         {
             Debug.Log("GAME OVER");
@@ -108,22 +145,19 @@ public class PlayerController : MonoBehaviour
         if (move.magnitude > 1f) move.Normalize();
 
         Vector3 finalMove = move * speed;
-        finalMove.y = -9.81f; // Gravité simple
+        finalMove.y = -9.81f;
 
         _controller.Move(finalMove * Time.deltaTime);
     }
 
     private void HandleRotation()
     {
-        // CAS 1 : Visée Manuelle (On regarde la souris)
         if (IsManualAiming)
         {
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit, 100f, groundMask))
             {
-                // On stocke la position pour le SpellManager
                 MouseWorldPosition = hit.point;
-
                 Vector3 targetPosition = new Vector3(hit.point.x, transform.position.y, hit.point.z);
                 Vector3 direction = (targetPosition - transform.position).normalized;
 
@@ -133,7 +167,6 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-        // CAS 2 : Visée Auto (On regarde dans le sens de la marche)
         else
         {
             Vector3 moveDir = new Vector3(_moveInput.x, 0, _moveInput.y);
@@ -142,7 +175,6 @@ public class PlayerController : MonoBehaviour
                 Quaternion lookRotation = Quaternion.LookRotation(moveDir.normalized);
                 transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * rotationSpeed);
             }
-            // Si on ne bouge pas, on garde la dernière rotation (ne rien faire)
         }
     }
 

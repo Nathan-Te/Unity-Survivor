@@ -15,8 +15,14 @@ public class SpellManager : MonoBehaviour
 
     private void Start()
     {
-        if (PlayerController.Instance != null) _playerTransform = PlayerController.Instance.transform;
-        foreach (var slot in activeSlots) { slot.ForceInit(); slot.currentCooldown = 0.5f; }
+        if (PlayerController.Instance != null)
+            _playerTransform = PlayerController.Instance.transform;
+
+        foreach (var slot in activeSlots)
+        {
+            slot.ForceInit();
+            slot.currentCooldown = 0.5f;
+        }
         OnInventoryUpdated?.Invoke();
     }
 
@@ -29,33 +35,16 @@ public class SpellManager : MonoBehaviour
     private void ProcessSlot(SpellSlot slot)
     {
         if (slot.Definition == null) return;
+
         slot.currentCooldown -= Time.deltaTime;
         if (slot.currentCooldown <= 0f)
         {
-            if (AttemptAttack(slot.Definition)) slot.currentCooldown = slot.Definition.Cooldown;
+            if (AttemptAttack(slot.Definition))
+                slot.currentCooldown = slot.Definition.Cooldown;
         }
     }
 
-    public void UpgradeRune(Rune rune, RuneDefinition def)
-    {
-        rune.ApplyUpgrade(def);
-        // Recalculate stats du slot parent...
-    }
-
-    public void AddNewSlot(SpellForm form)
-    {
-        SpellSlot newSlot = new SpellSlot();
-        newSlot.formRune = new Rune(form); // Constructeur simplifié (1 arg)
-
-        var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
-        if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
-
-        newSlot.effectRune = new Rune(defaultEffect); // Constructeur simplifié
-
-        newSlot.ForceInit();
-        activeSlots.Add(newSlot);
-        OnInventoryUpdated?.Invoke();
-    }
+    // --- LOGIQUE DE TIR RESTAURÉE ---
 
     private bool AttemptAttack(SpellDefinition def)
     {
@@ -69,12 +58,29 @@ public class SpellManager : MonoBehaviour
         }
         else
         {
+            // On tire depuis la hauteur du torse (+1m) pour éviter le sol
             Vector3 scanOrigin = _playerTransform.position + Vector3.up;
-            Transform target = EnemyManager.Instance.GetTarget(scanOrigin, def.Range, def.Mode, def.Effect.aoeRadius, def.RequiresLoS);
-            if (target != null) { targetPos = target.position; hasTarget = true; }
+
+            Transform target = EnemyManager.Instance.GetTarget(
+                scanOrigin,
+                def.Range,
+                def.Mode,
+                def.Effect.aoeRadius,
+                def.RequiresLoS
+            );
+
+            if (target != null)
+            {
+                targetPos = target.position;
+                hasTarget = true;
+            }
         }
 
-        if (hasTarget) { Fire(targetPos, def); return true; }
+        if (hasTarget)
+        {
+            Fire(targetPos, def);
+            return true;
+        }
         return false;
     }
 
@@ -82,6 +88,7 @@ public class SpellManager : MonoBehaviour
     {
         Vector3 dirToTarget = (targetPos - _playerTransform.position).normalized;
         dirToTarget.y = 0;
+
         int count = def.Count;
         float spread = def.Spread;
 
@@ -97,12 +104,19 @@ public class SpellManager : MonoBehaviour
             Vector3 finalDir = rotation * dirToTarget;
 
             Vector3 spawnPos = _playerTransform.position + Vector3.up + finalDir * 0.5f;
+
             GameObject p = ProjectilePool.Instance.Get(def.Form.prefab, spawnPos, Quaternion.LookRotation(finalDir));
-            if (p.TryGetComponent<ProjectileController>(out var ctrl)) ctrl.Initialize(def, finalDir, i, count);
+            if (p.TryGetComponent<ProjectileController>(out var ctrl))
+            {
+                ctrl.Initialize(def, finalDir, i, count);
+            }
         }
     }
 
-    // --- GESTION INVENTAIRE ---
+    // --- GESTION INVENTAIRE (AVEC UPGRADES) ---
+
+    public bool CanAddSpell() => activeSlots.Count < maxSpellSlots;
+    public List<SpellSlot> GetSlots() => activeSlots;
 
     public bool HasForm(SpellForm form)
     {
@@ -113,33 +127,15 @@ public class SpellManager : MonoBehaviour
         return false;
     }
 
-    // Méthode pour appliquer l'upgrade de forme
-    public void UpgradeForm(SpellForm form, RuneDefinition def)
-    {
-        foreach (var slot in activeSlots)
-        {
-            if (slot.formRune != null && slot.formRune.Data == form)
-            {
-                slot.formRune.ApplyUpgrade(def);
-                slot.RecalculateStats();
-                OnInventoryUpdated?.Invoke();
-                return;
-            }
-        }
-    }
-
-    public bool CanAddSpell() => activeSlots.Count < maxSpellSlots;
-
-    // Ajout d'un nouveau sort (Le premier niveau prend en compte le boost de rareté)
-    public void AddSpell(SpellForm form, Rarity rarity)
+    // 1. AJOUT NOUVEAU SORT + UPGRADE INITIALE
+    public void AddNewSpellWithUpgrade(SpellForm form, RuneDefinition upgradeDef)
     {
         if (!CanAddSpell()) return;
 
         SpellSlot newSlot = new SpellSlot();
 
-        // La rune commence avec la puissance de la rareté (ex: Leg = 3.0)
-        float initialPower = RarityUtils.GetPowerBoost(rarity);
-        newSlot.formRune = new Rune(form);
+        newSlot.formRune = new Rune(form); // Niveau 1
+        newSlot.formRune.ApplyUpgrade(upgradeDef); // Application stats piochées
 
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
         if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
@@ -150,113 +146,108 @@ public class SpellManager : MonoBehaviour
         OnInventoryUpdated?.Invoke();
     }
 
-    public void ReplaceSpell(SpellForm newForm, int slotIndex, Rarity rarity)
+    // 2. UPGRADE FORME EXISTANTE
+    public void UpgradeExistingForm(SpellForm form, RuneDefinition upgradeDef)
+    {
+        foreach (var slot in activeSlots)
+        {
+            if (slot.formRune != null && slot.formRune.Data == form)
+            {
+                slot.formRune.ApplyUpgrade(upgradeDef);
+                slot.RecalculateStats();
+                OnInventoryUpdated?.Invoke();
+                return;
+            }
+        }
+    }
+
+    // 3. REMPLACEMENT SORT
+    public void ReplaceSpell(SpellForm newForm, int slotIndex, RuneDefinition upgradeDef)
     {
         if (slotIndex < 0 || slotIndex >= activeSlots.Count) return;
         SpellSlot slot = activeSlots[slotIndex];
 
-        float initialPower = RarityUtils.GetPowerBoost(rarity);
         slot.formRune = new Rune(newForm);
+        slot.formRune.ApplyUpgrade(upgradeDef);
 
-        // Reset Effet et Mods
+        // Reset Effet et Mods pour éviter les conflits
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
         if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
         slot.effectRune = new Rune(defaultEffect);
-        slot.modifierRunes = new Rune[2];
+
+        slot.modifierRunes = new Rune[2]; // Reset mods
 
         slot.RecalculateStats();
         slot.currentCooldown = 0.5f;
         OnInventoryUpdated?.Invoke();
     }
 
-    public void ReplaceEffect(SpellEffect newEffect, int slotIndex, Rarity rarity)
+    // 4. APPLICATION EFFET (Nouveau ou Upgrade)
+    public void ApplyEffectToSlot(SpellEffect effectSO, int slotIndex, RuneDefinition upgradeDef)
     {
         if (slotIndex < 0 || slotIndex >= activeSlots.Count) return;
+        SpellSlot slot = activeSlots[slotIndex];
 
-        // Si l'effet est déjà le même, on upgrade
-        if (activeSlots[slotIndex].effectRune.Data == newEffect)
+        // Si c'est le même effet, on l'améliore
+        if (slot.effectRune.Data == effectSO)
         {
-            activeSlots[slotIndex].effectRune.Upgrade(rarity);
+            slot.effectRune.ApplyUpgrade(upgradeDef);
         }
         else
         {
-            // Sinon on remplace (Nouveau départ avec boost rareté)
-            float power = RarityUtils.GetPowerBoost(rarity);
-            activeSlots[slotIndex].effectRune = new Rune(newEffect);
+            // Si c'est un nouveau, on remplace et on applique l'upgrade
+            slot.effectRune = new Rune(effectSO);
+            slot.effectRune.ApplyUpgrade(upgradeDef);
         }
 
-        activeSlots[slotIndex].RecalculateStats();
+        slot.RecalculateStats();
         OnInventoryUpdated?.Invoke();
     }
 
-    public bool TryApplyModifierToSlot(SpellModifier mod, int slotIndex, int replaceIndex, Rarity rarity)
+    // 5. APPLICATION MODIFICATEUR
+    public bool TryApplyModifierToSlot(SpellModifier mod, int slotIndex, int replaceIndex, RuneDefinition upgradeDef)
     {
         if (slotIndex < 0 || slotIndex >= activeSlots.Count) return false;
         SpellSlot slot = activeSlots[slotIndex];
 
         if (mod.requiredTag != SpellTag.None && !slot.formRune.AsForm.tags.HasFlag(mod.requiredTag)) return false;
 
-        // 1. Upgrade Existant (Si même mod présent)
+        // A. Upgrade Existant
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
             if (slot.modifierRunes[i] != null && slot.modifierRunes[i].Data == mod)
             {
-                slot.modifierRunes[i].Upgrade(rarity); // +1 Niveau, +Power selon rareté
+                slot.modifierRunes[i].ApplyUpgrade(upgradeDef);
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
             }
         }
 
-        // 2. Nouveau Mod (Slot vide)
+        // B. Ajout Nouveau (Slot vide)
         for (int i = 0; i < slot.modifierRunes.Length; i++)
         {
+            // On vérifie si le slot est vide (null ou Data null)
             if (slot.modifierRunes[i] == null || slot.modifierRunes[i].Data == null)
             {
-                float power = RarityUtils.GetPowerBoost(rarity);
                 slot.modifierRunes[i] = new Rune(mod);
+                slot.modifierRunes[i].ApplyUpgrade(upgradeDef);
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
             }
         }
 
-        // 3. Remplacement Forcé (Si replaceIndex est fourni par l'UI)
+        // C. Remplacement Forcé
         if (replaceIndex != -1 && replaceIndex < slot.modifierRunes.Length)
         {
-            float power = RarityUtils.GetPowerBoost(rarity);
             slot.modifierRunes[replaceIndex] = new Rune(mod);
+            slot.modifierRunes[replaceIndex].ApplyUpgrade(upgradeDef);
             slot.RecalculateStats();
             OnInventoryUpdated?.Invoke();
             return true;
         }
 
-        return false; // Inventaire plein, il faut demander le remplacement
+        return false; // Inventaire plein
     }
-
-    // Cherche si le joueur possède déjà cette Rune (SO) active dans un slot
-    // Retourne la Rune dynamique si trouvée, sinon null.
-    public Rune FindActiveRune(RuneSO data)
-    {
-        foreach (var slot in activeSlots)
-        {
-            // Vérif Forme
-            if (slot.formRune != null && slot.formRune.Data == data)
-                return slot.formRune;
-
-            // Vérif Effet
-            if (slot.effectRune != null && slot.effectRune.Data == data)
-                return slot.effectRune;
-
-            // Vérif Modifiers
-            foreach (var modRune in slot.modifierRunes)
-            {
-                if (modRune != null && modRune.Data == data)
-                    return modRune;
-            }
-        }
-        return null; // Pas trouvée (Nouveau)
-    }
-
-    public List<SpellSlot> GetSlots() => activeSlots;
 }

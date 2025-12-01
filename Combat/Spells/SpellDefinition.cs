@@ -11,17 +11,19 @@ public class SpellDefinition
     public float Cooldown;
     public float Speed;
     public float Size;
-    public float Knockback;
     public float Range;
     public float Duration;
     public float Spread;
+    public float Knockback;
+
     public int Count;
     public int Pierce;
-    
+
     public TargetingMode Mode;
     public bool RequiresLoS;
     public bool IsHoming;
 
+    // Stats Spéciales
     public int ChainCount;
     public float ChainRange;
     public float ChainDamageReduction;

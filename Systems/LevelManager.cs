@@ -43,7 +43,11 @@ public class LevelManager : MonoBehaviour
 
     public void AddExperience(int amount)
     {
-        currentExperience += amount;
+        // Applique le multiplicateur
+        float mult = PlayerStats.Instance != null ? PlayerStats.Instance.ExperienceMultiplier : 1f;
+        int finalAmount = Mathf.RoundToInt(amount * mult);
+
+        currentExperience += finalAmount;
         CheckLevelUp();
         UpdateInterface();
     }

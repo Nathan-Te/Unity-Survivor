@@ -20,8 +20,10 @@ public class SpellForm : RuneSO
     public float baseSpread = 0f;
     public float baseSpeed = 20f;
     public float baseDuration = 5f;
+
+    // Range par défaut si non modifié par stats
     public float baseRange = 20f;
 
     [Range(0f, 1f)] public float procCoefficient = 1.0f;
-    public float impactDelay = 0f; // Pour Smite
+    public float impactDelay = 0f;
 }

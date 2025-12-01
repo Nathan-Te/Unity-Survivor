@@ -6,28 +6,27 @@ public class Rune
     public RuneSO Data;
     public int Level;
 
-    // Somme de toutes les améliorations reçues
+    // C'est ici qu'on stocke le cumul de toutes les upgrades choisies
     public RuneStats AccumulatedStats;
 
-    // Constructeur simple (Corrige l'erreur CS1729)
     public Rune(RuneSO data)
     {
         Data = data;
         Level = 1;
         AccumulatedStats = RuneStats.Zero;
 
-        // Cas particulier : Pour un Modifier, on applique ses stats de base dès le niveau 1
+        // Si c'est un Modifier, il commence avec ses stats de base
         if (data is SpellModifier mod)
         {
-            AccumulatedStats = mod.BaseStats;
+            AccumulatedStats = mod.baseStats;
         }
+        // Form et Effect n'ont pas de "RuneStats" de base dans ce système, 
+        // leurs valeurs de base sont dans les champs float du SO (baseDamage, etc.)
     }
 
-    // Appelé quand on choisit une carte d'amélioration
     public void ApplyUpgrade(RuneDefinition upgradeDef)
     {
         Level++;
-        // On additionne les stats de l'upgrade aux stats actuelles
         AccumulatedStats += upgradeDef.Stats;
     }
 

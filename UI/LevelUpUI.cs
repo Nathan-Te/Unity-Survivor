@@ -31,6 +31,7 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField] private List<SpellForm> availableSpells;
     [SerializeField] private List<SpellEffect> availableEffects;
     [SerializeField] private List<SpellModifier> availableModifiers;
+    [SerializeField] private List<StatUpgradeSO> availableStats; // NOUVEAU
 
     private UpgradeData _pendingUpgrade;
     private int _targetSlotIndex;
@@ -87,6 +88,7 @@ public class LevelUpUI : MonoBehaviour
 
         if (banStockText) banStockText.text = $"Ban ({LevelManager.Instance.availableBans})";
         banButton.interactable = LevelManager.Instance.availableBans > 0;
+
         banButton.image.color = _isBanMode ? Color.red : Color.white;
     }
 
@@ -106,7 +108,7 @@ public class LevelUpUI : MonoBehaviour
     {
         if (_isBanMode)
         {
-            LevelManager.Instance.BanRune(upgrade.Name);
+            LevelManager.Instance.BanRune(upgrade.TargetRuneSO.runeName);
             EndLevelUp();
             return;
         }
@@ -114,12 +116,20 @@ public class LevelUpUI : MonoBehaviour
         _pendingUpgrade = upgrade;
         SpellManager sm = FindFirstObjectByType<SpellManager>();
 
-        if (upgrade.Type == UpgradeType.NewSpell)
+        // CAS 0 : Stat Passive (Immédiat)
+        if (upgrade.Type == UpgradeType.StatBoost)
+        {
+            // On récupère la valeur depuis la définition piochée
+            float val = upgrade.UpgradeDefinition.Stats.StatValue;
+            PlayerStats.Instance.ApplyUpgrade(upgrade.TargetStat.targetStat, val);
+            EndLevelUp();
+        }
+        // CAS 1 : Nouveau Sort (Forme)
+        else if (upgrade.Type == UpgradeType.NewSpell)
         {
             if (sm.CanAddSpell())
             {
-                // Ajout Direct avec Rareté
-                sm.AddSpell(upgrade.TargetForm, upgrade.Rarity);
+                sm.AddNewSpellWithUpgrade((SpellForm)upgrade.TargetRuneSO, upgrade.UpgradeDefinition);
                 EndLevelUp();
             }
             else
@@ -128,9 +138,15 @@ public class LevelUpUI : MonoBehaviour
                 instructionText.text = "Inventaire Plein ! Remplacer quel sort ?";
             }
         }
+        // CAS 2 : Upgrade Forme existante
+        else if (upgrade.Type == UpgradeType.SpellUpgrade)
+        {
+            sm.UpgradeExistingForm((SpellForm)upgrade.TargetRuneSO, upgrade.UpgradeDefinition);
+            EndLevelUp();
+        }
+        // CAS 3 : Modif ou Effet
         else
         {
-            // Pour Modifiers et Effects, on demande toujours la cible
             ShowTargetingPhase();
         }
     }
@@ -164,18 +180,17 @@ public class LevelUpUI : MonoBehaviour
 
         if (_pendingUpgrade.Type == UpgradeType.NewSpell)
         {
-            sm.ReplaceSpell(_pendingUpgrade.TargetForm, slotIndex, _pendingUpgrade.Rarity);
+            sm.ReplaceSpell((SpellForm)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
             EndLevelUp();
         }
         else if (_pendingUpgrade.Type == UpgradeType.Effect)
         {
-            sm.ReplaceEffect(_pendingUpgrade.TargetEffect, slotIndex, _pendingUpgrade.Rarity);
+            sm.ApplyEffectToSlot((SpellEffect)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
             EndLevelUp();
         }
         else if (_pendingUpgrade.Type == UpgradeType.Modifier)
         {
-            // On essaie d'ajouter sans remplacement (-1)
-            bool success = sm.TryApplyModifierToSlot(_pendingUpgrade.TargetModifier, slotIndex, -1, _pendingUpgrade.Rarity);
+            bool success = sm.TryApplyModifierToSlot((SpellModifier)_pendingUpgrade.TargetRuneSO, slotIndex, -1, _pendingUpgrade.UpgradeDefinition);
 
             if (success)
             {
@@ -186,7 +201,7 @@ public class LevelUpUI : MonoBehaviour
                 if (_pendingUpgrade.TargetModifier.requiredTag != SpellTag.None &&
                     !slot.formRune.AsForm.tags.HasFlag(_pendingUpgrade.TargetModifier.requiredTag))
                 {
-                    instructionText.text = "Incompatible !";
+                    instructionText.text = "Incompatible avec cette forme !";
                     return;
                 }
                 ShowReplaceMenu(slot);
@@ -215,10 +230,10 @@ public class LevelUpUI : MonoBehaviour
             int indexToReplace = i;
             btn.onClick.AddListener(() => {
                 FindFirstObjectByType<SpellManager>().TryApplyModifierToSlot(
-                    _pendingUpgrade.TargetModifier,
+                    (SpellModifier)_pendingUpgrade.TargetRuneSO,
                     _targetSlotIndex,
                     indexToReplace,
-                    _pendingUpgrade.Rarity // On passe la rareté
+                    _pendingUpgrade.UpgradeDefinition
                 );
                 EndLevelUp();
             });
@@ -246,35 +261,31 @@ public class LevelUpUI : MonoBehaviour
         {
             attempts++;
             float r = Random.value;
-            RuneSO selectedSO = null;
+            UpgradeData candidate = null;
             Rarity rarity = RarityUtils.GetRandomRarity();
 
-            // Sélection du SO
+            // Pondération : 20% Spell, 20% Effect, 30% Mod, 30% Stat
             if (r < 0.2f && availableSpells.Count > 0)
-                selectedSO = availableSpells[Random.Range(0, availableSpells.Count)];
-            else if (r < 0.5f && availableEffects.Count > 0)
-                selectedSO = availableEffects[Random.Range(0, availableEffects.Count)];
-            else if (availableModifiers.Count > 0)
-                selectedSO = availableModifiers[Random.Range(0, availableModifiers.Count)];
+                candidate = new UpgradeData(availableSpells[Random.Range(0, availableSpells.Count)], rarity);
+            else if (r < 0.4f && availableEffects.Count > 0)
+                candidate = new UpgradeData(availableEffects[Random.Range(0, availableEffects.Count)], rarity);
+            else if (r < 0.7f && availableModifiers.Count > 0)
+                candidate = new UpgradeData(availableModifiers[Random.Range(0, availableModifiers.Count)], rarity);
+            else if (availableStats != null && availableStats.Count > 0) // Stats
+                candidate = new UpgradeData(availableStats[Random.Range(0, availableStats.Count)], rarity);
 
-            if (selectedSO != null)
+            if (candidate != null)
             {
-                // Vérif Ban / Doublon
-                if (LevelManager.Instance.IsRuneBanned(selectedSO.runeName)) continue;
-                if (picks.Exists(x => x.TargetRuneSO == selectedSO)) continue;
+                if (LevelManager.Instance.IsRuneBanned(candidate.Name)) continue;
+                if (picks.Exists(x => x.TargetRuneSO == candidate.TargetRuneSO)) continue;
 
-                UpgradeData data = new UpgradeData(selectedSO, rarity);
-
-                // LOGIQUE FORME : Nouveau ou Upgrade ?
-                if (data.Type == UpgradeType.NewSpell)
+                // Check Upgrade Forme
+                if (candidate.Type == UpgradeType.NewSpell && sm.HasForm((SpellForm)candidate.TargetRuneSO))
                 {
-                    if (sm.HasForm((SpellForm)selectedSO))
-                    {
-                        data.SetAsUpgrade(); // C'est une amélioration de forme
-                    }
+                    candidate.SetAsUpgrade();
                 }
 
-                picks.Add(data);
+                picks.Add(candidate);
             }
         }
         return picks;

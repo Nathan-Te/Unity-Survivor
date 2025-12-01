@@ -13,6 +13,9 @@ public class SpellEffect : RuneSO
     public float baseDamage = 10f;
     public float baseKnockback = 0f;
 
+    // Note: damageMultiplier de base est souvent 1.0 (100%)
+    public float baseDamageMultiplier = 1.0f;
+
     [Header("Spécial")]
     public bool applyBurn;
     public bool applySlow;

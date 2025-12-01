@@ -11,14 +11,13 @@ public abstract class RuneSO : ScriptableObject
 
     public abstract RuneType Type { get; }
 
-    // Listes manuelles d'améliorations par rareté
-    [Header("Améliorations Possibles")]
+    // Listes manuelles : Tu remplis ça dans l'éditeur
+    [Header("Upgrades par Rareté")]
     public List<RuneDefinition> CommonUpgrades;
     public List<RuneDefinition> RareUpgrades;
     public List<RuneDefinition> EpicUpgrades;
     public List<RuneDefinition> LegendaryUpgrades;
 
-    // Pioche une upgrade au hasard selon la rareté
     public RuneDefinition GetRandomUpgrade(Rarity rarity)
     {
         List<RuneDefinition> list = null;
@@ -35,6 +34,7 @@ public abstract class RuneSO : ScriptableObject
             return list[Random.Range(0, list.Count)];
         }
 
-        return new RuneDefinition { Description = "Aucun bonus (Liste vide)", Stats = RuneStats.Zero };
+        // Fallback
+        return new RuneDefinition { Description = "Upgrade Vide", Stats = RuneStats.Zero };
     }
 }

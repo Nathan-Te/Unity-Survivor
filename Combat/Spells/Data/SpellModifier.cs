@@ -9,8 +9,8 @@ public class SpellModifier : RuneSO
     public SpellTag requiredTag;
 
     [Header("Stats de Base (Niveau 1)")]
-    // Ici on utilise directement RuneStats car un modificateur EST un paquet de stats
-    public RuneStats BaseStats;
+    // Pour un Modifier, les stats de base sont définies directement via RuneStats
+    public RuneStats baseStats;
 
     [Header("Comportement")]
     public bool enableHoming;
