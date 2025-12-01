@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public enum UpgradeType { NewSpell, StatBoost, Modifier, Effect }
+public enum UpgradeType { NewSpell, SpellUpgrade, Modifier, Effect }
+// Note: J'ai ajouté SpellUpgrade pour distinguer "Nouveau" de "Améliorer Forme"
 
 [System.Serializable]
 public class UpgradeData
@@ -9,40 +10,37 @@ public class UpgradeData
     public string Description;
     public Sprite Icon;
     public UpgradeType Type;
-    public int Level = 1;
     public Rarity Rarity;
 
-    public SpellForm TargetForm;
-    public SpellModifier TargetModifier;
-    public SpellEffect TargetEffect;
+    // La définition précise (Stats) choisie pour cette carte
+    public RuneDefinition UpgradeDefinition;
 
-    public UpgradeData(SpellForm form, Rarity rarity)
+    public RuneSO TargetRuneSO; // Référence générique
+
+    // Constructeur
+    public UpgradeData(RuneSO so, Rarity rarity)
     {
-        Type = UpgradeType.NewSpell;
-        Name = $"Nouveau : {form.runeName}";
-        Description = form.description;
-        Icon = form.icon;
-        TargetForm = form;
+        TargetRuneSO = so;
         Rarity = rarity;
+
+        // On pioche l'upgrade maintenant !
+        UpgradeDefinition = so.GetRandomUpgrade(rarity);
+
+        // Setup UI
+        Name = so.runeName;
+        Icon = so.icon;
+        // La description vient de l'upgrade piochée
+        Description = UpgradeDefinition.Description;
+
+        if (so is SpellForm f) { Type = UpgradeType.NewSpell; TargetForm = f; }
+        else if (so is SpellEffect e) { Type = UpgradeType.Effect; TargetEffect = e; }
+        else if (so is SpellModifier m) { Type = UpgradeType.Modifier; TargetModifier = m; }
     }
 
-    public UpgradeData(SpellEffect effect, Rarity rarity)
+    // Méthode pour changer le type (utilisée par LevelUpUI si on possède déjà le sort)
+    public void SetAsUpgrade()
     {
-        Type = UpgradeType.Effect;
-        Name = $"Effet : {effect.runeName}";
-        Description = effect.description;
-        Icon = effect.icon; // <--- DÉCOMMENTÉ (Assure-toi d'avoir mis une icône dans l'Asset !)
-        TargetEffect = effect;
-        Rarity = rarity;
-    }
-
-    public UpgradeData(SpellModifier mod, Rarity rarity)
-    {
-        Type = UpgradeType.Modifier;
-        Name = $"Module : {mod.runeName}";
-        Description = mod.description;
-        Icon = mod.icon; // <--- DÉCOMMENTÉ (Même chose ici)
-        TargetModifier = mod;
-        Rarity = rarity;
+        Type = UpgradeType.SpellUpgrade;
+        Name = $"{TargetRuneSO.runeName} (Upgrade)";
     }
 }

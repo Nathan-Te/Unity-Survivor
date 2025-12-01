@@ -11,6 +11,7 @@ public class SpellDefinition
     public float Cooldown;
     public float Speed;
     public float Size;
+    public float Knockback;
     public float Range;
     public float Duration;
     public float Spread;

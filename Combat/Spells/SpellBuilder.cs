@@ -10,9 +10,8 @@ public static class SpellBuilder
         SpellForm form = slot.formRune.AsForm;
         SpellEffect effect = slot.effectRune.AsEffect;
 
-        // ON UTILISE TOTALPOWER AU LIEU DE LEVEL
-        float formPower = slot.formRune.TotalPower;
-        float effectPower = slot.effectRune.TotalPower;
+        RuneStats formStats = slot.formRune.AccumulatedStats;
+        RuneStats effectStats = slot.effectRune.AccumulatedStats;
 
         // 1. Base (Forme)
         def.Form = form;
@@ -20,72 +19,73 @@ public static class SpellBuilder
         def.Mode = form.targetingMode;
         def.RequiresLoS = form.requiresLineOfSight;
 
-        // --- CALCULS FORM (Basés sur formPower) ---
-        // Cooldown : Réduit selon la puissance accumulée
-        // (Power - 1) car au niveau 1 (Power 1), le bonus est de 0.
-        float reduction = form.cooldownReductionPerLevel * (formPower - 1);
-        float baseCooldown = Mathf.Max(0.1f, form.baseCooldown - reduction);
+        // 2. Calculs Initiaux (Base du SO + Bonus accumulés de la Forme)
+        // Cooldown : Base * (1 + BonusForme)
+        // Note: CooldownMult est généralement négatif (ex: -0.1)
+        float cdMult = Mathf.Max(0.1f, 1f + formStats.CooldownMult);
+        def.Cooldown = form.baseCooldown * cdMult;
 
-        // Count augmente par palier de puissance
-        int extraCount = Mathf.FloorToInt((formPower - 1) / form.countIncreaseEveryXLevels);
-        def.Count = form.baseCount + extraCount;
+        def.Count = form.baseCount + formStats.FlatCount;
+        def.Pierce = form.basePierce + formStats.FlatPierce;
+        def.Spread = form.baseSpread + formStats.FlatSpread;
 
-        def.Pierce = form.basePierce;
-        def.Duration = form.baseDuration;
+        def.Speed = form.baseSpeed * (1f + formStats.SpeedMult);
+        def.Duration = form.baseDuration * (1f + formStats.DurationMult);
+        def.Range = form.baseRange + formStats.FlatRange; // Assure-toi que baseRange existe dans SpellForm ! (sinon mets 20f)
 
-        // Spread (Initial)
-        float finalSpread = form.baseSpread;
-        def.Range = 20f;
+        // 3. Calculs Effet (Base du SO + Bonus accumulés de l'Effet)
+        def.Damage = effect.baseDamage * (1f + effectStats.DamageMult);
+        def.Knockback = effect.baseKnockback + effectStats.FlatKnockback; // <--- Ajouté
 
-        // --- CALCULS EFFECT (Basés sur effectPower) ---
-        // Dégâts
-        float baseDamage = effect.baseDamage + (effect.damageGrowth * (effectPower - 1));
-        // Multiplicateur
-        float finalDmgMult = effect.damageMultiplier + (effect.multiplierGrowth * (effectPower - 1));
-
-        // Transfert stats
-        def.ChainCount = effect.baseChainCount;
+        def.ChainCount = effect.baseChainCount + effectStats.FlatChainCount;
         def.ChainRange = effect.chainRange;
         def.ChainDamageReduction = effect.chainDamageReduction;
         def.MinionChance = effect.minionSpawnChance;
         def.MinionPrefab = effect.minionPrefab;
 
-        // 2. Modificateurs
-        float damageMultTotal = finalDmgMult;
-        float cooldownMult = 1f;
-        float sizeMult = 1f;
-        float speedMult = 1f;
-
+        // 4. Application des Modificateurs
         foreach (var modRune in slot.modifierRunes)
         {
             if (modRune == null || modRune.AsModifier == null) continue;
+            SpellModifier modSO = modRune.AsModifier;
 
-            SpellModifier mod = modRune.AsModifier;
-            float modPower = modRune.TotalPower;
+            if (modSO.requiredTag != SpellTag.None && !form.tags.HasFlag(modSO.requiredTag)) continue;
 
-            if (mod.requiredTag != SpellTag.None && !form.tags.HasFlag(mod.requiredTag)) continue;
+            // Les stats du mod sont déjà dans AccumulatedStats
+            RuneStats modStats = modRune.AccumulatedStats;
 
-            // --- CALCULS MODIFIER (Basés sur modPower) ---
-            float growth = mod.damageMultGrowth * (modPower - 1);
-            float modDmg = mod.damageMult + growth;
+            // Application multiplicative des %
+            def.Damage *= (1f + modStats.DamageMult);
+            def.Cooldown *= Mathf.Max(0.1f, 1f + modStats.CooldownMult);
+            def.Speed *= (1f + modStats.SpeedMult);
+            def.Size *= (1f + modStats.SizeMult);
+            def.Duration *= (1f + modStats.DurationMult);
 
-            damageMultTotal *= modDmg;
-            cooldownMult *= mod.cooldownMult;
-            sizeMult *= mod.sizeMult;
-            speedMult *= mod.speedMult;
+            // Application additive des Flats
+            def.Count += modStats.FlatCount;
+            def.Pierce += modStats.FlatPierce;
+            def.Spread += modStats.FlatSpread;
+            def.ChainCount += modStats.FlatChainCount;
+            def.Knockback += modStats.FlatKnockback;
 
-            def.Count += mod.addCount;
-            def.Pierce += mod.addPierce;
-            finalSpread += mod.addSpread;
-            if (mod.enableHoming) def.IsHoming = true;
+            if (modSO.enableHoming) def.IsHoming = true;
         }
 
-        // 3. Finalisation
-        def.Damage = baseDamage * damageMultTotal * form.procCoefficient;
-        def.Cooldown = Mathf.Max(0.1f, baseCooldown * cooldownMult);
-        def.Speed = form.baseSpeed * speedMult;
-        def.Size = (form.prefab ? form.prefab.transform.localScale.x : 1f) * sizeMult;
-        def.Spread = finalSpread;
+        // Final adjustments
+        def.Damage *= form.procCoefficient;
+        float prefabScale = (form.prefab ? form.prefab.transform.localScale.x : 1f);
+        def.Size = prefabScale * def.Size; // Attention: def.Size est initialisé à 0 par défaut (float), il faut le mettre à 1
+
+        // CORRECTION TAILLE : Si SizeMult est 0 (défaut), on veut 1.
+        // Dans RuneStats, SizeMult est un "Bonus" (+0.5).
+        // Donc taille finale = Base * (1 + SommeBonusSize).
+        // On recalcule propre :
+        float totalSizeBonus = formStats.SizeMult + effectStats.SizeMult;
+        foreach (var m in slot.modifierRunes) if (m?.AsModifier != null) totalSizeBonus += m.AccumulatedStats.SizeMult;
+
+        def.Size = prefabScale * (1f + totalSizeBonus);
+
+        if (def.Range <= 0) def.Range = 20f; // Sécurité
 
         return def;
     }

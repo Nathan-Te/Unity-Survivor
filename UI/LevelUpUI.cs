@@ -236,31 +236,45 @@ public class LevelUpUI : MonoBehaviour
         if (LevelManager.Instance != null) LevelManager.Instance.TriggerNextLevelUp();
     }
 
-    // ... (GenerateOptions inchangé) ...
     private List<UpgradeData> GenerateOptions(int count)
     {
         List<UpgradeData> picks = new List<UpgradeData>();
         int attempts = 0;
+        SpellManager sm = FindFirstObjectByType<SpellManager>();
 
         while (picks.Count < count && attempts < 100)
         {
             attempts++;
             float r = Random.value;
-            UpgradeData candidate = null;
-            Rarity randomRarity = RarityUtils.GetRandomRarity();
+            RuneSO selectedSO = null;
+            Rarity rarity = RarityUtils.GetRandomRarity();
 
+            // Sélection du SO
             if (r < 0.2f && availableSpells.Count > 0)
-                candidate = new UpgradeData(availableSpells[Random.Range(0, availableSpells.Count)], randomRarity);
+                selectedSO = availableSpells[Random.Range(0, availableSpells.Count)];
             else if (r < 0.5f && availableEffects.Count > 0)
-                candidate = new UpgradeData(availableEffects[Random.Range(0, availableEffects.Count)], randomRarity);
+                selectedSO = availableEffects[Random.Range(0, availableEffects.Count)];
             else if (availableModifiers.Count > 0)
-                candidate = new UpgradeData(availableModifiers[Random.Range(0, availableModifiers.Count)], randomRarity);
+                selectedSO = availableModifiers[Random.Range(0, availableModifiers.Count)];
 
-            if (candidate != null)
+            if (selectedSO != null)
             {
-                if (LevelManager.Instance.IsRuneBanned(candidate.Name)) continue;
-                if (picks.Exists(x => x.Name == candidate.Name)) continue;
-                picks.Add(candidate);
+                // Vérif Ban / Doublon
+                if (LevelManager.Instance.IsRuneBanned(selectedSO.runeName)) continue;
+                if (picks.Exists(x => x.TargetRuneSO == selectedSO)) continue;
+
+                UpgradeData data = new UpgradeData(selectedSO, rarity);
+
+                // LOGIQUE FORME : Nouveau ou Upgrade ?
+                if (data.Type == UpgradeType.NewSpell)
+                {
+                    if (sm.HasForm((SpellForm)selectedSO))
+                    {
+                        data.SetAsUpgrade(); // C'est une amélioration de forme
+                    }
+                }
+
+                picks.Add(data);
             }
         }
         return picks;

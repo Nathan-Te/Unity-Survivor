@@ -36,6 +36,27 @@ public class SpellManager : MonoBehaviour
         }
     }
 
+    public void UpgradeRune(Rune rune, RuneDefinition def)
+    {
+        rune.ApplyUpgrade(def);
+        // Recalculate stats du slot parent...
+    }
+
+    public void AddNewSlot(SpellForm form)
+    {
+        SpellSlot newSlot = new SpellSlot();
+        newSlot.formRune = new Rune(form); // Constructeur simplifié (1 arg)
+
+        var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
+        if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
+
+        newSlot.effectRune = new Rune(defaultEffect); // Constructeur simplifié
+
+        newSlot.ForceInit();
+        activeSlots.Add(newSlot);
+        OnInventoryUpdated?.Invoke();
+    }
+
     private bool AttemptAttack(SpellDefinition def)
     {
         Vector3 targetPos = Vector3.zero;
@@ -83,6 +104,30 @@ public class SpellManager : MonoBehaviour
 
     // --- GESTION INVENTAIRE ---
 
+    public bool HasForm(SpellForm form)
+    {
+        foreach (var slot in activeSlots)
+        {
+            if (slot.formRune != null && slot.formRune.Data == form) return true;
+        }
+        return false;
+    }
+
+    // Méthode pour appliquer l'upgrade de forme
+    public void UpgradeForm(SpellForm form, RuneDefinition def)
+    {
+        foreach (var slot in activeSlots)
+        {
+            if (slot.formRune != null && slot.formRune.Data == form)
+            {
+                slot.formRune.ApplyUpgrade(def);
+                slot.RecalculateStats();
+                OnInventoryUpdated?.Invoke();
+                return;
+            }
+        }
+    }
+
     public bool CanAddSpell() => activeSlots.Count < maxSpellSlots;
 
     // Ajout d'un nouveau sort (Le premier niveau prend en compte le boost de rareté)
@@ -94,11 +139,11 @@ public class SpellManager : MonoBehaviour
 
         // La rune commence avec la puissance de la rareté (ex: Leg = 3.0)
         float initialPower = RarityUtils.GetPowerBoost(rarity);
-        newSlot.formRune = new Rune(form, initialPower);
+        newSlot.formRune = new Rune(form);
 
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
         if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
-        newSlot.effectRune = new Rune(defaultEffect, 1.0f);
+        newSlot.effectRune = new Rune(defaultEffect);
 
         newSlot.ForceInit();
         activeSlots.Add(newSlot);
@@ -111,12 +156,12 @@ public class SpellManager : MonoBehaviour
         SpellSlot slot = activeSlots[slotIndex];
 
         float initialPower = RarityUtils.GetPowerBoost(rarity);
-        slot.formRune = new Rune(newForm, initialPower);
+        slot.formRune = new Rune(newForm);
 
         // Reset Effet et Mods
         var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
         if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
-        slot.effectRune = new Rune(defaultEffect, 1.0f);
+        slot.effectRune = new Rune(defaultEffect);
         slot.modifierRunes = new Rune[2];
 
         slot.RecalculateStats();
@@ -137,7 +182,7 @@ public class SpellManager : MonoBehaviour
         {
             // Sinon on remplace (Nouveau départ avec boost rareté)
             float power = RarityUtils.GetPowerBoost(rarity);
-            activeSlots[slotIndex].effectRune = new Rune(newEffect, power);
+            activeSlots[slotIndex].effectRune = new Rune(newEffect);
         }
 
         activeSlots[slotIndex].RecalculateStats();
@@ -169,7 +214,7 @@ public class SpellManager : MonoBehaviour
             if (slot.modifierRunes[i] == null || slot.modifierRunes[i].Data == null)
             {
                 float power = RarityUtils.GetPowerBoost(rarity);
-                slot.modifierRunes[i] = new Rune(mod, power);
+                slot.modifierRunes[i] = new Rune(mod);
                 slot.RecalculateStats();
                 OnInventoryUpdated?.Invoke();
                 return true;
@@ -180,7 +225,7 @@ public class SpellManager : MonoBehaviour
         if (replaceIndex != -1 && replaceIndex < slot.modifierRunes.Length)
         {
             float power = RarityUtils.GetPowerBoost(rarity);
-            slot.modifierRunes[replaceIndex] = new Rune(mod, power);
+            slot.modifierRunes[replaceIndex] = new Rune(mod);
             slot.RecalculateStats();
             OnInventoryUpdated?.Invoke();
             return true;

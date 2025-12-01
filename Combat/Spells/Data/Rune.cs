@@ -4,26 +4,31 @@ using UnityEngine;
 public class Rune
 {
     public RuneSO Data;
-
-    // Le niveau affiché au joueur (1, 2, 3...)
     public int Level;
 
-    // La puissance réelle accumulée (1.0, 2.5, 5.5...)
-    // C'est cette valeur qui sera utilisée dans les formules de dégâts.
-    public float TotalPower;
+    // Somme de toutes les améliorations reçues
+    public RuneStats AccumulatedStats;
 
-    public Rune(RuneSO data, float initialPower = 1.0f)
+    // Constructeur simple (Corrige l'erreur CS1729)
+    public Rune(RuneSO data)
     {
         Data = data;
         Level = 1;
-        TotalPower = initialPower; // Une rune commence généralement avec 1.0 de puissance (base)
+        AccumulatedStats = RuneStats.Zero;
+
+        // Cas particulier : Pour un Modifier, on applique ses stats de base dès le niveau 1
+        if (data is SpellModifier mod)
+        {
+            AccumulatedStats = mod.BaseStats;
+        }
     }
 
     // Appelé quand on choisit une carte d'amélioration
-    public void Upgrade(Rarity rarity)
+    public void ApplyUpgrade(RuneDefinition upgradeDef)
     {
-        Level++; // Toujours +1 niveau
-        TotalPower += RarityUtils.GetPowerBoost(rarity); // Mais la puissance bondit selon la rareté
+        Level++;
+        // On additionne les stats de l'upgrade aux stats actuelles
+        AccumulatedStats += upgradeDef.Stats;
     }
 
     // Helpers
