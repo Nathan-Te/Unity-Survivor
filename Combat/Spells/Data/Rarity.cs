@@ -11,14 +11,11 @@ public static class RarityUtils
             case Rarity.Common: return 1;
             case Rarity.Rare: return 2;
             case Rarity.Epic: return 3;
-            case Rarity.Legendary: return 5; // Jackpot !
+            case Rarity.Legendary: return 5;
             default: return 1;
         }
     }
 
-    // C'est le coeur de ton équilibrage.
-    // Common = Croissance normale (100%)
-    // Legendary = Croissance triple (300%) sur un seul niveau !
     public static float GetPowerBoost(Rarity rarity)
     {
         switch (rarity)
@@ -45,10 +42,29 @@ public static class RarityUtils
 
     public static Rarity GetRandomRarity()
     {
-        float roll = Random.value;
-        if (roll < 0.60f) return Rarity.Common;
-        if (roll < 0.85f) return Rarity.Rare;
-        if (roll < 0.95f) return Rarity.Epic;
+        return GetRandomRarityAtLeast(Rarity.Common);
+    }
+
+    // NOUVEAU : Tirage pondéré avec seuil minimum
+    public static Rarity GetRandomRarityAtLeast(Rarity minRarity)
+    {
+        // Poids arbitraires (Common=60, Rare=25, Epic=10, Leg=5)
+        float wCommon = minRarity <= Rarity.Common ? 60f : 0f;
+        float wRare = minRarity <= Rarity.Rare ? 25f : 0f;
+        float wEpic = minRarity <= Rarity.Epic ? 10f : 0f;
+        float wLeg = minRarity <= Rarity.Legendary ? 5f : 0f;
+
+        float totalWeight = wCommon + wRare + wEpic + wLeg;
+        float roll = Random.Range(0, totalWeight);
+
+        if (roll < wCommon) return Rarity.Common;
+        roll -= wCommon;
+
+        if (roll < wRare) return Rarity.Rare;
+        roll -= wRare;
+
+        if (roll < wEpic) return Rarity.Epic;
+
         return Rarity.Legendary;
     }
 }
