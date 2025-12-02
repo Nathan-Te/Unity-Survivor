@@ -22,6 +22,8 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private float rotationSpeed = 8f;
     [SerializeField] private float avoidanceBlendSpeed = 3f;
 
+    public event System.Action<Vector3> OnEnemyDeathPosition;
+
     // Données Job System
     private List<EnemyController> _activeEnemies = new List<EnemyController>();
     private TransformAccessArray _transformAccessArray;
@@ -78,6 +80,11 @@ public class EnemyManager : MonoBehaviour
     }
 
     // --- HELPERS PRIVÉS (Organisation) ---
+
+    public void NotifyEnemyDeath(Vector3 position)
+    {
+        OnEnemyDeathPosition?.Invoke(position);
+    }
 
     private void SyncDataForJob()
     {

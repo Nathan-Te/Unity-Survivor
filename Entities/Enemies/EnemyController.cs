@@ -141,6 +141,12 @@ public class EnemyController : MonoBehaviour
 
     private void Die()
     {
+        // Notification au Manager (Pour les POI)
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.NotifyEnemyDeath(this.transform.position);
+        }
+
         // 1. Drop d'XP
         if (GemPool.Instance != null)
         {

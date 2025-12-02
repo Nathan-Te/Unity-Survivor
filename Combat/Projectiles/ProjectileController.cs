@@ -113,6 +113,18 @@ public class ProjectileController : MonoBehaviour
             return;
         }
 
+        // --- MODIFICATION ICI : GESTION IDAMAGEABLE (POIs) ---
+        // On vérifie d'abord si c'est un objet destructible (Caisse, Cristal...)
+        IDamageable damageable = other.GetComponent<IDamageable>();
+        if (damageable != null && !(damageable is PlayerController)) // On ne se blesse pas soi-même
+        {
+            damageable.TakeDamage(_def.Damage);
+            // Hit count et pierce logic pour les objets destructibles
+            _hitCount++;
+            if (_def.Effect.aoeRadius <= 0 && _hitCount > _def.Pierce) Despawn();
+            return;
+        }
+
         // GESTION JOUEUR
         bool isEnemy = EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy);
         bool isObstacle = !isEnemy && other.gameObject.layer == LayerMask.NameToLayer("Obstacle");

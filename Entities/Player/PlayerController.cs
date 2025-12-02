@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IDamageable
 {
     public static PlayerController Instance { get; private set; }
 
@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float maxHp = 100f;
     [SerializeField] private float _currentHp;
 
-    // --- NOUVEAU : Variables internes pour les stats ---
+    // Variables internes stats
     private float _baseMoveSpeed;
     private float _regenPerSec = 0f;
     private float _armor = 0f;
@@ -38,33 +38,26 @@ public class PlayerController : MonoBehaviour
         _controller = GetComponent<CharacterController>();
         _mainCamera = Camera.main;
         _currentHp = maxHp;
-
-        // On sauvegarde la vitesse définie dans l'éditeur comme "Base"
         _baseMoveSpeed = moveSpeed;
     }
 
     private void Update()
     {
-        // 1. Inputs Mouvement
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
         _moveInput = new Vector2(h, v);
 
-        // 2. Input Visée
         if (Input.GetMouseButtonDown(1))
         {
             IsManualAiming = !IsManualAiming;
         }
 
-        // 3. Gestion des Ennemis
         float currentSpeed = moveSpeed;
         CheckEnemyContact(ref currentSpeed);
 
-        // 4. Mouvements & Rotation
         HandleMovement(currentSpeed);
         HandleRotation();
 
-        // --- NOUVEAU : Régénération de PV ---
         if (_regenPerSec > 0 && _currentHp < maxHp)
         {
             _currentHp += _regenPerSec * Time.deltaTime;
@@ -72,25 +65,28 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- NOUVEAU : Méthodes de modification des Stats ---
-
-    public void ModifySpeed(float percentAdd)
+    public void Heal(float amount)
     {
-        // Exemple : Base 8 * (1 + 10) = 88
-        moveSpeed = _baseMoveSpeed * (1.0f + percentAdd);
-        Debug.Log($"Vitesse modifiée : {moveSpeed} (Base: {_baseMoveSpeed} + {percentAdd * 100}%)");
+        _currentHp += amount;
+        if (_currentHp > maxHp) _currentHp = maxHp;
+        Debug.Log($"Player Healed: +{amount}. HP: {_currentHp}/{maxHp}");
+        // Ici tu pourrais ajouter un VFX de soin ou un popup text
     }
 
+    // --- Méthodes Stats ---
+    public void ModifySpeed(float percentAdd)
+    {
+        moveSpeed = _baseMoveSpeed * (1.0f + percentAdd);
+    }
     public void ModifyMaxHealth(float flatAdd)
     {
         maxHp += flatAdd;
-        _currentHp += flatAdd; // On soigne du montant ajouté pour ne pas laisser un trou
+        _currentHp += flatAdd;
     }
-
     public void ModifyRegen(float flatAdd) => _regenPerSec += flatAdd;
     public void ModifyArmor(float flatAdd) => _armor += flatAdd;
 
-    // ---------------------------------------------------
+    // ----------------------
 
     private void CheckEnemyContact(ref float currentMoveSpeed)
     {
@@ -127,10 +123,7 @@ public class PlayerController : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (_isGodMode) return;
-
-        // Application de l'armure
         float reducedDamage = Mathf.Max(0f, amount - _armor);
-
         _currentHp -= reducedDamage;
         if (_currentHp <= 0)
         {
@@ -143,10 +136,8 @@ public class PlayerController : MonoBehaviour
     {
         Vector3 move = new Vector3(_moveInput.x, 0, _moveInput.y);
         if (move.magnitude > 1f) move.Normalize();
-
         Vector3 finalMove = move * speed;
         finalMove.y = -9.81f;
-
         _controller.Move(finalMove * Time.deltaTime);
     }
 
@@ -160,7 +151,6 @@ public class PlayerController : MonoBehaviour
                 MouseWorldPosition = hit.point;
                 Vector3 targetPosition = new Vector3(hit.point.x, transform.position.y, hit.point.z);
                 Vector3 direction = (targetPosition - transform.position).normalized;
-
                 if (direction != Vector3.zero)
                 {
                     transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * rotationSpeed);
