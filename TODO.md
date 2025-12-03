@@ -31,6 +31,7 @@ Le joueur se déplace actuellement sur un plan fini.
 - [ ] **Slots Vides :** S'assurer que les slots vides dans le menu de Level Up (Targeting Phase) ont un visuel distinct (ex: un "+" gris).
 - [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Mod vs Stat).
 - [ ] **Pause Menu :** Pouvoir reprendre, recommencer ou quitter.
+- [ ] **XP Bar :** Barre d'expérience avec affichage du niveau actuel du joueur dans l'HUD
 
 ### Combat
 - [ ] **VFX Manager :** Remplacer les changements de couleur (`tintColor`) par de vrais effets de particules (Explosions, Traînées).
@@ -44,7 +45,6 @@ Le joueur se déplace actuellement sur un plan fini.
 Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 
 ### 1. Formes (Forms)
-- [ ] **Nova :** Tir circulaire (Spread 360, Count élevé).
 - [ ] **Boomerang :** Projectile qui part et revient (Nécessite une nouvelle `MotionStrategy`).
 - [ ] **Aura :** Zone de dégâts constante autour du joueur (Similaire à Orbit mais sans projectile).
 
@@ -72,3 +72,4 @@ Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 - [ ] **Sauvegarde :** Stocker l'or et les Unlocks (Json).
 - [ ] **Menu Principal :** Armurerie pour acheter des améliorations permanentes (ex: +1 Reroll de base).
 - [ ] **Unlock System :** Débloquer la rune "Météore" après avoir tué le premier Boss.
+- [ ] **Leaderboards :** Leaderboards du nombre de kils / temps survécus en partie pour que les joueurs soient en compétition
