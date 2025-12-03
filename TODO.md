@@ -72,3 +72,4 @@ Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 - [ ] **Sauvegarde :** Stocker l'or et les Unlocks (Json).
 - [ ] **Menu Principal :** Armurerie pour acheter des améliorations permanentes (ex: +1 Reroll de base).
 - [ ] **Unlock System :** Débloquer la rune "Météore" après avoir tué le premier Boss.
+- [ ] **Leaderboards :** Leaderboards du nombre de kils / temps survécus en partie pour que les joueurs soient en compétition
