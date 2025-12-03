@@ -104,7 +104,54 @@ public class SpellManager : MonoBehaviour
             Quaternion rotation = Quaternion.Euler(0, currentAngle, 0);
             Vector3 finalDir = rotation * dirToTarget;
 
-            Vector3 spawnPos = _playerTransform.position + Vector3.up + finalDir * 0.5f;
+            Vector3 spawnPos;
+
+            if (def.Form.tags.HasFlag(SpellTag.Smite))
+            {
+                Vector3 currentTarget = targetPos;
+
+                // Si c'est un tir supplémentaire (Multicast) ET qu'on est en Auto-Aim
+                // -> On essaie de viser un autre ennemi
+                if (i > 0 && !PlayerController.Instance.IsManualAiming)
+                {
+                    Vector3 scanOrigin = _playerTransform.position + Vector3.up;
+
+                    // On force le mode RANDOM pour arroser la zone
+                    Transform extraTarget = EnemyManager.Instance.GetTarget(
+                        scanOrigin,
+                        def.Range,
+                        TargetingMode.Random,
+                        def.Effect.aoeRadius,
+                        def.RequiresLoS
+                    );
+
+                    if (extraTarget != null)
+                    {
+                        currentTarget = extraTarget.position;
+                    }
+                    else
+                    {
+                        // Si pas d'autre ennemi trouvé (ex: il n'en reste qu'un), 
+                        // on tape à côté de la cible principale pour ne pas tout empiler
+                        Vector2 rnd = UnityEngine.Random.insideUnitCircle * 3.0f;
+                        currentTarget += new Vector3(rnd.x, 0, rnd.y);
+                    }
+                }
+                // Si c'est le tir principal ou en visée manuelle avec Multicast
+                // -> On ajoute juste un peu de dispersion aléatoire
+                else if (count > 1)
+                {
+                    Vector2 rnd = UnityEngine.Random.insideUnitCircle * 2.0f;
+                    currentTarget += new Vector3(rnd.x, 0, rnd.y);
+                }
+
+                spawnPos = currentTarget;
+            }
+            else
+            {
+                // Cas BOLT / NOVA / ORBIT : Spawn DEPUIS le joueur
+                spawnPos = _playerTransform.position + Vector3.up + finalDir * 0.5f;
+            }
 
             GameObject p = ProjectilePool.Instance.Get(def.Form.prefab, spawnPos, Quaternion.LookRotation(finalDir));
             if (p.TryGetComponent<ProjectileController>(out var ctrl))
