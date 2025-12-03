@@ -44,7 +44,6 @@ Le joueur se déplace actuellement sur un plan fini.
 Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 
 ### 1. Formes (Forms)
-- [ ] **Nova :** Tir circulaire (Spread 360, Count élevé).
 - [ ] **Boomerang :** Projectile qui part et revient (Nécessite une nouvelle `MotionStrategy`).
 - [ ] **Aura :** Zone de dégâts constante autour du joueur (Similaire à Orbit mais sans projectile).
 
