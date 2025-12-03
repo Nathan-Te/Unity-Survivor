@@ -37,9 +37,9 @@ Ce document recense tous les ScriptableObjects (Données) du jeu pour faciliter 
 | :--- | :--- | :--- | :--- |
 | **Multicast** | Ajoute des projectiles | Count +1, Spread +15 | SupportsMulticast |
 | **Pierce** | Traverse les ennemis | Pierce +1 | SupportsPierce |
+| **Homing** | Guidage automatique | Homing = True | SupportsHoming |
 | **Heavy** | Gros dégâts, lent | Dégâts +50%, Vitesse -20% | - |
 | **Sniper** | Rapide et loin | Vitesse +50%, Range +10m | Projectile |
-| **Homing** | Guidage automatique | Homing = True | SupportsHoming |
 
 ---
 
