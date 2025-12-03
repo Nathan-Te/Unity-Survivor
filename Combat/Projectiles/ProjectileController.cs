@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ProjectileController : MonoBehaviour
@@ -10,6 +11,8 @@ public class ProjectileController : MonoBehaviour
 
     private int _hitCount;
     private bool _isHostile;
+
+    private HashSet<int> _hitTargets = new HashSet<int>();
 
     public void Initialize(SpellDefinition def, Vector3 direction, int index = 0, int totalCount = 1)
     {
@@ -57,6 +60,7 @@ public class ProjectileController : MonoBehaviour
         _sourcePrefab = sourcePrefab;
         _isHostile = true;
         _hitCount = 0;
+        _hitTargets.Clear();
 
         // Mouvement linéaire simple pour l'ennemi
         transform.forward = transform.forward; // Déjà orienté par l'ennemi
@@ -101,8 +105,12 @@ public class ProjectileController : MonoBehaviour
         // GESTION HOSTILE
         if (_isHostile)
         {
+            int targetID = other.gameObject.GetInstanceID();
+            if (_hitTargets.Contains(targetID)) return;
+
             if (other.TryGetComponent<PlayerController>(out var player))
             {
+                _hitTargets.Add(targetID);
                 player.SendMessage("TakeDamage", _def.Damage, SendMessageOptions.DontRequireReceiver);
                 Despawn();
             }
@@ -131,6 +139,10 @@ public class ProjectileController : MonoBehaviour
 
         if (isEnemy)
         {
+            int enemyID = enemy.GetInstanceID();
+            if (_hitTargets.Contains(enemyID)) return;
+            _hitTargets.Add(enemyID);
+
             ApplyHit(enemy);
             _hitCount++;
 
