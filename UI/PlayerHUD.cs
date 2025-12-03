@@ -1,18 +1,34 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerHUD : MonoBehaviour
 {
     [SerializeField] private Transform slotsContainer;
     [SerializeField] private GameObject slotUIPrefab;
 
+    [Header("Health Bar")]
+    [SerializeField] private Slider healthSlider;
+    [SerializeField] private TextMeshProUGUI healthText;
+
     private void Start()
     {
+        // Setup Spells
         SpellManager sm = FindFirstObjectByType<SpellManager>();
         if (sm != null)
         {
             sm.OnInventoryUpdated += RefreshUI;
-            RefreshUI(); // Premier appel
+            RefreshUI();
+        }
+
+        // Setup Health
+        if (PlayerController.Instance != null)
+        {
+            PlayerController.Instance.OnHealthChanged += UpdateHealth;
+            UpdateHealth(PlayerController.Instance.CurrentHp, PlayerController.Instance.MaxHp);
+            // Force update initiale (si le joueur est déjà init)
+            // Note: Idéalement, PlayerController devrait exposer CurrentHp/MaxHp publiquement pour lire l'état initial
         }
     }
 
@@ -33,6 +49,19 @@ public class PlayerHUD : MonoBehaviour
                 // Pas de manager passé ici, donc non-cliquable (juste affichage)
                 ui.Initialize(slots[i], i, null);
             }
+        }
+    }
+
+    private void UpdateHealth(float current, float max)
+    {
+        if (healthSlider)
+        {
+            healthSlider.maxValue = max;
+            healthSlider.value = current;
+        }
+        if (healthText)
+        {
+            healthText.text = $"{Mathf.CeilToInt(current)} / {Mathf.CeilToInt(max)}";
         }
     }
 }

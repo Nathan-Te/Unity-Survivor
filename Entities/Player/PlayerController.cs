@@ -11,6 +11,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] private float maxHp = 100f;
     [SerializeField] private float _currentHp;
 
+    public float MaxHp => maxHp;
+    public float CurrentHp => _currentHp;
+
     // Variables internes stats
     private float _baseMoveSpeed;
     private float _regenPerSec = 0f;
@@ -32,6 +35,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     private Vector2 _moveInput;
     private Collider[] _hitBuffer = new Collider[20];
 
+    public event System.Action<float, float> OnHealthChanged;
+
     private void Awake()
     {
         Instance = this;
@@ -39,6 +44,11 @@ public class PlayerController : MonoBehaviour, IDamageable
         _mainCamera = Camera.main;
         _currentHp = maxHp;
         _baseMoveSpeed = moveSpeed;
+    }
+
+    private void Start()
+    {
+        OnHealthChanged?.Invoke(_currentHp, maxHp);
     }
 
     private void Update()
@@ -71,6 +81,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (_currentHp > maxHp) _currentHp = maxHp;
         Debug.Log($"Player Healed: +{amount}. HP: {_currentHp}/{maxHp}");
         // Ici tu pourrais ajouter un VFX de soin ou un popup text
+        OnHealthChanged?.Invoke(_currentHp, maxHp);
     }
 
     // --- Méthodes Stats ---
@@ -82,6 +93,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         maxHp += flatAdd;
         _currentHp += flatAdd;
+        OnHealthChanged?.Invoke(_currentHp, maxHp);
     }
     public void ModifyRegen(float flatAdd) => _regenPerSec += flatAdd;
     public void ModifyArmor(float flatAdd) => _armor += flatAdd;
@@ -125,6 +137,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (_isGodMode) return;
         float reducedDamage = Mathf.Max(0f, amount - _armor);
         _currentHp -= reducedDamage;
+
+        OnHealthChanged?.Invoke(_currentHp, maxHp);
+
         if (_currentHp <= 0)
         {
             Debug.Log("GAME OVER");

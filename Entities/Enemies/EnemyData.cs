@@ -10,6 +10,9 @@ public class EnemyData : ScriptableObject
     public GameObject prefab;
     public EnemyType type = EnemyType.Melee;
 
+    [Header("Type")]
+    public bool isBoss = false;
+
     [Header("Stats de Base")]
     public float baseHp = 30f;
     public float baseDamage = 10f;

@@ -133,10 +133,16 @@ public class EnemyController : MonoBehaviour
     public void TakeDamage(float amount)
     {
         currentHp -= amount;
-        if (currentHp <= 0)
+
+        // --- POPUP DÉGÂTS ---
+        if (DamageTextPool.Instance != null)
         {
-            Die();
+            // Ajoute un petit offset aléatoire pour que les textes ne se chevauchent pas trop
+            Vector3 popPos = transform.position + Random.insideUnitSphere * 0.5f;
+            DamageTextPool.Instance.Spawn(amount, popPos);
         }
+
+        if (currentHp <= 0) Die();
     }
 
     private void Die()
@@ -232,9 +238,12 @@ public class EnemyController : MonoBehaviour
     private void OnEnable()
     {
         if (EnemyManager.Instance != null)
-        {
-            // On passe notre collider pour l'inscription dans le dictionnaire
             EnemyManager.Instance.RegisterEnemy(this, _myCollider);
+
+        // --- GESTION BOSS BAR ---
+        if (data != null && data.isBoss && BossHealthBarUI.Instance != null)
+        {
+            BossHealthBarUI.Instance.Show(this);
         }
     }
 

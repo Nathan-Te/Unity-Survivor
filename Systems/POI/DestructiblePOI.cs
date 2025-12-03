@@ -14,13 +14,11 @@ public abstract class DestructiblePOI : PointOfInterest, IDamageable
     public void TakeDamage(float amount)
     {
         if (isCompleted) return;
-
         _currentHp -= amount;
-        // Feedback visuel (Flash, Shake) à ajouter ici
 
-        if (_currentHp <= 0)
-        {
-            CompletePOI();
-        }
+        if (DamageTextPool.Instance != null)
+            DamageTextPool.Instance.Spawn(amount, transform.position);
+
+        if (_currentHp <= 0) CompletePOI();
     }
 }
