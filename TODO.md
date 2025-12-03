@@ -31,6 +31,7 @@ Le joueur se déplace actuellement sur un plan fini.
 - [ ] **Slots Vides :** S'assurer que les slots vides dans le menu de Level Up (Targeting Phase) ont un visuel distinct (ex: un "+" gris).
 - [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Mod vs Stat).
 - [ ] **Pause Menu :** Pouvoir reprendre, recommencer ou quitter.
+- [ ] **XP Bar :** Barre d'expérience avec affichage du niveau actuel du joueur dans l'HUD
 
 ### Combat
 - [ ] **VFX Manager :** Remplacer les changements de couleur (`tintColor`) par de vrais effets de particules (Explosions, Traînées).
