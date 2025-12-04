@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f44c9cc5942d37148bcb620e8c4be2bf, type: 3}
+  m_Name: Nova
+  m_EditorClassIdentifier: Assembly-CSharp::SpellForm
+  runeName: Nova
+  description: Multi shot
+  icon: {fileID: 21300000, guid: 1b2ce18204f7f8e4da91e96749174156, type: 3}
+  prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+  targetingMode: 0
+  requiresLineOfSight: 1
+  tags: 370
+  baseCooldown: 1
+  baseCount: 8
+  basePierce: 0
+  baseSpread: 360
+  cooldownReductionPerLevel: 0.05
+  countIncreaseEveryXLevels: 5
+  baseSpeed: 20
+  impactDelay: 0
+  baseDuration: 2
+  procCoefficient: 1

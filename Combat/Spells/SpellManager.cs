@@ -11,6 +11,9 @@ public class SpellManager : MonoBehaviour
     [Header("Inventaire Actif")]
     [SerializeField] private List<SpellSlot> activeSlots = new List<SpellSlot>();
 
+    [Header("Defaults")]
+    [SerializeField] private SpellEffect defaultEffectAsset;
+
     private Transform _playerTransform;
     public event Action OnInventoryUpdated;
 
@@ -185,9 +188,8 @@ public class SpellManager : MonoBehaviour
         newSlot.formRune = new Rune(form); // Niveau 1
         newSlot.formRune.InitializeWithStats(upgradeDef); // Application stats piochées
 
-        var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
-        if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
-        newSlot.effectRune = new Rune(defaultEffect);
+        SpellEffect effectToUse = defaultEffectAsset != null ? defaultEffectAsset : ScriptableObject.CreateInstance<SpellEffect>();
+        newSlot.effectRune = new Rune(effectToUse);
 
         newSlot.ForceInit();
         activeSlots.Add(newSlot);
@@ -218,10 +220,8 @@ public class SpellManager : MonoBehaviour
         slot.formRune = new Rune(newForm);
         slot.formRune.InitializeWithStats(upgradeDef);
 
-        // Reset Effet et Mods pour éviter les conflits
-        var defaultEffect = Resources.Load<SpellEffect>("Spells/Effects/Physical");
-        if (defaultEffect == null) defaultEffect = ScriptableObject.CreateInstance<SpellEffect>();
-        slot.effectRune = new Rune(defaultEffect);
+        SpellEffect effectToUse = defaultEffectAsset != null ? defaultEffectAsset : ScriptableObject.CreateInstance<SpellEffect>();
+        slot.effectRune = new Rune(effectToUse);
 
         slot.modifierRunes = new Rune[2]; // Reset mods
 

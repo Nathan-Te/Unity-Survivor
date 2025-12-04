@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65aed9e5b07d6ba42ae2f25ce3e47dea, type: 3}
+  m_Name: Ice
+  m_EditorClassIdentifier: Assembly-CSharp::SpellEffect
+  runeName: Ice
+  icon: {fileID: 21300000, guid: 66384eb6c28059443acec8ed9df8d2c3, type: 3}
+  CommonUpgrades: []
+  RareUpgrades: []
+  EpicUpgrades: []
+  LegendaryUpgrades: []
+  element: 2
+  tintColor: {r: 0, g: 0.92939377, b: 1, a: 1}
+  baseDamage: 10
+  baseKnockback: 0
+  baseDamageMultiplier: 1
+  applyBurn: 0
+  applySlow: 1
+  baseChainCount: 0
+  chainRange: 8
+  chainDamageReduction: 0.7
+  minionSpawnChance: 0
+  minionPrefab: {fileID: 0}
+  aoeRadius: 0
