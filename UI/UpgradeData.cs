@@ -42,14 +42,4 @@ public class UpgradeData
         else if (so is SpellModifier) Type = UpgradeType.Modifier;
         else if (so is StatUpgradeSO) Type = UpgradeType.StatBoost;
     }
-
-    // Méthode pour changer le type (utilisée par LevelUpUI si on possède déjà le sort)
-    public void SetAsUpgrade()
-    {
-        if (Type == UpgradeType.NewSpell)
-        {
-            Type = UpgradeType.SpellUpgrade;
-            Name = $"{TargetRuneSO.runeName} (Upgrade)";
-        }
-    }
 }

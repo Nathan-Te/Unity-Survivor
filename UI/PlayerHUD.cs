@@ -12,6 +12,10 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private Slider healthSlider;
     [SerializeField] private TextMeshProUGUI healthText;
 
+    [Header("Expérience")]
+    [SerializeField] private Slider xpSlider;
+    [SerializeField] private TextMeshProUGUI levelText;
+
     private void Start()
     {
         // Setup Spells
@@ -29,6 +33,17 @@ public class PlayerHUD : MonoBehaviour
             UpdateHealth(PlayerController.Instance.CurrentHp, PlayerController.Instance.MaxHp);
             // Force update initiale (si le joueur est déjà init)
             // Note: Idéalement, PlayerController devrait exposer CurrentHp/MaxHp publiquement pour lire l'état initial
+        }
+
+        if (LevelManager.Instance != null)
+        {
+            // On s'abonne aux événements du LevelManager
+            LevelManager.Instance.OnExperienceChanged.AddListener(UpdateXPBar);
+            LevelManager.Instance.OnLevelUp.AddListener(UpdateLevelText);
+
+            // Initialisation de l'affichage (au cas où on commence niveau 1 avec 0 XP)
+            UpdateXPBar(0);
+            UpdateLevelText();
         }
     }
 
@@ -49,6 +64,24 @@ public class PlayerHUD : MonoBehaviour
                 // Pas de manager passé ici, donc non-cliquable (juste affichage)
                 ui.Initialize(slots[i], i, null);
             }
+        }
+    }
+
+    // --- UI EXPERIENCE ---
+
+    private void UpdateXPBar(float ratio)
+    {
+        if (xpSlider != null)
+        {
+            xpSlider.value = ratio;
+        }
+    }
+
+    private void UpdateLevelText()
+    {
+        if (levelText != null && LevelManager.Instance != null)
+        {
+            levelText.text = $"LVL {LevelManager.Instance.currentLevel}";
         }
     }
 

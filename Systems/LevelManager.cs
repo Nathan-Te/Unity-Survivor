@@ -77,7 +77,6 @@ public class LevelManager : MonoBehaviour
         if (_pendingLevelUps > 0)
         {
             _pendingLevelUps--;
-            Debug.Log($"LEVEL UP! Reste à traiter : {_pendingLevelUps}");
             OnLevelUp?.Invoke();
         }
     }
