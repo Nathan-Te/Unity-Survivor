@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: DefaultEnemy
   prefab: {fileID: 6760055813335041748, guid: a866d602ce18b4148af25acea704d774, type: 3}
-  type: 2
+  type: 0
   isBoss: 0
   baseHp: 30
   baseDamage: 10
   baseSpeed: 3
   xpDropAmount: 10
-  stopDistance: 0
+  stopDistance: 0.5
   fleeDistance: 0
   projectilePrefab: {fileID: 0}
   attackCooldown: 2
