@@ -57,7 +57,7 @@ Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 - [ ] **Echo :** Chance de relancer le sort une seconde fois gratuitement.
 
 ### 4. Stats Passives (StatUpgrades)
-- [ ] Créer les Assets pour : Vitesse, MaxHP, Armor, Regen, Magnet, Growth.
+- [ ] Créer les Assets pour : Armor, Regen, Growth.
 
 ### 5. Ennemis & Vagues
 - [ ] Configurer une boucle de jeu de 10 minutes dans `WaveManager`.
