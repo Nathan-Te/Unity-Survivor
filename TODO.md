@@ -28,7 +28,6 @@ Le joueur se déplace actuellement sur un plan fini.
 ## 🛠️ Améliorations & Refactoring (Tech)
 
 ### UI / UX
-- [ ] **Slots Vides :** S'assurer que les slots vides dans le menu de Level Up (Targeting Phase) ont un visuel distinct (ex: un "+" gris).
 - [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Mod vs Stat).
 - [ ] **Pause Menu :** Pouvoir reprendre, recommencer ou quitter.
 
@@ -58,7 +57,7 @@ Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 - [ ] **Echo :** Chance de relancer le sort une seconde fois gratuitement.
 
 ### 4. Stats Passives (StatUpgrades)
-- [ ] Créer les Assets pour : Vitesse, MaxHP, Armor, Regen, Magnet, Growth.
+- [ ] Créer les Assets pour : Armor, Regen, Growth.
 
 ### 5. Ennemis & Vagues
 - [ ] Configurer une boucle de jeu de 10 minutes dans `WaveManager`.
