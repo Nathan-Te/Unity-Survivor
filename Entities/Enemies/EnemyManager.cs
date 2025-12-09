@@ -11,11 +11,17 @@ using System;
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; private set; }
-    public event Action<int> OnEnemyCountChanged;
+
+    // --- EVENTS ---
+    public event Action<int> OnEnemyCountChanged; // Pour l'UI (Compteur)
+    public event Action<Vector3> OnEnemyDeathPosition; // Pour les POI (Autels)
 
     [Header("Réglages")]
     [SerializeField] private Transform playerTransform;
     [SerializeField] private LayerMask obstacleLayer;
+
+    [Header("Performance")]
+    [SerializeField] private int maxEnemiesCapacity = 2000; // Capacité Max (Buffer fixe)
 
     [Header("Steering Settings")]
     [SerializeField] private float separationWeight = 1.5f;
@@ -24,31 +30,39 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private float rotationSpeed = 8f;
     [SerializeField] private float avoidanceBlendSpeed = 3f;
 
-    public event System.Action<Vector3> OnEnemyDeathPosition;
-
-    // Données Job System
+    // Listes C# (Gestion logique)
     private List<EnemyController> _activeEnemies = new List<EnemyController>();
     private TransformAccessArray _transformAccessArray;
 
-    // Tableaux de données pour le Job
+    // Données Job (NativeLists redimensionnables pour les données simples)
     private NativeList<float> _moveSpeeds;
     private NativeList<float> _stopDistances;
     private NativeList<float> _fleeDistances;
 
+    // Buffers Fixes (Pour éviter les réallocations constantes des Raycasts)
     private NativeArray<RaycastCommand> _rayCommands;
     private NativeArray<RaycastHit> _rayResults;
     private NativeArray<float3> _previousDirections;
-    private int _currentCapacity = 0;
 
     private Dictionary<int, EnemyController> _colliderCache = new Dictionary<int, EnemyController>();
 
     private void Awake()
     {
         Instance = this;
-        _moveSpeeds = new NativeList<float>(Allocator.Persistent);
-        _stopDistances = new NativeList<float>(Allocator.Persistent);
-        _fleeDistances = new NativeList<float>(Allocator.Persistent);
-        _transformAccessArray = new TransformAccessArray(0);
+
+        // Allocation des listes dynamiques
+        _moveSpeeds = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
+        _stopDistances = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
+        _fleeDistances = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
+
+        _transformAccessArray = new TransformAccessArray(maxEnemiesCapacity);
+
+        // ALLOCATION FIXE (BUFFER)
+        int rayCapacity = maxEnemiesCapacity * 3;
+        _rayCommands = new NativeArray<RaycastCommand>(rayCapacity, Allocator.Persistent);
+        _rayResults = new NativeArray<RaycastHit>(rayCapacity, Allocator.Persistent);
+
+        _previousDirections = new NativeArray<float3>(maxEnemiesCapacity, Allocator.Persistent);
     }
 
     private void Update()
@@ -56,22 +70,32 @@ public class EnemyManager : MonoBehaviour
         if (playerTransform == null || _activeEnemies.Count == 0) return;
 
         SyncDataForJob();
-        EnsureBufferSize();
 
-        // 1. Raycasts
+        // 1. Préparation des Raycasts
         PrepareRaycasts();
-        JobHandle rayHandle = RaycastCommand.ScheduleBatch(_rayCommands, _rayResults, 10);
 
-        // 2. Mouvement
+        // 2. Exécution des Raycasts (Optimisation Slicing)
+        int activeRayCount = _activeEnemies.Count * 3;
+        if (activeRayCount > _rayCommands.Length) activeRayCount = _rayCommands.Length;
+
+        NativeArray<RaycastCommand> cmdSlice = _rayCommands.GetSubArray(0, activeRayCount);
+        NativeArray<RaycastHit> resSlice = _rayResults.GetSubArray(0, activeRayCount);
+
+        JobHandle rayHandle = RaycastCommand.ScheduleBatch(cmdSlice, resSlice, 10);
+
+        // 3. Mouvement
         MoveEnemiesJob moveJob = new MoveEnemiesJob
         {
             PlayerPosition = playerTransform.position,
             DeltaTime = Time.deltaTime,
+
             MoveSpeeds = _moveSpeeds.AsArray(),
             StopDistances = _stopDistances.AsArray(),
             FleeDistances = _fleeDistances.AsArray(),
+
             RayResults = _rayResults,
             PreviousDirections = _previousDirections,
+
             AvoidanceWeight = separationWeight,
             RotationSpeed = rotationSpeed,
             AvoidanceBlendSpeed = avoidanceBlendSpeed
@@ -81,38 +105,12 @@ public class EnemyManager : MonoBehaviour
         moveHandle.Complete();
     }
 
-    // --- HELPERS PRIVÉS (Organisation) ---
-
-    public void NotifyEnemyDeath(Vector3 position)
-    {
-        OnEnemyDeathPosition?.Invoke(position);
-    }
-
     private void SyncDataForJob()
     {
-        // Synchronisation des vitesses (pour gérer Slow/Frenzy)
         for (int i = 0; i < _activeEnemies.Count; i++)
         {
             if (_activeEnemies[i] != null)
-            {
                 _moveSpeeds[i] = _activeEnemies[i].currentSpeed;
-            }
-        }
-    }
-
-    private void EnsureBufferSize()
-    {
-        int requiredSize = _activeEnemies.Count * 3;
-        if (!_rayCommands.IsCreated || _currentCapacity != requiredSize / 3)
-        {
-            if (_rayCommands.IsCreated) _rayCommands.Dispose();
-            if (_rayResults.IsCreated) _rayResults.Dispose();
-            if (_previousDirections.IsCreated) _previousDirections.Dispose();
-
-            _rayCommands = new NativeArray<RaycastCommand>(requiredSize, Allocator.Persistent);
-            _rayResults = new NativeArray<RaycastHit>(requiredSize, Allocator.Persistent);
-            _previousDirections = new NativeArray<float3>(requiredSize / 3, Allocator.Persistent);
-            _currentCapacity = requiredSize / 3;
         }
     }
 
@@ -120,7 +118,10 @@ public class EnemyManager : MonoBehaviour
     {
         QueryParameters queryParams = new QueryParameters { layerMask = obstacleLayer, hitTriggers = QueryTriggerInteraction.Ignore };
 
-        for (int i = 0; i < _activeEnemies.Count; i++)
+        int count = _activeEnemies.Count;
+        if (count > maxEnemiesCapacity) count = maxEnemiesCapacity;
+
+        for (int i = 0; i < count; i++)
         {
             EnemyController enemy = _activeEnemies[i];
             if (enemy == null) continue;
@@ -135,21 +136,16 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    // --- API PUBLIQUE ---
-
-    public void DebugKillAllEnemies()
-    {
-        for (int i = _activeEnemies.Count - 1; i >= 0; i--)
-        {
-            if (_activeEnemies[i] != null)
-            {
-                _activeEnemies[i].TakeDamage(99999f);
-            }
-        }
-    }
+    // --- GESTION LISTES ---
 
     public void RegisterEnemy(EnemyController enemy, Collider col)
     {
+        if (_activeEnemies.Count >= maxEnemiesCapacity)
+        {
+            Debug.LogWarning("EnemyManager: Capacité Max atteinte !");
+            return;
+        }
+
         if (!_activeEnemies.Contains(enemy))
         {
             _activeEnemies.Add(enemy);
@@ -178,6 +174,13 @@ public class EnemyManager : MonoBehaviour
                 _moveSpeeds[index] = _moveSpeeds[last];
                 _stopDistances[index] = _stopDistances[last];
                 _fleeDistances[index] = _fleeDistances[last];
+
+                _previousDirections[index] = _previousDirections[last];
+                _previousDirections[last] = float3.zero;
+            }
+            else
+            {
+                _previousDirections[last] = float3.zero;
             }
 
             _activeEnemies.RemoveAt(last);
@@ -189,6 +192,22 @@ public class EnemyManager : MonoBehaviour
             if (col != null) _colliderCache.Remove(col.GetInstanceID());
 
             OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
+        }
+    }
+
+    // --- API & POI ---
+
+    // C'est la méthode qui manquait !
+    public void NotifyEnemyDeath(Vector3 position)
+    {
+        OnEnemyDeathPosition?.Invoke(position);
+    }
+
+    public void DebugKillAllEnemies()
+    {
+        for (int i = _activeEnemies.Count - 1; i >= 0; i--)
+        {
+            if (_activeEnemies[i] != null) _activeEnemies[i].TakeDamage(99999f);
         }
     }
 
@@ -207,7 +226,6 @@ public class EnemyManager : MonoBehaviour
         return results;
     }
 
-    // DÉLÉGATION AU TARGETING SYSTEM
     public Transform GetTarget(Vector3 sourcePos, float range, TargetingMode mode, float areaSize = 2f, bool checkVisibility = true)
     {
         switch (mode)
@@ -229,12 +247,14 @@ public class EnemyManager : MonoBehaviour
         if (_stopDistances.IsCreated) _stopDistances.Dispose();
         if (_fleeDistances.IsCreated) _fleeDistances.Dispose();
         if (_transformAccessArray.isCreated) _transformAccessArray.Dispose();
+
         if (_rayCommands.IsCreated) _rayCommands.Dispose();
         if (_rayResults.IsCreated) _rayResults.Dispose();
         if (_previousDirections.IsCreated) _previousDirections.Dispose();
     }
 }
 
+// Le Job reste identique
 [BurstCompile]
 public struct MoveEnemiesJob : IJobParallelForTransform
 {
@@ -280,6 +300,7 @@ public struct MoveEnemiesJob : IJobParallelForTransform
         if (currentSpeedMultiplier > 0.01f)
         {
             int baseIndex = index * 3;
+
             bool hitCenter = RayResults[baseIndex].colliderInstanceID != 0;
             bool hitLeft = RayResults[baseIndex + 1].colliderInstanceID != 0;
             bool hitRight = RayResults[baseIndex + 2].colliderInstanceID != 0;

@@ -14,6 +14,15 @@ public class ProjectileController : MonoBehaviour
 
     private HashSet<int> _hitTargets = new HashSet<int>();
 
+    private static MaterialPropertyBlock _propBlock;
+    private Renderer _renderer;
+
+    private void Awake()
+    {
+        // On récupère le renderer une seule fois à la création
+        _renderer = GetComponentInChildren<Renderer>();
+    }
+
     public void Initialize(SpellDefinition def, Vector3 direction, int index = 0, int totalCount = 1)
     {
         _def = def;
@@ -41,10 +50,17 @@ public class ProjectileController : MonoBehaviour
 
         // 2. Visuels
         transform.localScale = Vector3.one * def.Size;
-        if (def.Effect.tintColor != Color.white)
+
+        // --- CORRECTION COULEUR (Optimisée) ---
+        // Au lieu de toucher à .material (qui crée une copie et une fuite mémoire),
+        // on utilise SetPropertyBlock.
+        if (_renderer != null && def.Effect.tintColor != Color.white)
         {
-            var renderer = GetComponentInChildren<Renderer>();
-            if (renderer) renderer.material.color = def.Effect.tintColor;
+            if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
+
+            _renderer.GetPropertyBlock(_propBlock);
+            _propBlock.SetColor("_BaseColor", def.Effect.tintColor); // Utilise "_BaseColor" pour URP
+            _renderer.SetPropertyBlock(_propBlock);
         }
     }
 

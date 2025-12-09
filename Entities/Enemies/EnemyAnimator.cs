@@ -11,6 +11,8 @@ public class EnemyAnimator : MonoBehaviour
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int AttackHash = Animator.StringToHash("Attack");
 
+    private float _lastSpeedValue = -1f;
+
     private void Awake()
     {
         _animator = GetComponent<Animator>();
@@ -19,6 +21,8 @@ public class EnemyAnimator : MonoBehaviour
         _controller = GetComponentInParent<EnemyController>();
 
         _lastPosition = transform.position;
+
+        _animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
     }
 
     private void Update()
@@ -27,12 +31,14 @@ public class EnemyAnimator : MonoBehaviour
         // Le Job System déplace le Transform, on mesure juste la distance parcourue
         float distanceMoved = (transform.position - _lastPosition).magnitude;
         float currentSpeed = distanceMoved / Time.deltaTime;
-
-        // 2. Mise à jour de l'Animator
-        // On utilise un petit dampTime (0.1f) pour que l'animation ne saccade pas
-        _animator.SetFloat(SpeedHash, currentSpeed, 0.1f, Time.deltaTime);
-
         _lastPosition = transform.position;
+
+        // OPTIMISATION : On ne met à jour l'Animator que si la vitesse change significativement (> 0.05f)
+        if (Mathf.Abs(currentSpeed - _lastSpeedValue) > 0.05f)
+        {
+            _animator.SetFloat(SpeedHash, currentSpeed);
+            _lastSpeedValue = currentSpeed;
+        }
     }
 
     // Appelé par le Controller pour lancer l'anim
