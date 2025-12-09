@@ -4,14 +4,28 @@ using UnityEngine;
 public static class TargetingUtils
 {
     // Vérifie la ligne de vue (Line of Sight)
-    public static bool IsVisible(Vector3 start, Vector3 end, LayerMask obstacleLayer)
+    private static Dictionary<int, (bool visible, float timestamp)> _visibilityCache = new Dictionary<int, (bool, float)>();
+    private const float CACHE_DURATION = 0.2f; // 200ms de cache
+
+    public static bool IsVisible(Vector3 start, Vector3 end, LayerMask obstacleLayer, int targetID = 0)
     {
-        // On vise le torse (hauteur approximative) pour éviter le sol
+        // Si on a un ID, vérifier le cache
+        if (targetID != 0 && _visibilityCache.TryGetValue(targetID, out var cached))
+        {
+            if (Time.time - cached.timestamp < CACHE_DURATION)
+                return cached.visible;
+        }
+
         Vector3 targetPoint = new Vector3(end.x, start.y, end.z);
         Vector3 dir = targetPoint - start;
         float dist = dir.magnitude;
 
-        return !Physics.Raycast(start, dir.normalized, dist, obstacleLayer);
+        bool visible = !Physics.Raycast(start, dir.normalized, dist, obstacleLayer);
+
+        if (targetID != 0)
+            _visibilityCache[targetID] = (visible, Time.time);
+
+        return visible;
     }
 
     public static Transform GetNearestEnemy(List<EnemyController> enemies, Vector3 sourcePos, float range, bool checkVisibility, LayerMask obstacleLayer)
@@ -38,7 +52,6 @@ public static class TargetingUtils
 
     public static Transform GetDensestCluster(List<EnemyController> enemies, Vector3 sourcePos, float range, float areaSize, bool checkVisibility, LayerMask obstacleLayer)
     {
-        // Réflexe de Survie : Si un ennemi est trop près (< 4m), on l'abat en priorité
         Transform panicTarget = GetNearestEnemy(enemies, sourcePos, 4.0f, checkVisibility, obstacleLayer);
         if (panicTarget != null) return panicTarget;
 
@@ -47,28 +60,67 @@ public static class TargetingUtils
         float rangeSqr = range * range;
         float areaSqr = areaSize * areaSize;
 
+        // OPTIMISATION : Spatial Hashing ou Grid-based approach
+        // Au lieu de O(n²), utiliser une grille spatiale
+        Dictionary<Vector2Int, List<EnemyController>> grid = new Dictionary<Vector2Int, List<EnemyController>>();
+        int cellSize = Mathf.CeilToInt(areaSize);
+
+        // Phase 1 : Remplir la grille (O(n))
         for (int i = 0; i < enemies.Count; i++)
         {
-            EnemyController candidate = enemies[i];
-            if (candidate == null) continue;
-            if ((candidate.transform.position - sourcePos).sqrMagnitude > rangeSqr) continue;
-            if (checkVisibility && !IsVisible(sourcePos, candidate.transform.position, obstacleLayer)) continue;
+            EnemyController enemy = enemies[i];
+            if (enemy == null) continue;
 
-            int neighborCount = 0;
-            for (int j = 0; j < enemies.Count; j++)
-            {
-                if (i == j) continue;
-                if ((enemies[j].transform.position - candidate.transform.position).sqrMagnitude <= areaSqr)
-                    neighborCount++;
-            }
+            Vector3 pos = enemy.transform.position;
+            if ((pos - sourcePos).sqrMagnitude > rangeSqr) continue;
 
-            if (neighborCount > maxNeighbors)
+            Vector2Int cell = new Vector2Int(
+                Mathf.FloorToInt(pos.x / cellSize),
+                Mathf.FloorToInt(pos.z / cellSize)
+            );
+
+            if (!grid.ContainsKey(cell)) grid[cell] = new List<EnemyController>();
+            grid[cell].Add(enemy);
+        }
+
+        // Phase 2 : Compter les voisins uniquement dans les cellules adjacentes (O(n))
+        foreach (var kvp in grid)
+        {
+            Vector2Int cell = kvp.Key;
+
+            foreach (var candidate in kvp.Value)
             {
-                maxNeighbors = neighborCount;
-                bestTarget = candidate.transform;
+                if (checkVisibility && !IsVisible(sourcePos, candidate.transform.position, obstacleLayer))
+                    continue;
+
+                int neighborCount = 0;
+
+                // Vérifier seulement les 9 cellules adjacentes (3x3)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    for (int dz = -1; dz <= 1; dz++)
+                    {
+                        Vector2Int neighborCell = new Vector2Int(cell.x + dx, cell.y + dz);
+                        if (!grid.ContainsKey(neighborCell)) continue;
+
+                        foreach (var neighbor in grid[neighborCell])
+                        {
+                            if (neighbor == candidate) continue;
+                            if ((neighbor.transform.position - candidate.transform.position).sqrMagnitude <= areaSqr)
+                                neighborCount++;
+                        }
+                    }
+                }
+
+                if (neighborCount > maxNeighbors)
+                {
+                    maxNeighbors = neighborCount;
+                    bestTarget = candidate.transform;
+                }
             }
         }
-        return bestTarget != null ? bestTarget : GetNearestEnemy(enemies, sourcePos, range, checkVisibility, obstacleLayer);
+
+        return bestTarget;
     }
 
     public static Transform GetRandomEnemy(List<EnemyController> enemies, Vector3 sourcePos, float range, bool checkVisibility, LayerMask obstacleLayer)

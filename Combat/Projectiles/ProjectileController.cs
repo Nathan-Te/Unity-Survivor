@@ -126,64 +126,59 @@ public class ProjectileController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Smite ignore les triggers physiques (c'est le Timer qui déclenche)
         if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite)) return;
 
-        // GESTION HOSTILE
+        // OPTIMISATION : Utiliser les layers au lieu de GetComponent
+        int layer = other.gameObject.layer;
+
         if (_isHostile)
         {
-            int targetID = other.gameObject.GetInstanceID();
-            if (_hitTargets.Contains(targetID)) return;
-
-            if (other.TryGetComponent<PlayerController>(out var player))
+            if (layer == LayerMask.NameToLayer("Player"))
             {
+                int targetID = other.gameObject.GetInstanceID();
+                if (_hitTargets.Contains(targetID)) return;
                 _hitTargets.Add(targetID);
-                player.SendMessage("TakeDamage", _def.Damage, SendMessageOptions.DontRequireReceiver);
-                Despawn();
+
+                if (other.TryGetComponent<PlayerController>(out var player))
+                {
+                    other.GetComponent<PlayerController>().TakeDamage(_def.Damage);
+                    Despawn();
+                }
+                else
+                {
+                    return;
+                }
+                    
             }
-            else if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle"))
+            else if (layer == LayerMask.NameToLayer("Obstacle"))
             {
                 Despawn();
             }
             return;
         }
 
-        // --- MODIFICATION ICI : GESTION IDAMAGEABLE (POIs) ---
-        // On vérifie d'abord si c'est un objet destructible (Caisse, Cristal...)
-        IDamageable damageable = other.GetComponent<IDamageable>();
-        if (damageable != null && !(damageable is PlayerController)) // On ne se blesse pas soi-même
+        // Pour les projectiles joueur
+        if (layer == LayerMask.NameToLayer("Enemy"))
         {
-            damageable.TakeDamage(_def.Damage);
-            // Hit count et pierce logic pour les objets destructibles
+            if (EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy))
+            {
+                int enemyID = enemy.GetInstanceID();
+                if (_hitTargets.Contains(enemyID)) return;
+                _hitTargets.Add(enemyID);
+                ApplyHit(enemy);
+                _hitCount++;
+
+                if (_def.Effect.aoeRadius > 0 || _hitCount > _def.Pierce)
+                    Despawn();
+            }
+        }
+        else if (layer == LayerMask.NameToLayer("Destructible"))
+        {
+            other.GetComponent<IDamageable>()?.TakeDamage(_def.Damage);
             _hitCount++;
             if (_def.Effect.aoeRadius <= 0 && _hitCount > _def.Pierce) Despawn();
-            return;
         }
-
-        // GESTION JOUEUR
-        bool isEnemy = EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy);
-        bool isObstacle = !isEnemy && other.gameObject.layer == LayerMask.NameToLayer("Obstacle");
-
-        if (isEnemy)
-        {
-            int enemyID = enemy.GetInstanceID();
-            if (_hitTargets.Contains(enemyID)) return;
-            _hitTargets.Add(enemyID);
-
-            ApplyHit(enemy);
-            _hitCount++;
-
-            // Logique Pierce / AOE
-            if (_def.Effect.aoeRadius > 0)
-            {
-                Despawn(); // Les AOE explosent au premier contact
-            }
-            else if (_hitCount > _def.Pierce)
-            {
-                Despawn();
-            }
-        }
-        else if (isObstacle)
+        else if (layer == LayerMask.NameToLayer("Obstacle"))
         {
             if (_def.Effect.aoeRadius > 0) ApplyAreaDamage(transform.position);
             Despawn();
