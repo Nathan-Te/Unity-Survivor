@@ -67,11 +67,22 @@ public class ProjectileController : MonoBehaviour
         _motionStrategy = new LinearMotion(transform.position, 30f, 10f, false, true);
     }
 
-    private void Update()
+    //private void Update()
+    //{
+    //    if (_motionStrategy != null)
+    //    {
+    //        _motionStrategy.Update(this, Time.deltaTime);
+    //    }
+    //}
+
+    public void ManualUpdate(float dt)
     {
+        if (_def == null) return;
+
+        // Note : J'ai remplacé Time.deltaTime par 'dt' partout
         if (_motionStrategy != null)
         {
-            _motionStrategy.Update(this, Time.deltaTime);
+            _motionStrategy.Update(this, dt);
         }
     }
 

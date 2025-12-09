@@ -5,11 +5,13 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Burst;
 using Unity.Mathematics;
+using System;
 
 [DefaultExecutionOrder(-50)]
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; private set; }
+    public event Action<int> OnEnemyCountChanged;
 
     [Header("Réglages")]
     [SerializeField] private Transform playerTransform;
@@ -158,6 +160,8 @@ public class EnemyManager : MonoBehaviour
             _fleeDistances.Add(enemy.Data.fleeDistance);
 
             if (col != null) _colliderCache.TryAdd(col.GetInstanceID(), enemy);
+
+            OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
         }
     }
 
@@ -183,6 +187,8 @@ public class EnemyManager : MonoBehaviour
             _transformAccessArray.RemoveAtSwapBack(index);
 
             if (col != null) _colliderCache.Remove(col.GetInstanceID());
+
+            OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
         }
     }
 

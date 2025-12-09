@@ -8,48 +8,69 @@ public class ProjectilePool : MonoBehaviour
     // Dictionnaire : Prefab ID -> File d'attente d'objets
     private Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
 
+    private List<ProjectileController> _activeProjectiles = new List<ProjectileController>();
+
     private void Awake()
     {
         Instance = this;
     }
 
+    private void Update()
+    {
+        // BOUCLE OPTIMISÉE
+        // On évite le foreach pour ne pas générer de garbage
+        float dt = Time.deltaTime;
+        for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
+        {
+            // Sécurité si un projectile a été détruit brutalement
+            if (_activeProjectiles[i] == null || !_activeProjectiles[i].gameObject.activeSelf)
+            {
+                _activeProjectiles.RemoveAt(i);
+                continue;
+            }
+
+            _activeProjectiles[i].ManualUpdate(dt);
+        }
+    }
+
     public GameObject Get(GameObject prefab, Vector3 position, Quaternion rotation)
     {
         int key = prefab.GetInstanceID();
+        if (!_pools.ContainsKey(key)) _pools.Add(key, new Queue<GameObject>());
 
-        // Si le pool n'existe pas pour ce prefab, on le crée
-        if (!_pools.ContainsKey(key))
-        {
-            _pools.Add(key, new Queue<GameObject>());
-        }
-
-        // Si on a un objet en réserve, on le sort
+        GameObject obj;
         if (_pools[key].Count > 0)
         {
-            GameObject obj = _pools[key].Dequeue();
+            obj = _pools[key].Dequeue();
             obj.transform.position = position;
             obj.transform.rotation = rotation;
             obj.SetActive(true);
-            return obj;
         }
         else
         {
-            // Sinon on instancie (et on l'ajoute au parent pour garder la hiérarchie propre)
-            GameObject newObj = Instantiate(prefab, position, rotation, transform);
-            return newObj;
+            obj = Instantiate(prefab, position, rotation, transform);
         }
+
+        // ENREGISTREMENT POUR UPDATE
+        if (obj.TryGetComponent<ProjectileController>(out var ctrl))
+        {
+            _activeProjectiles.Add(ctrl);
+        }
+
+        return obj;
     }
 
     public void ReturnToPool(GameObject obj, GameObject originalPrefab)
     {
-        obj.SetActive(false);
-        int key = originalPrefab.GetInstanceID();
-
-        if (!_pools.ContainsKey(key))
+        // DÉSINSCRIPTION DE L'UPDATE
+        if (obj.TryGetComponent<ProjectileController>(out var ctrl))
         {
-            _pools.Add(key, new Queue<GameObject>());
+            _activeProjectiles.Remove(ctrl);
         }
 
+        obj.SetActive(false);
+        int key = originalPrefab.GetInstanceID();
+        if (!_pools.ContainsKey(key)) _pools.Add(key, new Queue<GameObject>());
         _pools[key].Enqueue(obj);
     }
 }

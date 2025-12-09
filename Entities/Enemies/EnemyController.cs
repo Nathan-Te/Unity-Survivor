@@ -27,6 +27,9 @@ public class EnemyController : MonoBehaviour
     private float _originalSpeed;
     private bool _isSlowed;
 
+    private int _frameIntervalOffset;
+    private const int LOGIC_FRAME_INTERVAL = 10; // Exécute la logique 1 frame sur 10
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
@@ -37,16 +40,27 @@ public class EnemyController : MonoBehaviour
         if (enemyAnimator == null) enemyAnimator = GetComponentInChildren<EnemyAnimator>();
 
         InitializeStats();
+
+        // On donne un offset aléatoire pour éviter que tous les ennemis calculent
+        // EXACTEMENT à la même frame (lissage du pic CPU)
+        _frameIntervalOffset = Random.Range(0, LOGIC_FRAME_INTERVAL);
     }
 
     private void Update()
     {
-        if (data != null && data.projectilePrefab != null)
+        // 1. Logique lourde (Attaque + Statuts) -> Throttled (Time Sliced)
+        if ((Time.frameCount + _frameIntervalOffset) % LOGIC_FRAME_INTERVAL == 0)
         {
-            HandleRangedAttack();
-        }
+            // On passe le temps écoulé depuis la dernière exécution logique
+            float logicDeltaTime = Time.deltaTime * LOGIC_FRAME_INTERVAL;
 
-        HandleStatusEffects();
+            if (data != null && data.projectilePrefab != null)
+            {
+                HandleRangedAttack(logicDeltaTime);
+            }
+
+            HandleStatusEffects(logicDeltaTime);
+        }
     }
 
     public void InitializeStats()
@@ -95,13 +109,20 @@ public class EnemyController : MonoBehaviour
             Destroy(gameObject);
     }
 
-    private void HandleStatusEffects()
+    private void HandleStatusEffects(float dt)
     {
-        float dt = Time.deltaTime;
+        // On utilise 'dt' (qui vaut ~0.16s) au lieu de Time.deltaTime (~0.016s)
+
         if (_burnTimer > 0)
         {
-            _burnTimer -= dt; _burnTickTimer += dt;
-            if (_burnTickTimer >= 1.0f) { TakeDamage(_burnDamagePerSec); _burnTickTimer = 0f; }
+            _burnTimer -= dt;
+            _burnTickTimer += dt;
+            // Si on a accumulé assez de temps pour un tick (1s)
+            if (_burnTickTimer >= 1.0f)
+            {
+                TakeDamage(_burnDamagePerSec);
+                _burnTickTimer -= 1.0f; // On retire 1s au lieu de reset à 0 pour garder la précision
+            }
         }
         if (_slowTimer > 0)
         {
@@ -126,7 +147,7 @@ public class EnemyController : MonoBehaviour
     // GESTION DE L'ATTAQUE SYNCHRONISÉE
     // -----------------------------------------------------------
 
-    private void HandleRangedAttack()
+    private void HandleRangedAttack(float dt)
     {
         if (PlayerController.Instance == null) return;
 
@@ -135,32 +156,23 @@ public class EnemyController : MonoBehaviour
         float attackRange = data.stopDistance + 2f;
         float attackRangeSqr = attackRange * attackRange;
 
-        // Panique (Fuite) -> Pas d'attaque
         if (data.fleeDistance > 0 && distSqr < fleeDistSqr) return;
 
         if (distSqr <= attackRangeSqr)
         {
-            _attackTimer += Time.deltaTime;
+            _attackTimer += dt; // On ajoute le temps accumulé
             if (_attackTimer >= data.attackCooldown)
             {
-                // CAS A : On a un Animator -> On demande l'animation
-                if (enemyAnimator != null)
-                {
-                    // L'animator déclenchera SpawnProjectile() via l'Event "OnAttackFrame"
-                    enemyAnimator.TriggerAttackAnimation();
-                }
-                // CAS B : Pas d'animator (Prototype) -> On tire direct
-                else
-                {
-                    SpawnProjectile();
-                }
+                if (enemyAnimator != null) enemyAnimator.TriggerAttackAnimation();
+                else SpawnProjectile();
 
                 _attackTimer = 0f;
             }
         }
         else
         {
-            _attackTimer = Mathf.Min(_attackTimer, data.attackCooldown * 0.5f);
+            // Réduction du timer si hors de portée (plus lente)
+            _attackTimer = Mathf.Max(0, _attackTimer - dt);
         }
     }
 

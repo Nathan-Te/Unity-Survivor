@@ -14,24 +14,35 @@ public class ExperienceGem : MonoBehaviour
         _xpValue = value;
         _isAttracted = false;
         _target = null;
-        // Optionnel : Ajouter une petite animation de pop ou une couleur selon la valeur
+
+        // Optimisation : On désactive ce script (Update) tant qu'il n'est pas attiré !
+        // Le mouvement ne sert à rien tant qu'elle est au sol.
+        this.enabled = false;
     }
 
     public void AttractTo(Transform target)
     {
-        if (_isAttracted) return; // Déjà capturée
+        if (_isAttracted) return;
+
         _isAttracted = true;
         _target = target;
+
+        // On réactive le script pour que l'Update tourne enfin
+        this.enabled = true;
     }
 
     private void Update()
     {
-        if (!_isAttracted || _target == null) return;
+        // Plus besoin de vérifier _isAttracted ici, car si le script est enabled, c'est qu'on est attiré
+        if (_target == null)
+        {
+            Collect(); // Sécurité si le joueur meurt ou disparaît
+            return;
+        }
 
-        // Mouvement vers le joueur (Accélération simple)
+        // Mouvement fluide
         transform.position = Vector3.MoveTowards(transform.position, _target.position, flySpeed * Time.deltaTime);
 
-        // Collecte
         if (Vector3.Distance(transform.position, _target.position) < 0.5f)
         {
             Collect();
@@ -45,7 +56,13 @@ public class ExperienceGem : MonoBehaviour
             LevelManager.Instance.AddExperience(_xpValue);
         }
 
-        // Retour au pool
-        GemPool.Instance.ReturnToPool(this.gameObject);
+        if (GemPool.Instance != null)
+        {
+            GemPool.Instance.ReturnToPool(this.gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }
