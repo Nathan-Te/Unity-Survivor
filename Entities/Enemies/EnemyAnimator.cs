@@ -5,55 +5,72 @@ public class EnemyAnimator : MonoBehaviour
 {
     private Animator _animator;
     private EnemyController _controller;
+    private Renderer _renderer; // Pour vérifier la visibilité
     private Vector3 _lastPosition;
 
-    // Optimisation : On cache les Hashes pour ne pas utiliser de strings à chaque frame
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int AttackHash = Animator.StringToHash("Attack");
 
     private float _lastSpeedValue = -1f;
+    private int _frameOffset;
+
+    // Seuils de distance (à ajuster selon ta caméra)
+    private const float DIST_HIGH_QUALITY = 1f;
+    private const float DIST_MED_QUALITY = 2f;
 
     private void Awake()
     {
         _animator = GetComponent<Animator>();
-
-        // On cherche le controller sur le parent (la racine de l'ennemi)
         _controller = GetComponentInParent<EnemyController>();
-
+        _renderer = GetComponentInChildren<Renderer>(); // Trouve le mesh
         _lastPosition = transform.position;
 
+        // Offset aléatoire pour désynchroniser les updates
+        _frameOffset = Random.Range(0, 10);
+
+        // Culling : C'est la base, mais on va aller plus loin
         _animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
     }
 
     private void Update()
     {
-        // 1. Calcul de la vitesse réelle
-        // Le Job System déplace le Transform, on mesure juste la distance parcourue
-        float distanceMoved = (transform.position - _lastPosition).magnitude;
-        float currentSpeed = distanceMoved / Time.deltaTime;
-        _lastPosition = transform.position;
+        // 1. Calcul Distance Joueur
+        float distToPlayer = Vector3.Distance(transform.position, PlayerController.Instance.transform.position);
 
-        // OPTIMISATION : On ne met à jour l'Animator que si la vitesse change significativement (> 0.05f)
-        if (Mathf.Abs(currentSpeed - _lastSpeedValue) > 0.05f)
+        // 2. Logique LOD (Throttling)
+        int updateInterval = 1;
+
+        if (distToPlayer > DIST_MED_QUALITY) updateInterval = 5; // Très loin : 10fps
+        else if (distToPlayer > DIST_HIGH_QUALITY) updateInterval = 3; // Moyen : 20fps
+
+        // Si ce n'est pas le tour de cet ennemi, on sort
+        if ((Time.frameCount + _frameOffset) % updateInterval != 0) return;
+
+        // 3. Mise à jour (Seulement si visible ou proche)
+        if (_renderer.isVisible || distToPlayer < DIST_HIGH_QUALITY)
         {
-            _animator.SetFloat(SpeedHash, currentSpeed);
-            _lastSpeedValue = currentSpeed;
+            float distanceMoved = (transform.position - _lastPosition).magnitude;
+            // On compense le temps écoulé (dt * interval) pour avoir la vitesse réelle
+            float currentSpeed = distanceMoved / (Time.deltaTime * updateInterval);
+
+            _lastPosition = transform.position;
+
+            if (Mathf.Abs(currentSpeed - _lastSpeedValue) > 0.05f)
+            {
+                _animator.SetFloat(SpeedHash, currentSpeed);
+                _lastSpeedValue = currentSpeed;
+            }
         }
     }
 
-    // Appelé par le Controller pour lancer l'anim
     public void TriggerAttackAnimation()
     {
+        // Les attaques sont prioritaires, on les joue toujours
         _animator.SetTrigger(AttackHash);
     }
 
-    // --- ANIMATION EVENT ---
-    // À placer dans l'onglet Animation sur la frame précise du tir
     public void OnAttackFrame()
     {
-        if (_controller != null)
-        {
-            _controller.SpawnProjectile(); // Le tir part maintenant !
-        }
+        if (_controller != null) _controller.SpawnProjectile();
     }
 }

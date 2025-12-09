@@ -62,15 +62,13 @@ public class WaveManager : MonoBehaviour
         else
         {
             Debug.LogWarning("WaveManager: Aucune vague configurée !");
-            enabled = false; // Désactive le script pour éviter les erreurs
+            enabled = false;
         }
     }
 
     private void Update()
     {
         if (_playerTransform == null) return;
-
-        // Sécurité supplémentaire
         if (currentWaveIndex >= waves.Count) return;
 
         WaveDefinition currentWave = waves[currentWaveIndex];
@@ -78,15 +76,24 @@ public class WaveManager : MonoBehaviour
         // 1. Avancée du Temps
         waveTimer += Time.deltaTime;
 
-        // 2. Vérification des Spawns Fixes
+        // 2. Vérification des Spawns Fixes (Boss/Elites)
         CheckTimedSpawns();
 
-        // 3. Vérification des Spawns Aléatoires
+        // 3. Vérification des Spawns Aléatoires (Horde)
         _spawnTimer += Time.deltaTime;
         if (_spawnTimer >= currentWave.spawnInterval)
         {
-            SpawnRandomEnemy(currentWave);
-            _spawnTimer = 0f;
+            // CORRECTION : On vérifie si l'EnemyManager est plein !
+            if (EnemyManager.Instance != null && !EnemyManager.Instance.IsAtCapacity)
+            {
+                SpawnRandomEnemy(currentWave);
+                _spawnTimer = 0f;
+            }
+            else
+            {
+                // Si plein, on ne spawn pas, et on garde le timer prêt pour la prochaine frame dispo
+                // (On ne reset pas _spawnTimer, donc ça réessaiera tout de suite dès qu'une place se libère)
+            }
         }
 
         // 4. Fin de Vague
@@ -98,7 +105,6 @@ public class WaveManager : MonoBehaviour
 
     private void InitializeWave(int index)
     {
-        // Sécurité anti-crash
         if (index >= waves.Count) return;
 
         currentWaveIndex = index;
@@ -108,14 +114,12 @@ public class WaveManager : MonoBehaviour
 
         WaveDefinition wave = waves[currentWaveIndex];
 
-        // Calcul des poids
         wave.totalWeight = 0f;
         foreach (var config in wave.randomSpawns)
         {
             wave.totalWeight += config.weight;
         }
 
-        // Préparation des événements
         if (wave.timedSpawns != null)
         {
             _currentWaveTimedSpawns = wave.timedSpawns.OrderBy(x => x.spawnTime).ToList();
@@ -132,26 +136,21 @@ public class WaveManager : MonoBehaviour
     {
         int nextIndex = currentWaveIndex + 1;
 
-        // CORRECTION : On vérifie si la prochaine vague existe
         if (nextIndex >= waves.Count)
         {
             if (loopLastWave && waves.Count > 0)
             {
-                // On boucle sur la dernière vague
-                // Attention : On reste sur le même index, mais on réinitialise le timer
                 InitializeWave(waves.Count - 1);
                 Debug.Log("WaveManager: Boucle sur la dernière vague");
             }
             else
             {
-                // Fin du jeu (Plus de vagues)
                 Debug.Log("WaveManager: Toutes les vagues sont terminées !");
-                enabled = false; // On arrête le script
+                enabled = false;
             }
         }
         else
         {
-            // On passe à la suivante normalement
             InitializeWave(nextIndex);
         }
     }

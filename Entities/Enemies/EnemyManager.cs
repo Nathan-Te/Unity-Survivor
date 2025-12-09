@@ -13,15 +13,18 @@ public class EnemyManager : MonoBehaviour
     public static EnemyManager Instance { get; private set; }
 
     // --- EVENTS ---
-    public event Action<int> OnEnemyCountChanged; // Pour l'UI (Compteur)
-    public event Action<Vector3> OnEnemyDeathPosition; // Pour les POI (Autels)
+    public event Action<int> OnEnemyCountChanged; // Pour l'UI
+    public event Action<Vector3> OnEnemyDeathPosition; // Pour les Autels
 
     [Header("Réglages")]
     [SerializeField] private Transform playerTransform;
     [SerializeField] private LayerMask obstacleLayer;
 
     [Header("Performance")]
-    [SerializeField] private int maxEnemiesCapacity = 2000; // Capacité Max (Buffer fixe)
+    [SerializeField] private int maxEnemiesCapacity = 2000;
+
+    // --- C'est cette ligne qui manquait ! ---
+    public bool IsAtCapacity => _activeEnemies.Count >= maxEnemiesCapacity;
 
     [Header("Steering Settings")]
     [SerializeField] private float separationWeight = 1.5f;
@@ -30,16 +33,16 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private float rotationSpeed = 8f;
     [SerializeField] private float avoidanceBlendSpeed = 3f;
 
-    // Listes C# (Gestion logique)
+    // Listes C#
     private List<EnemyController> _activeEnemies = new List<EnemyController>();
     private TransformAccessArray _transformAccessArray;
 
-    // Données Job (NativeLists redimensionnables pour les données simples)
+    // Données Job
     private NativeList<float> _moveSpeeds;
     private NativeList<float> _stopDistances;
     private NativeList<float> _fleeDistances;
 
-    // Buffers Fixes (Pour éviter les réallocations constantes des Raycasts)
+    // Buffers Fixes
     private NativeArray<RaycastCommand> _rayCommands;
     private NativeArray<RaycastHit> _rayResults;
     private NativeArray<float3> _previousDirections;
@@ -50,14 +53,12 @@ public class EnemyManager : MonoBehaviour
     {
         Instance = this;
 
-        // Allocation des listes dynamiques
         _moveSpeeds = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
         _stopDistances = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
         _fleeDistances = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
 
         _transformAccessArray = new TransformAccessArray(maxEnemiesCapacity);
 
-        // ALLOCATION FIXE (BUFFER)
         int rayCapacity = maxEnemiesCapacity * 3;
         _rayCommands = new NativeArray<RaycastCommand>(rayCapacity, Allocator.Persistent);
         _rayResults = new NativeArray<RaycastHit>(rayCapacity, Allocator.Persistent);
@@ -71,10 +72,10 @@ public class EnemyManager : MonoBehaviour
 
         SyncDataForJob();
 
-        // 1. Préparation des Raycasts
+        // 1. Raycasts
         PrepareRaycasts();
 
-        // 2. Exécution des Raycasts (Optimisation Slicing)
+        // 2. Exécution des Raycasts
         int activeRayCount = _activeEnemies.Count * 3;
         if (activeRayCount > _rayCommands.Length) activeRayCount = _rayCommands.Length;
 
@@ -140,9 +141,9 @@ public class EnemyManager : MonoBehaviour
 
     public void RegisterEnemy(EnemyController enemy, Collider col)
     {
+        // Sécurité Ultime : Si on est plein, on refuse l'enregistrement
         if (_activeEnemies.Count >= maxEnemiesCapacity)
         {
-            Debug.LogWarning("EnemyManager: Capacité Max atteinte !");
             return;
         }
 
@@ -195,9 +196,6 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    // --- API & POI ---
-
-    // C'est la méthode qui manquait !
     public void NotifyEnemyDeath(Vector3 position)
     {
         OnEnemyDeathPosition?.Invoke(position);
@@ -254,7 +252,6 @@ public class EnemyManager : MonoBehaviour
     }
 }
 
-// Le Job reste identique
 [BurstCompile]
 public struct MoveEnemiesJob : IJobParallelForTransform
 {
