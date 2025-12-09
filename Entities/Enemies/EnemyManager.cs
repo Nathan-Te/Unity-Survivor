@@ -139,12 +139,12 @@ public class EnemyManager : MonoBehaviour
 
     // --- GESTION LISTES ---
 
-    public void RegisterEnemy(EnemyController enemy, Collider col)
+    public bool RegisterEnemy(EnemyController enemy, Collider col)
     {
-        // Sécurité Ultime : Si on est plein, on refuse l'enregistrement
+        // Si plein, on renvoie FAUX (Échec)
         if (_activeEnemies.Count >= maxEnemiesCapacity)
         {
-            return;
+            return false;
         }
 
         if (!_activeEnemies.Contains(enemy))
@@ -160,6 +160,8 @@ public class EnemyManager : MonoBehaviour
 
             OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
         }
+
+        return true; // SUCCÈS
     }
 
     public void UnregisterEnemy(EnemyController enemy, Collider col)

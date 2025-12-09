@@ -200,8 +200,29 @@ public class EnemyController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (EnemyManager.Instance != null) EnemyManager.Instance.RegisterEnemy(this, _myCollider);
-        if (data != null && data.isBoss && BossHealthBarUI.Instance != null) BossHealthBarUI.Instance.Show(this);
+        if (EnemyManager.Instance != null)
+        {
+            // TENTATIVE D'ENREGISTREMENT
+            bool isRegistered = EnemyManager.Instance.RegisterEnemy(this, _myCollider);
+
+            // SÉCURITÉ ANTI-CRASH : Si le manager est plein, on se détruit tout de suite !
+            if (!isRegistered)
+            {
+                // Retour au pool si possible, sinon Destroy
+                if (EnemyPool.Instance != null && data != null)
+                {
+                    EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
+                return; // On arrête tout ici
+            }
+        }
+
+        if (data != null && data.isBoss && BossHealthBarUI.Instance != null)
+            BossHealthBarUI.Instance.Show(this);
     }
 
     private void OnDisable()
