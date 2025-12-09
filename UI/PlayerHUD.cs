@@ -16,6 +16,9 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private Slider xpSlider;
     [SerializeField] private TextMeshProUGUI levelText;
 
+    [Header("Infos Combat")]
+    [SerializeField] private TextMeshProUGUI enemyCountText;
+
     private void Start()
     {
         // Setup Spells
@@ -45,6 +48,12 @@ public class PlayerHUD : MonoBehaviour
             UpdateXPBar(0);
             UpdateLevelText();
         }
+
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.OnEnemyCountChanged += UpdateEnemyCount;
+            UpdateEnemyCount(0); // Init à 0
+        }
     }
 
     private void RefreshUI()
@@ -64,6 +73,18 @@ public class PlayerHUD : MonoBehaviour
                 // Pas de manager passé ici, donc non-cliquable (juste affichage)
                 ui.Initialize(slots[i], i, null);
             }
+        }
+    }
+
+    private void UpdateEnemyCount(int count)
+    {
+        if (enemyCountText != null)
+        {
+            enemyCountText.text = $"Ennemis : {count}";
+
+            // Optionnel : Changer la couleur si ça devient critique (+ de 300)
+            if (count > 300) enemyCountText.color = Color.red;
+            else enemyCountText.color = Color.white;
         }
     }
 

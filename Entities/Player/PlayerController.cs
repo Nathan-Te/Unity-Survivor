@@ -30,6 +30,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     public bool IsManualAiming { get; private set; }
     public Vector3 MouseWorldPosition { get; private set; }
 
+    public Vector2 MoveInput => _moveInput;
+
     private CharacterController _controller;
     private Camera _mainCamera;
     private Vector2 _moveInput;
