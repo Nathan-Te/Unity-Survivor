@@ -39,6 +39,8 @@ public class GameDirector : MonoBehaviour
             _isVisible = !_isVisible;
         }
 
+        if (Time.timeScale == 0f) return;
+
         // 2. Collecte des données (Même si fenêtre fermée, pour avoir des stats prêtes)
         // On utilise unscaledDeltaTime pour avoir les vrais FPS même si le jeu est ralenti/accéléré
         float dt = Time.unscaledDeltaTime;
