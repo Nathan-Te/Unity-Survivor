@@ -1,7 +1,10 @@
 using UnityEngine;
+using System;
 
 public abstract class ZonePOI : PointOfInterest
 {
+    public event Action<float> OnProgressChanged;
+
     [Header("Zone Settings")]
     [SerializeField] private float radius = 5f;
     [SerializeField] private float requiredCharge = 100f;
@@ -23,6 +26,8 @@ public abstract class ZonePOI : PointOfInterest
         {
             EnemyManager.Instance.OnEnemyDeathPosition += OnEnemyDeath;
         }
+
+        OnProgressChanged?.Invoke(0f);
     }
 
     private void OnDestroy()
@@ -66,8 +71,9 @@ public abstract class ZonePOI : PointOfInterest
     private void AddCharge(float amount)
     {
         _currentCharge += amount;
-        // Debug.Log($"Charge: {_currentCharge}/{requiredCharge}");
-        // TODO: Mettre à jour une barre de progression UI (World Space Canvas)
+
+        float ratio = Mathf.Clamp01(_currentCharge / requiredCharge);
+        OnProgressChanged?.Invoke(ratio);
 
         if (_currentCharge >= requiredCharge)
         {

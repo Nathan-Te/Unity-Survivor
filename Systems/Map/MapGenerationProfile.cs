@@ -17,6 +17,11 @@ public class MapGenerationProfile : ScriptableObject
     public int minObstaclesPerChunk = 5;
     public int maxObstaclesPerChunk = 15;
 
+    [Header("Décors (Visuels / Pass-Through)")]
+    public List<SpawnEntry> decorationTable;
+    public int minDecorationsPerChunk = 20;
+    public int maxDecorationsPerChunk = 40;
+
     [Header("Points d'Intérêt (POI)")]
     public List<SpawnEntry> poiTable;
 
@@ -28,15 +33,9 @@ public class MapGenerationProfile : ScriptableObject
 
     // --- LOGIQUE DE TIRAGE PONDÉRÉ ---
 
-    public GameObject PickRandomObstacle(System.Random rng)
-    {
-        return PickWeighted(obstacleTable, rng);
-    }
-
-    public GameObject PickRandomPOI(System.Random rng)
-    {
-        return PickWeighted(poiTable, rng);
-    }
+    public GameObject PickRandomObstacle(System.Random rng) => PickWeighted(obstacleTable, rng);
+    public GameObject PickRandomDecoration(System.Random rng) => PickWeighted(decorationTable, rng);
+    public GameObject PickRandomPOI(System.Random rng) => PickWeighted(poiTable, rng);
 
     private GameObject PickWeighted(List<SpawnEntry> table, System.Random rng)
     {

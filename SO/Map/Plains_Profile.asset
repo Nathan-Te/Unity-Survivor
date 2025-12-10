@@ -17,6 +17,25 @@ MonoBehaviour:
     weight: 100
   minObstaclesPerChunk: 5
   maxObstaclesPerChunk: 15
+  decorationTable:
+  - prefab: {fileID: 7658452977839805270, guid: 7bfc69592d8bf2a4e9e5fa6842e93043, type: 3}
+    weight: 80
+  - prefab: {fileID: 4443322738932377894, guid: bc5b42b028de0d147b9ff044c717abab, type: 3}
+    weight: 80
+  - prefab: {fileID: 7803077713549878110, guid: 9b72d40f06150c446b5fa1ab56177a13, type: 3}
+    weight: 5
+  - prefab: {fileID: 1296085670021301474, guid: f386126a8005fa348bccd7bac0cb0d48, type: 3}
+    weight: 5
+  - prefab: {fileID: 6014058737199555822, guid: 029a438a1c9fa9f42aca194d882c553d, type: 3}
+    weight: 5
+  - prefab: {fileID: 7886865815107961650, guid: a1c6857e5400cff40a9b90d8c54a2544, type: 3}
+    weight: 5
+  - prefab: {fileID: 8296128869887216991, guid: 4da8664a45f76584fb3a20f25c744872, type: 3}
+    weight: 5
+  - prefab: {fileID: 9017279377667439527, guid: 18d14ec2115db6a4083825dbdcd9d7ff, type: 3}
+    weight: 5
+  minDecorationsPerChunk: 50
+  maxDecorationsPerChunk: 100
   poiTable:
   - prefab: {fileID: 882935590952897620, guid: 5aa3f25e3c5684645b7a2afa660eb23d, type: 3}
     weight: 100

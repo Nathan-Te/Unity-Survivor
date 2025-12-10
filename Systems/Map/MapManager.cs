@@ -22,10 +22,26 @@ public class MapManager : MonoBehaviour
     // Getter pour le chunk
     public MapGenerationProfile CurrentProfile => currentProfile;
 
+    [Header("Rendu")]
+    [SerializeField] private Material groundMaterial;
+
     private void Awake()
     {
         Instance = this;
         if (randomizeSeed) worldSeed = Random.Range(-1000000, 1000000);
+
+        if (groundMaterial != null)
+        {
+            // On génère un décalage énorme basé sur la seed
+            // (Les shaders aiment les Vector2 pour les offsets)
+            float offsetX = Random.Range(-10000f, 10000f);
+            float offsetY = Random.Range(-10000f, 10000f);
+
+            // On envoie ça au Shader
+            // Assurez-vous que le nom "Noise_Offset" correspond exactement à celui du Shader Graph
+            groundMaterial.SetVector("_Noise_Offset", new Vector2(offsetX, offsetY));
+            Debug.Log("Vector : " + groundMaterial.GetVector("_Noise_Offset"));
+        }
 
         // Sécurité
         if (currentProfile == null) Debug.LogError("MapManager : Aucun Profil de génération assigné !");
