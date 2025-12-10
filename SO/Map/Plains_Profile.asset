@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef244e24afe03c0428b1eafa58df5cf7, type: 3}
+  m_Name: Plains_Profile
+  m_EditorClassIdentifier: Assembly-CSharp::MapGenerationProfile
+  obstacleTable:
+  - prefab: {fileID: 2120279258324292772, guid: f5b4b0f722cd34f43a6e550a8412a7f4, type: 3}
+    weight: 100
+  minObstaclesPerChunk: 5
+  maxObstaclesPerChunk: 15
+  poiTable:
+  - prefab: {fileID: 882935590952897620, guid: 5aa3f25e3c5684645b7a2afa660eb23d, type: 3}
+    weight: 100
+  - prefab: {fileID: 3184319293414171542, guid: 91eb19e43b792c94186a4bbebfc142a5, type: 3}
+    weight: 100
+  - prefab: {fileID: 1483557002948839081, guid: b67e93d5c9d87fb4b9b85f7f937441df, type: 3}
+    weight: 100
+  basePoiChance: 0.2
+  guaranteedPoiGridSize: 3

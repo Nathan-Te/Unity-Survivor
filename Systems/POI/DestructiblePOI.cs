@@ -20,5 +20,5 @@ public abstract class DestructiblePOI : PointOfInterest, IDamageable
             DamageTextPool.Instance.Spawn(amount, transform.position);
 
         if (_currentHp <= 0) CompletePOI();
-    }
+    } 
 }
