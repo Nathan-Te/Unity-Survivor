@@ -53,6 +53,10 @@ Gestion du rythme et de l'environnement.
     * `DestructiblePOI` : Cristaux de soin, Coffres à butin.
     * `ZonePOI` : Autels (chargement par présence ou kills).
     * **Rune Altar :** Permet de déclencher un draft de récompense filtré (ex: "Uniquement des Runes Épiques").
+* **La Carte Infinie :** Chunking
+   * Le joueur se déplace actuellement sur un plan infini
+   * Implémenter le repositionnement dynamique (Tapis roulant) pour donner l'illusion de l'infini.
+   * Génératon des obstacles procéduraux (Arbres, Ruines) dans les chunks pour valider le Steering des ennemis ainsi que de Decals et éléments de décors.
 
 ## 5. Interface Utilisateur (UI/UX)
 * **HUD Joueur :**
