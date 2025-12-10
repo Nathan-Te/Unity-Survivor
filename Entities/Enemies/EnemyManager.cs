@@ -101,6 +101,47 @@ public class EnemyManager : MonoBehaviour
         Debug.Log("[EnemyManager] Native Collections libérées");
     }
 
+    /// <summary>
+    /// Tente de libérer une place en supprimant l'ennemi le plus éloigné
+    /// </summary>
+    /// <param name="minDistanceRecycle">Distance minimum pour accepter le recyclage (ex: 40m)</param>
+    /// <returns>True si une place a été libérée</returns>
+    public bool TryFreeSpaceByRecycling(float minDistanceRecycle)
+    {
+        if (_activeEnemies.Count == 0) return false;
+
+        float maxDistSq = -1f;
+        int bestIndex = -1;
+        float minDistSq = minDistanceRecycle * minDistanceRecycle;
+        Vector3 playerPos = playerTransform.position;
+
+        // On parcourt la liste pour trouver le plus loin
+        // C'est rapide (O(N)) et on ne le fait que si le spawn est bloqué
+        for (int i = 0; i < _activeEnemies.Count; i++)
+        {
+            if (_activeEnemies[i] == null) continue;
+
+            // On utilise le Transform directement (plus fiable que le buffer qui a 1 frame de retard)
+            float dSq = (_activeEnemies[i].transform.position - playerPos).sqrMagnitude;
+
+            if (dSq > maxDistSq)
+            {
+                maxDistSq = dSq;
+                bestIndex = i;
+            }
+        }
+
+        // Si on a trouvé un candidat assez loin
+        if (bestIndex != -1 && maxDistSq > minDistSq)
+        {
+            // On le supprime silencieusement
+            _activeEnemies[bestIndex].SilentDespawn();
+            return true; // Une place est libre !
+        }
+
+        return false; // Tous les ennemis sont trop proches, on ne peut rien faire
+    }
+
     private void Update()
     {
         if (playerTransform == null || _activeEnemies.Count == 0) return;

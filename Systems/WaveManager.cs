@@ -45,6 +45,11 @@ public class WaveManager : MonoBehaviour
     public int currentWaveIndex = 0;
     public float waveTimer = 0f;
 
+    [Header("Sécurité Spawn")] // --- NOUVEAU ---
+    [SerializeField] private LayerMask invalidSpawnLayers; // Mettre Obstacle + Destructible (POI)
+    [SerializeField] private float checkRadius = 0.5f;     // Taille de la zone à vérifier
+    [SerializeField] private float recycleDistance = 45f;
+
     private float _spawnTimer;
     private int _nextTimedSpawnIndex;
     private Transform _playerTransform;
@@ -55,15 +60,8 @@ public class WaveManager : MonoBehaviour
         if (PlayerController.Instance != null)
             _playerTransform = PlayerController.Instance.transform;
 
-        if (waves.Count > 0)
-        {
-            InitializeWave(0);
-        }
-        else
-        {
-            Debug.LogWarning("WaveManager: Aucune vague configurée !");
-            enabled = false;
-        }
+        if (waves.Count > 0) InitializeWave(0);
+        else enabled = false;
     }
 
     private void Update()
@@ -83,16 +81,27 @@ public class WaveManager : MonoBehaviour
         _spawnTimer += Time.deltaTime;
         if (_spawnTimer >= currentWave.spawnInterval)
         {
-            // CORRECTION : On vérifie si l'EnemyManager est plein !
+            bool canSpawn = false;
+
+            // CAS A : Il y a de la place
             if (EnemyManager.Instance != null && !EnemyManager.Instance.IsAtCapacity)
+            {
+                canSpawn = true;
+            }
+            // CAS B : C'est plein -> On essaie de RECYCLER
+            else if (EnemyManager.Instance != null)
+            {
+                // On demande au Manager : "T'as pas un truc inutile au fond de la classe ?"
+                if (EnemyManager.Instance.TryFreeSpaceByRecycling(recycleDistance))
+                {
+                    canSpawn = true; // Une place s'est libérée !
+                }
+            }
+
+            if (canSpawn)
             {
                 SpawnRandomEnemy(currentWave);
                 _spawnTimer = 0f;
-            }
-            else
-            {
-                // Si plein, on ne spawn pas, et on garde le timer prêt pour la prochaine frame dispo
-                // (On ne reset pas _spawnTimer, donc ça réessaiera tout de suite dès qu'une place se libère)
             }
         }
 
@@ -159,17 +168,20 @@ public class WaveManager : MonoBehaviour
     {
         if (_currentWaveTimedSpawns == null) return;
 
+        // Pour les events, on force un peu plus, mais on respecte le cap si on ne peut pas recycler
+        if (EnemyManager.Instance != null && EnemyManager.Instance.IsAtCapacity)
+        {
+            // On tente un recyclage agressif pour faire place au Boss/Elite
+            if (!EnemyManager.Instance.TryFreeSpaceByRecycling(spawnRadius + 5f))
+                return; // Vraiment pas de place, on attend
+        }
+
         while (_nextTimedSpawnIndex < _currentWaveTimedSpawns.Count &&
                waveTimer >= _currentWaveTimedSpawns[_nextTimedSpawnIndex].spawnTime)
         {
             TimedSpawn spawnInfo = _currentWaveTimedSpawns[_nextTimedSpawnIndex];
-
-            for (int i = 0; i < spawnInfo.count; i++)
-            {
-                SpawnEntity(spawnInfo.enemy);
-            }
-
-            Debug.Log($"WaveManager: Event '{spawnInfo.name}' déclenché à {waveTimer:F1}s");
+            for (int i = 0; i < spawnInfo.count; i++) SpawnEntity(spawnInfo.enemy);
+            Debug.Log($"WaveManager: Event '{spawnInfo.name}'");
             _nextTimedSpawnIndex++;
         }
     }
@@ -192,26 +204,47 @@ public class WaveManager : MonoBehaviour
             }
         }
 
-        if (selectedEnemy != null)
-        {
-            SpawnEntity(selectedEnemy);
-        }
+        if (selectedEnemy != null) SpawnEntity(selectedEnemy);
     }
 
     private void SpawnEntity(EnemyData data)
     {
         if (data == null || data.prefab == null) return;
 
-        Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRadius;
-        Vector3 spawnPos = _playerTransform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
-
-        if (EnemyPool.Instance != null)
+        // --- NOUVEAU : Recherche de position valide ---
+        Vector3 spawnPos;
+        if (TryGetValidSpawnPosition(out spawnPos))
         {
-            GameObject enemyObj = EnemyPool.Instance.GetEnemy(data.prefab, spawnPos, Quaternion.identity);
-            if (enemyObj.TryGetComponent<EnemyController>(out var controller))
+            if (EnemyPool.Instance != null)
             {
-                controller.ResetEnemy();
+                GameObject enemyObj = EnemyPool.Instance.GetEnemy(data.prefab, spawnPos, Quaternion.identity);
+                if (enemyObj.TryGetComponent<EnemyController>(out var controller))
+                {
+                    controller.ResetEnemy();
+                }
             }
         }
+    }
+
+    private bool TryGetValidSpawnPosition(out Vector3 position)
+    {
+        position = Vector3.zero;
+        int maxAttempts = 10; // On essaie 10 fois max pour pas freezer le jeu
+
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRadius;
+            Vector3 candidatePos = _playerTransform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
+
+            // Vérification Physics.CheckSphere
+            // On vérifie si ça touche le Layer "Obstacle" ou "Destructible" (POI)
+            if (!Physics.CheckSphere(candidatePos, checkRadius, invalidSpawnLayers))
+            {
+                position = candidatePos;
+                return true; // C'est libre !
+            }
+        }
+
+        return false; // Pas trouvé de place (trop dense)
     }
 }

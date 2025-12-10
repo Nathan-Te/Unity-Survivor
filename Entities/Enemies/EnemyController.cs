@@ -77,6 +77,23 @@ public class EnemyController : MonoBehaviour
         _originalSpeed = currentSpeed;
     }
 
+    public void SilentDespawn()
+    {
+        // On désinscrit l'ennemi du Manager proprement
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.UnregisterEnemy(this, _myCollider);
+
+        // On le renvoie au pool sans lâcher d'XP ni d'event
+        if (EnemyPool.Instance != null && data != null && data.prefab != null)
+        {
+            EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     public void ResetEnemy()
     {
         InitializeStats();

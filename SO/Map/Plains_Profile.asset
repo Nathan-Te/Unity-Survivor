@@ -14,7 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerationProfile
   obstacleTable:
   - prefab: {fileID: 2120279258324292772, guid: f5b4b0f722cd34f43a6e550a8412a7f4, type: 3}
-    weight: 100
+    weight: 0
+  - prefab: {fileID: 8593737713899134787, guid: 4b19d86f3e0e9f344b600ca085cb5f75, type: 3}
+    weight: 50
+  - prefab: {fileID: 735954322486971095, guid: d6275b3fcc6646e4f9939febe7e672a6, type: 3}
+    weight: 50
+  - prefab: {fileID: 1121042136063138626, guid: 3d219df17f76a2c4dbb83e412a1daef9, type: 3}
+    weight: 50
+  - prefab: {fileID: 280050219226227683, guid: 0690f32c926b83b4dbc9e51bef8ac978, type: 3}
+    weight: 50
+  - prefab: {fileID: 4897498599330501561, guid: 35eeaa12b44b511428f3ab81043a1b92, type: 3}
+    weight: 50
+  - prefab: {fileID: 1871128528075666237, guid: eac652f44811d1b46b811d983099ee31, type: 3}
+    weight: 50
+  - prefab: {fileID: 7514323389622038029, guid: 89664d2e1552089479a3e61205f19c13, type: 3}
+    weight: 50
+  - prefab: {fileID: 5422831372402764909, guid: 6ec48fcecdab6aa43a1d05b8c3ab480b, type: 3}
+    weight: 50
+  - prefab: {fileID: 4537843221184939248, guid: 3670d4666796ffd4ebd3ad7ea6d5d145, type: 3}
+    weight: 50
+  - prefab: {fileID: 337114707701426718, guid: f031cc70f856b09489a7b1e9877db8c6, type: 3}
+    weight: 50
+  - prefab: {fileID: 2590482203587296674, guid: c2ee4cecb7ad921409a71f6b767731f8, type: 3}
+    weight: 50
   minObstaclesPerChunk: 5
   maxObstaclesPerChunk: 15
   decorationTable:

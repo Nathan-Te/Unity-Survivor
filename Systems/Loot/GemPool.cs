@@ -31,27 +31,30 @@ public class GemPool : MonoBehaviour
     {
         ExperienceGem gemScript;
 
-        // CAS 1 : On a atteint la limite max de gemmes en jeu
+        // CAS 1 : Limite atteinte -> On recycle la plus vieille (FIFO)
         if (_activeGems.Count >= maxActiveGems)
         {
             gemScript = _activeGems[0];
             _activeGems.RemoveAt(0);
-            gemScript.transform.position = position;
         }
-        // CAS 2 : On pioche dans le pool inactif
+        // CAS 2 : Récupération du pool inactif
         else if (_inactivePool.Count > 0)
         {
             GameObject obj = _inactivePool.Dequeue();
             obj.SetActive(true);
             gemScript = obj.GetComponent<ExperienceGem>();
-            gemScript.transform.position = position;
         }
-        // CAS 3 : On crée du neuf
+        // CAS 3 : Création d'une nouvelle
         else
         {
+            // On instancie sous le Manager pour garder la hiérarchie propre
             GameObject newObj = Instantiate(gemPrefab, transform);
             gemScript = newObj.GetComponent<ExperienceGem>();
         }
+
+        // --- CORRECTION : On applique la position ICI pour tous les cas ---
+        gemScript.transform.position = position;
+        // ----------------------------------------------------------------
 
         // Initialisation et Ajout à la liste active
         gemScript.Initialize(xpValue);
