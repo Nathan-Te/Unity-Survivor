@@ -13,8 +13,11 @@ MonoBehaviour:
   m_Name: Bolt
   m_EditorClassIdentifier: Assembly-CSharp::SpellForm
   runeName: Bolt
-  description: Simple bolt
   icon: {fileID: 21300000, guid: 6920950608c19ca4386243bc1566889a, type: 3}
+  CommonUpgrades: []
+  RareUpgrades: []
+  EpicUpgrades: []
+  LegendaryUpgrades: []
   prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
   targetingMode: 0
   requiresLineOfSight: 1
@@ -23,9 +26,8 @@ MonoBehaviour:
   baseCount: 1
   basePierce: 0
   baseSpread: 0
-  cooldownReductionPerLevel: 0.05
-  countIncreaseEveryXLevels: 5
-  baseSpeed: 20
-  impactDelay: 0
+  baseSpeed: 5
   baseDuration: 5
+  baseRange: 20
   procCoefficient: 1
+  impactDelay: 0
