@@ -72,4 +72,22 @@ public class GemPool : MonoBehaviour
         gemObj.SetActive(false);
         _inactivePool.Enqueue(gemObj);
     }
+
+    public void ClearAll()
+    {
+        foreach (var gem in _activeGems)
+        {
+            if (gem != null && gem.gameObject != null)
+                Destroy(gem.gameObject);
+        }
+        _activeGems.Clear();
+
+        while (_inactivePool.Count > 0)
+        {
+            GameObject obj = _inactivePool.Dequeue();
+            if (obj != null) Destroy(obj);
+        }
+
+        Debug.Log("[GemPool] Pool vidé");
+    }
 }

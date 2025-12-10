@@ -77,4 +77,20 @@ public class ProjectilePool : MonoBehaviour
         if (!_pools.ContainsKey(key)) _pools.Add(key, new Queue<GameObject>());
         _pools[key].Enqueue(obj);
     }
+
+    public void ClearAll()
+    {
+        foreach (var kvp in _pools)
+        {
+            while (kvp.Value.Count > 0)
+            {
+                GameObject obj = kvp.Value.Dequeue();
+                if (obj != null) Destroy(obj);
+            }
+        }
+        _pools.Clear();
+        _activeProjectiles.Clear();
+
+        Debug.Log("[ProjectilePool] Pool vidé");
+    }
 }

@@ -1,15 +1,25 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public static class TargetingUtils
 {
-    // V�rifie la ligne de vue (Line of Sight)
+    // Vérifie la ligne de vue (Line of Sight)
     private static Dictionary<int, (bool visible, float timestamp)> _visibilityCache = new Dictionary<int, (bool, float)>();
     private const float CACHE_DURATION = 0.2f; // 200ms de cache
 
+    private static float _lastCleanupTime;
+    private const float CLEANUP_INTERVAL = 5.0f;
+
     public static bool IsVisible(Vector3 start, Vector3 end, LayerMask obstacleLayer, int targetID = 0)
     {
-        // Si on a un ID, v�rifier le cache
+        // ⭐ Nettoyage périodique
+        if (Time.time - _lastCleanupTime > CLEANUP_INTERVAL)
+        {
+            CleanupCache();
+            _lastCleanupTime = Time.time;
+        }
+
+        // Si on a un ID, vérifier le cache
         if (targetID != 0 && _visibilityCache.TryGetValue(targetID, out var cached))
         {
             if (Time.time - cached.timestamp < CACHE_DURATION)
@@ -26,6 +36,28 @@ public static class TargetingUtils
             _visibilityCache[targetID] = (visible, Time.time);
 
         return visible;
+    }
+
+    // ⭐ NOUVEAU : Nettoyage des entrées expirées
+    private static void CleanupCache()
+    {
+        var keysToRemove = new List<int>();
+        float currentTime = Time.time;
+
+        foreach (var kvp in _visibilityCache)
+        {
+            if (currentTime - kvp.Value.timestamp > CACHE_DURATION * 10) // 10x la durée
+                keysToRemove.Add(kvp.Key);
+        }
+
+        foreach (var key in keysToRemove)
+            _visibilityCache.Remove(key);
+    }
+
+    // ⭐ NOUVEAU : Clear complet (appelé au changement de scène)
+    public static void ClearCache()
+    {
+        _visibilityCache.Clear();
     }
 
     public static Transform GetNearestEnemy(List<EnemyController> enemies, Vector3 sourcePos, float range, bool checkVisibility, LayerMask obstacleLayer)
@@ -61,7 +93,7 @@ public static class TargetingUtils
         float areaSqr = areaSize * areaSize;
 
         // OPTIMISATION : Spatial Hashing ou Grid-based approach
-        // Au lieu de O(n�), utiliser une grille spatiale
+        // Au lieu de O(n²), utiliser une grille spatiale
         Dictionary<Vector2Int, List<EnemyController>> grid = new Dictionary<Vector2Int, List<EnemyController>>();
         int cellSize = Mathf.CeilToInt(areaSize);
 
@@ -95,7 +127,7 @@ public static class TargetingUtils
 
                 int neighborCount = 0;
 
-                // V�rifier seulement les 9 cellules adjacentes (3x3)
+                // Vérifier seulement les 9 cellules adjacentes (3x3)
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     for (int dz = -1; dz <= 1; dz++)

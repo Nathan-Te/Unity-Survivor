@@ -49,6 +49,8 @@ public class EnemyManager : MonoBehaviour
 
     private Dictionary<int, EnemyController> _colliderCache = new Dictionary<int, EnemyController>();
 
+    private bool _isDisposed = false;
+
     private void Awake()
     {
         Instance = this;
@@ -64,6 +66,39 @@ public class EnemyManager : MonoBehaviour
         _rayResults = new NativeArray<RaycastHit>(rayCapacity, Allocator.Persistent);
 
         _previousDirections = new NativeArray<float3>(maxEnemiesCapacity, Allocator.Persistent);
+    }
+
+    private void OnApplicationQuit()
+    {
+        CleanupNativeCollections();
+    }
+
+    private void OnDestroy()
+    {
+        CleanupNativeCollections();
+    }
+
+    private void CleanupNativeCollections()
+    {
+        if (_isDisposed) return; // Évite double Dispose
+        _isDisposed = true;
+
+        _activeEnemies.Clear();
+        _colliderCache.Clear();
+
+        // Complete any pending jobs first
+        JobHandle.ScheduleBatchedJobs();
+
+        if (_moveSpeeds.IsCreated) _moveSpeeds.Dispose();
+        if (_stopDistances.IsCreated) _stopDistances.Dispose();
+        if (_fleeDistances.IsCreated) _fleeDistances.Dispose();
+        if (_transformAccessArray.isCreated) _transformAccessArray.Dispose();
+
+        if (_rayCommands.IsCreated) _rayCommands.Dispose();
+        if (_rayResults.IsCreated) _rayResults.Dispose();
+        if (_previousDirections.IsCreated) _previousDirections.Dispose();
+
+        Debug.Log("[EnemyManager] Native Collections libérées");
     }
 
     private void Update()
@@ -241,18 +276,6 @@ public class EnemyManager : MonoBehaviour
             default:
                 return null;
         }
-    }
-
-    private void OnDestroy()
-    {
-        if (_moveSpeeds.IsCreated) _moveSpeeds.Dispose();
-        if (_stopDistances.IsCreated) _stopDistances.Dispose();
-        if (_fleeDistances.IsCreated) _fleeDistances.Dispose();
-        if (_transformAccessArray.isCreated) _transformAccessArray.Dispose();
-
-        if (_rayCommands.IsCreated) _rayCommands.Dispose();
-        if (_rayResults.IsCreated) _rayResults.Dispose();
-        if (_previousDirections.IsCreated) _previousDirections.Dispose();
     }
 }
 

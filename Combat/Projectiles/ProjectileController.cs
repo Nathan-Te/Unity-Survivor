@@ -81,7 +81,7 @@ public class ProjectileController : MonoBehaviour
         _isHostile = true;
         _hitCount = 0;
         _hitTargets.Clear();
-        _shouldDestroyEffect = false;
+        _shouldDestroyEffect = true;
 
         // Mouvement linéaire simple pour l'ennemi
         transform.forward = transform.forward; // Déjà orienté par l'ennemi

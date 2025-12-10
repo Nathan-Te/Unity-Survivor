@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
@@ -8,7 +8,7 @@ public class EnemyController : MonoBehaviour
     [Header("Animation (Optionnel)")]
     [SerializeField] private EnemyAnimator enemyAnimator;
 
-    [Header("État (Read Only)")]
+    [Header("Ã‰tat (Read Only)")]
     public float currentHp;
     public float currentDamage;
     public float currentSpeed;
@@ -28,7 +28,7 @@ public class EnemyController : MonoBehaviour
     private bool _isSlowed;
 
     private int _frameIntervalOffset;
-    private const int LOGIC_FRAME_INTERVAL = 10; // Exécute la logique 1 frame sur 10
+    private const int LOGIC_FRAME_INTERVAL = 10; // ExÃ©cute la logique 1 frame sur 10
 
     private void Awake()
     {
@@ -36,13 +36,13 @@ public class EnemyController : MonoBehaviour
         _myCollider = GetComponent<Collider>();
         if (_myCollider == null) _myCollider = GetComponentInChildren<Collider>();
 
-        // Si on n'a pas assigné l'animator manuellement, on essaie de le trouver
+        // Si on n'a pas assignÃ© l'animator manuellement, on essaie de le trouver
         if (enemyAnimator == null) enemyAnimator = GetComponentInChildren<EnemyAnimator>();
 
         InitializeStats();
 
-        // On donne un offset aléatoire pour éviter que tous les ennemis calculent
-        // EXACTEMENT à la même frame (lissage du pic CPU)
+        // On donne un offset alÃ©atoire pour Ã©viter que tous les ennemis calculent
+        // EXACTEMENT Ã  la mÃªme frame (lissage du pic CPU)
         _frameIntervalOffset = Random.Range(0, LOGIC_FRAME_INTERVAL);
     }
 
@@ -51,7 +51,7 @@ public class EnemyController : MonoBehaviour
         // 1. Logique lourde (Attaque + Statuts) -> Throttled (Time Sliced)
         if ((Time.frameCount + _frameIntervalOffset) % LOGIC_FRAME_INTERVAL == 0)
         {
-            // On passe le temps écoulé depuis la dernière exécution logique
+            // On passe le temps Ã©coulÃ© depuis la derniÃ¨re exÃ©cution logique
             float logicDeltaTime = Time.deltaTime * LOGIC_FRAME_INTERVAL;
 
             if (data != null && data.projectilePrefab != null)
@@ -84,6 +84,16 @@ public class EnemyController : MonoBehaviour
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            rb.Sleep();
+        }
+
+        if (enemyAnimator != null)
+        {
+            Animator anim = enemyAnimator.GetComponent<Animator>();
+            if (anim != null)
+            {
+                anim.Rebind(); // â­ RÃ©initialise complÃ¨tement l'animator
+            }
         }
     }
 
@@ -117,11 +127,11 @@ public class EnemyController : MonoBehaviour
         {
             _burnTimer -= dt;
             _burnTickTimer += dt;
-            // Si on a accumulé assez de temps pour un tick (1s)
+            // Si on a accumulÃ© assez de temps pour un tick (1s)
             if (_burnTickTimer >= 1.0f)
             {
                 TakeDamage(_burnDamagePerSec);
-                _burnTickTimer -= 1.0f; // On retire 1s au lieu de reset à 0 pour garder la précision
+                _burnTickTimer -= 1.0f; // On retire 1s au lieu de reset Ã  0 pour garder la prÃ©cision
             }
         }
         if (_slowTimer > 0)
@@ -144,7 +154,7 @@ public class EnemyController : MonoBehaviour
     }
 
     // -----------------------------------------------------------
-    // GESTION DE L'ATTAQUE SYNCHRONISÉE
+    // GESTION DE L'ATTAQUE SYNCHRONISÃ‰E
     // -----------------------------------------------------------
 
     private void HandleRangedAttack(float dt)
@@ -160,7 +170,7 @@ public class EnemyController : MonoBehaviour
 
         if (distSqr <= attackRangeSqr)
         {
-            _attackTimer += dt; // On ajoute le temps accumulé
+            _attackTimer += dt; // On ajoute le temps accumulÃ©
             if (_attackTimer >= data.attackCooldown)
             {
                 if (enemyAnimator != null) enemyAnimator.TriggerAttackAnimation();
@@ -171,25 +181,25 @@ public class EnemyController : MonoBehaviour
         }
         else
         {
-            // Réduction du timer si hors de portée (plus lente)
+            // RÃ©duction du timer si hors de portÃ©e (plus lente)
             _attackTimer = Mathf.Max(0, _attackTimer - dt);
         }
     }
 
-    // Cette méthode est appelée par l'Animation Event (ou directement si pas d'anim)
+    // Cette mÃ©thode est appelÃ©e par l'Animation Event (ou directement si pas d'anim)
     public void SpawnProjectile()
     {
         if (PlayerController.Instance == null) return;
 
         // Calcul de la direction de tir
-        // Note : L'ennemi regarde déjà le joueur grâce au Job System, 
-        // mais on recalcule le vecteur pour être précis.
+        // Note : L'ennemi regarde dÃ©jÃ  le joueur grÃ¢ce au Job System, 
+        // mais on recalcule le vecteur pour Ãªtre prÃ©cis.
         Vector3 dir = (PlayerController.Instance.transform.position - transform.position).normalized;
 
         // Point de spawn : On part du centre + un peu devant/haut
         Vector3 spawnPos = transform.position + Vector3.up + dir;
 
-        // Récupération du projectile
+        // RÃ©cupÃ©ration du projectile
         GameObject proj = ProjectilePool.Instance.Get(data.projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
 
         if (proj.TryGetComponent<ProjectileController>(out var ctrl))
@@ -205,7 +215,7 @@ public class EnemyController : MonoBehaviour
             // TENTATIVE D'ENREGISTREMENT
             bool isRegistered = EnemyManager.Instance.RegisterEnemy(this, _myCollider);
 
-            // SÉCURITÉ ANTI-CRASH : Si le manager est plein, on se détruit tout de suite !
+            // SÃ‰CURITÃ‰ ANTI-CRASH : Si le manager est plein, on se dÃ©truit tout de suite !
             if (!isRegistered)
             {
                 // Retour au pool si possible, sinon Destroy
@@ -217,7 +227,7 @@ public class EnemyController : MonoBehaviour
                 {
                     Destroy(gameObject);
                 }
-                return; // On arrête tout ici
+                return; // On arrÃªte tout ici
             }
         }
 

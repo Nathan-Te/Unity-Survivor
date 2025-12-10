@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq; // Nécessaire pour le tri (Sort)
-using UnityEditor;
 using UnityEngine;
 
 public class GameDirector : MonoBehaviour
@@ -26,9 +25,30 @@ public class GameDirector : MonoBehaviour
     private string _lowText = "-";
     private Color _perfColor = Color.white;
 
+    private GUIStyle _boldLabelStyle;
+    private GUIStyle _miniLabelStyle;
+    private bool _stylesInitialized = false;
+
     private void Start()
     {
         _isVisible = startVisible;
+    }
+
+    private void InitializeGUIStyles()
+    {
+        if (_stylesInitialized) return;
+
+        _boldLabelStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontStyle = FontStyle.Bold
+        };
+
+        _miniLabelStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 10
+        };
+
+        _stylesInitialized = true;
     }
 
     private void Update()
@@ -99,6 +119,8 @@ public class GameDirector : MonoBehaviour
 
     private void OnGUI()
     {
+        InitializeGUIStyles();
+
         if (!_isVisible) return;
 
         _windowRect = GUI.Window(0, _windowRect, DrawWindowContent, "Game Director (Debug)");
@@ -109,7 +131,7 @@ public class GameDirector : MonoBehaviour
         GUILayout.BeginVertical();
 
         // --- SECTION PERFORMANCE (En haut ou en bas, ici en haut pour visibilité) ---
-        GUILayout.Label("--- PERFORMANCE ---", EditorStyles.boldLabel);
+        GUILayout.Label("--- PERFORMANCE ---", _boldLabelStyle);
 
         GUI.contentColor = _perfColor;
         GUILayout.BeginHorizontal();
@@ -168,6 +190,17 @@ public class GameDirector : MonoBehaviour
             if (EnemyManager.Instance) EnemyManager.Instance.DebugKillAllEnemies();
         }
 
+        GUILayout.Space(10);
+
+        // --- MÉMOIRE ---
+        GUILayout.Label("Memory");
+        if (GUILayout.Button("Force Cleanup (GC + Pools)"))
+        {
+            MemoryManager.ForceCleanup();
+        }
+
+        GUILayout.Space(10);
+
         if (GUILayout.Button("Spawn Horde (Debug)"))
         {
             // Hack rapide : utilise le pool directement
@@ -179,7 +212,7 @@ public class GameDirector : MonoBehaviour
         }
 
         GUILayout.Space(10);
-        GUILayout.Label("Info: Appuie sur '²' pour fermer", EditorStyles.miniLabel);
+        GUILayout.Label("Info: Appuie sur '²' pour fermer", _miniLabelStyle);
 
         GUILayout.EndVertical();
 
