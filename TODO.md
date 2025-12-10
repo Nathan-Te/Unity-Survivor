@@ -12,17 +12,6 @@ Actuellement, l'effet `Nécrotique` instancie un Prefab inerte.
 - [ ] Implémenter l'attaque (Utiliser une `SpellDefinition` simplifiée pour tirer).
 - [ ] Gérer la durée de vie et la mort des minions.
 
-### 2. La Carte Infinie (Chunking)
-Le joueur se déplace actuellement sur un plan fini.
-- [ ] Créer le système de **Chunks** (Tuiles de terrain).
-- [ ] Implémenter le repositionnement dynamique (Tapis roulant) pour donner l'illusion de l'infini.
-- [ ] Générer des obstacles procéduraux (Arbres, Ruines) dans les chunks pour valider le Steering des ennemis.
-
-### 3. Système de "Loot" Physique
-- [ ] Créer le prefab visuel pour le **Coffre** et le **Cristal de Soin**.
-- [ ] Vérifier la collision des projectiles avec les objets `IDamageable` (Déjà codé, à tester en scène).
-- [ ] Finaliser l'UI de récompense pour l'Autel (Ouvrir le menu de choix sans Level Up).
-
 ---
 
 ## 🛠️ Améliorations & Refactoring (Tech)
