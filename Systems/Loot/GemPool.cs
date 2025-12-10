@@ -20,6 +20,13 @@ public class GemPool : MonoBehaviour
         Instance = this;
     }
 
+    private void OnDestroy()
+    {
+        _activeGems.Clear();
+        _inactivePool.Clear();
+        Instance = null;
+    }
+
     public void Spawn(Vector3 position, int xpValue)
     {
         ExperienceGem gemScript;
@@ -27,22 +34,8 @@ public class GemPool : MonoBehaviour
         // CAS 1 : On a atteint la limite max de gemmes en jeu
         if (_activeGems.Count >= maxActiveGems)
         {
-            // OPTIMISATION : FUSION (VACUUM)
-            // Au lieu d'instancier, on prend la gemme active la plus vieille (index 0)
-            // ou celle qui est le plus loin du joueur (plus coûteux à calculer).
-            // Ici, on prend la plus ancienne (FIFO) pour la performance O(1).
-
             gemScript = _activeGems[0];
-
-            // On la déplace "téléportation" vers le nouveau monstre mort
-            // Note : Dans un jeu avancé, on ajouterait la valeur de l'ancienne gemme
-            // à une "Super Gemme" pour ne pas perdre d'XP.
-            // Pour l'instant, on recycle juste le contenant.
-
-            // On la retire du début de la liste et on la remettra à la fin
             _activeGems.RemoveAt(0);
-
-            // On réinitialise sa position
             gemScript.transform.position = position;
         }
         // CAS 2 : On pioche dans le pool inactif
@@ -51,6 +44,7 @@ public class GemPool : MonoBehaviour
             GameObject obj = _inactivePool.Dequeue();
             obj.SetActive(true);
             gemScript = obj.GetComponent<ExperienceGem>();
+            gemScript.transform.position = position;
         }
         // CAS 3 : On crée du neuf
         else

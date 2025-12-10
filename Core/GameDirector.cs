@@ -44,8 +44,11 @@ public class GameDirector : MonoBehaviour
         // 2. Collecte des données (Même si fenêtre fermée, pour avoir des stats prêtes)
         // On utilise unscaledDeltaTime pour avoir les vrais FPS même si le jeu est ralenti/accéléré
         float dt = Time.unscaledDeltaTime;
-        _frameTimes.Add(dt);
-        if (_frameTimes.Count > MAX_SAMPLES) _frameTimes.RemoveAt(0);
+        if (dt > 0 && dt < 1.0f)
+        {
+            _frameTimes.Add(dt);
+            if (_frameTimes.Count > MAX_SAMPLES) _frameTimes.RemoveAt(0);
+        }
 
         // 3. Calcul périodique (pour ne pas faire ramer l'UI)
         _timer += dt;
@@ -54,6 +57,11 @@ public class GameDirector : MonoBehaviour
             CalculatePerformance();
             _timer = 0f;
         }
+    }
+    private void OnDestroy()
+    {
+        _frameTimes.Clear();
+        _frameTimes = null;
     }
 
     private void CalculatePerformance()

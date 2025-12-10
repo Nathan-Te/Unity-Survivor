@@ -15,14 +15,18 @@ public class ProjectilePool : MonoBehaviour
         Instance = this;
     }
 
+    private void OnDestroy()
+    {
+        _activeProjectiles.Clear();
+        _pools.Clear();
+        Instance = null;
+    }
+
     private void Update()
     {
-        // BOUCLE OPTIMISÉE
-        // On évite le foreach pour ne pas générer de garbage
         float dt = Time.deltaTime;
         for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
         {
-            // Sécurité si un projectile a été détruit brutalement
             if (_activeProjectiles[i] == null || !_activeProjectiles[i].gameObject.activeSelf)
             {
                 _activeProjectiles.RemoveAt(i);

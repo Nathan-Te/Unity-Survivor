@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 public class ProjectileController : MonoBehaviour
@@ -6,7 +6,7 @@ public class ProjectileController : MonoBehaviour
     private SpellDefinition _def;
     private GameObject _sourcePrefab;
 
-    // Stratégie active (Pattern Strategy)
+    // StratÃ©gie active (Pattern Strategy)
     private IMotionStrategy _motionStrategy;
 
     private int _hitCount;
@@ -17,9 +17,11 @@ public class ProjectileController : MonoBehaviour
     private static MaterialPropertyBlock _propBlock;
     private Renderer _renderer;
 
+    private bool _shouldDestroyEffect;
+
     private void Awake()
     {
-        // On récupère le renderer une seule fois à la création
+        // On rÃ©cupÃ¨re le renderer une seule fois Ã  la crÃ©ation
         _renderer = GetComponentInChildren<Renderer>();
     }
 
@@ -29,17 +31,19 @@ public class ProjectileController : MonoBehaviour
         _sourcePrefab = def.Form.prefab;
         _hitCount = 0;
         _isHostile = false;
+        _hitTargets.Clear();
+        _shouldDestroyEffect = false;
 
-        // 1. Choix de la Stratégie
+        // 1. Choix de la StratÃ©gie
         if (_def.Form.tags.HasFlag(SpellTag.Smite))
         {
             _motionStrategy = new SmiteMotion(_def.Form.impactDelay);
-            // On n'oriente pas le Smite, il est fixe au sol là où il a spawn
+            // On n'oriente pas le Smite, il est fixe au sol lÃ  oÃ¹ il a spawn
         }
         else if (_def.Form.tags.HasFlag(SpellTag.Orbit))
         {
             _motionStrategy = new OrbitMotion(_def.Duration, _def.Speed, index, totalCount);
-            // Position initiale immédiate pour éviter le glitch visuel
+            // Position initiale immÃ©diate pour Ã©viter le glitch visuel
             _motionStrategy.Update(this, 0f);
         }
         else
@@ -51,8 +55,8 @@ public class ProjectileController : MonoBehaviour
         // 2. Visuels
         transform.localScale = Vector3.one * def.Size;
 
-        // --- CORRECTION COULEUR (Optimisée) ---
-        // Au lieu de toucher à .material (qui crée une copie et une fuite mémoire),
+        // --- CORRECTION COULEUR (OptimisÃ©e) ---
+        // Au lieu de toucher Ã  .material (qui crÃ©e une copie et une fuite mÃ©moire),
         // on utilise SetPropertyBlock.
         if (_renderer != null && def.Effect.tintColor != Color.white)
         {
@@ -71,15 +75,16 @@ public class ProjectileController : MonoBehaviour
         _def.Speed = 10f;
         _def.Range = 30f;
         _def.Pierce = 0;
-        _def.Effect = ScriptableObject.CreateInstance<SpellEffect>();
+        _def.Effect = null;
 
         _sourcePrefab = sourcePrefab;
         _isHostile = true;
         _hitCount = 0;
         _hitTargets.Clear();
+        _shouldDestroyEffect = false;
 
-        // Mouvement linéaire simple pour l'ennemi
-        transform.forward = transform.forward; // Déjà orienté par l'ennemi
+        // Mouvement linÃ©aire simple pour l'ennemi
+        transform.forward = transform.forward; // DÃ©jÃ  orientÃ© par l'ennemi
         _motionStrategy = new LinearMotion(transform.position, 30f, 10f, false, true);
     }
 
@@ -95,14 +100,14 @@ public class ProjectileController : MonoBehaviour
     {
         if (_def == null) return;
 
-        // Note : J'ai remplacé Time.deltaTime par 'dt' partout
+        // Note : J'ai remplacÃ© Time.deltaTime par 'dt' partout
         if (_motionStrategy != null)
         {
             _motionStrategy.Update(this, dt);
         }
     }
 
-    // --- LOGIQUE PUBLIQUE POUR LES STRATÉGIES ---
+    // --- LOGIQUE PUBLIQUE POUR LES STRATÃ‰GIES ---
 
     public void TriggerSmiteExplosion()
     {
@@ -112,6 +117,12 @@ public class ProjectileController : MonoBehaviour
 
     public void Despawn()
     {
+        if (_shouldDestroyEffect && _def?.Effect != null)
+        {
+            Destroy(_def.Effect);
+            _def.Effect = null;
+        }
+
         if (ProjectilePool.Instance != null)
         {
             ProjectilePool.Instance.ReturnToPool(gameObject, _sourcePrefab);
@@ -144,11 +155,6 @@ public class ProjectileController : MonoBehaviour
                     other.GetComponent<PlayerController>().TakeDamage(_def.Damage);
                     Despawn();
                 }
-                else
-                {
-                    return;
-                }
-                    
             }
             else if (layer == LayerMask.NameToLayer("Obstacle"))
             {
@@ -232,7 +238,7 @@ public class ProjectileController : MonoBehaviour
 
     private void HandleChainReaction(EnemyController currentTarget)
     {
-        // Logique Chain inchangée, je la remets pour que le script soit complet
+        // Logique Chain inchangÃ©e, je la remets pour que le script soit complet
         var candidates = EnemyManager.Instance.GetEnemiesInRange(transform.position, _def.ChainRange);
         EnemyController bestCandidate = null;
         float closestDistSqr = float.MaxValue;

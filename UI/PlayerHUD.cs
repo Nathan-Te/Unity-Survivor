@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,65 +12,75 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private Slider healthSlider;
     [SerializeField] private TextMeshProUGUI healthText;
 
-    [Header("ExpÈrience")]
+    [Header("Exp√©rience")]
     [SerializeField] private Slider xpSlider;
     [SerializeField] private TextMeshProUGUI levelText;
 
     [Header("Infos Combat")]
     [SerializeField] private TextMeshProUGUI enemyCountText;
 
+    private SpellManager _spellManager;
+    private PlayerController _playerController;
+    private LevelManager _levelManager;
+    private EnemyManager _enemyManager;
+
     private void Start()
     {
         // Setup Spells
-        SpellManager sm = FindFirstObjectByType<SpellManager>();
-        if (sm != null)
+        _spellManager = FindFirstObjectByType<SpellManager>();
+        if (_spellManager != null)
         {
-            sm.OnInventoryUpdated += RefreshUI;
+            _spellManager.OnInventoryUpdated += RefreshUI;
             RefreshUI();
         }
 
         // Setup Health
-        if (PlayerController.Instance != null)
+        _playerController = PlayerController.Instance;
+        if (_playerController != null)
         {
-            PlayerController.Instance.OnHealthChanged += UpdateHealth;
-            UpdateHealth(PlayerController.Instance.CurrentHp, PlayerController.Instance.MaxHp);
-            // Force update initiale (si le joueur est dÈj‡ init)
-            // Note: IdÈalement, PlayerController devrait exposer CurrentHp/MaxHp publiquement pour lire l'Ètat initial
+            _playerController.OnHealthChanged += UpdateHealth;
+            UpdateHealth(_playerController.CurrentHp, _playerController.MaxHp);
         }
 
-        if (LevelManager.Instance != null)
+        _levelManager = LevelManager.Instance;
+        if (_levelManager != null)
         {
-            // On s'abonne aux ÈvÈnements du LevelManager
-            LevelManager.Instance.OnExperienceChanged.AddListener(UpdateXPBar);
-            LevelManager.Instance.OnLevelUp.AddListener(UpdateLevelText);
+            _levelManager.OnExperienceChanged.AddListener(UpdateXPBar);
+            _levelManager.OnLevelUp.AddListener(UpdateLevelText);
 
-            // Initialisation de l'affichage (au cas o˘ on commence niveau 1 avec 0 XP)
             UpdateXPBar(0);
             UpdateLevelText();
         }
 
-        if (EnemyManager.Instance != null)
+        _enemyManager = EnemyManager.Instance;
+        if (_enemyManager != null)
         {
-            EnemyManager.Instance.OnEnemyCountChanged += UpdateEnemyCount;
-            UpdateEnemyCount(0); // Init ‡ 0
+            _enemyManager.OnEnemyCountChanged += UpdateEnemyCount;
+            UpdateEnemyCount(0);
         }
     }
 
     private void RefreshUI()
     {
-        // Nettoyage
-        foreach (Transform child in slotsContainer) Destroy(child.gameObject);
+        // ‚≠ê CORRECTION : D√©truire imm√©diatement pour √©viter les accumulations
+        List<GameObject> childrenToDestroy = new List<GameObject>();
+        foreach (Transform child in slotsContainer)
+        {
+            childrenToDestroy.Add(child.gameObject);
+        }
+        foreach (var child in childrenToDestroy)
+        {
+            DestroyImmediate(child);
+        }
 
-        SpellManager sm = FindFirstObjectByType<SpellManager>();
-        if (sm == null) return;
+        if (_spellManager == null) return;
 
-        List<SpellSlot> slots = sm.GetSlots();
+        List<SpellSlot> slots = _spellManager.GetSlots();
         for (int i = 0; i < slots.Count; i++)
         {
             GameObject obj = Instantiate(slotUIPrefab, slotsContainer);
             if (obj.TryGetComponent<SpellSlotUI>(out var ui))
             {
-                // Pas de manager passÈ ici, donc non-cliquable (juste affichage)
                 ui.Initialize(slots[i], i, null);
             }
         }
@@ -82,7 +92,7 @@ public class PlayerHUD : MonoBehaviour
         {
             enemyCountText.text = $"Ennemis : {count}";
 
-            // Optionnel : Changer la couleur si Áa devient critique (+ de 300)
+            // Optionnel : Changer la couleur si √ßa devient critique (+ de 300)
             if (count > 300) enemyCountText.color = Color.red;
             else enemyCountText.color = Color.white;
         }
@@ -100,9 +110,9 @@ public class PlayerHUD : MonoBehaviour
 
     private void UpdateLevelText()
     {
-        if (levelText != null && LevelManager.Instance != null)
+        if (levelText != null && _levelManager != null)
         {
-            levelText.text = $"LVL {LevelManager.Instance.currentLevel}";
+            levelText.text = $"LVL {_levelManager.currentLevel}";
         }
     }
 
@@ -117,5 +127,24 @@ public class PlayerHUD : MonoBehaviour
         {
             healthText.text = $"{Mathf.CeilToInt(current)} / {Mathf.CeilToInt(max)}";
         }
+    }
+
+    // ‚≠ê CORRECTION CRITIQUE : Se d√©sabonner des √©v√©nements
+    private void OnDestroy()
+    {
+        if (_spellManager != null)
+            _spellManager.OnInventoryUpdated -= RefreshUI;
+
+        if (_playerController != null)
+            _playerController.OnHealthChanged -= UpdateHealth;
+
+        if (_levelManager != null)
+        {
+            _levelManager.OnExperienceChanged.RemoveListener(UpdateXPBar);
+            _levelManager.OnLevelUp.RemoveListener(UpdateLevelText);
+        }
+
+        if (_enemyManager != null)
+            _enemyManager.OnEnemyCountChanged -= UpdateEnemyCount;
     }
 }

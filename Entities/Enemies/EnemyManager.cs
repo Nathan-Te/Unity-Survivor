@@ -104,6 +104,8 @@ public class EnemyManager : MonoBehaviour
 
         JobHandle moveHandle = moveJob.Schedule(_transformAccessArray, rayHandle);
         moveHandle.Complete();
+
+        Physics.SyncTransforms();
     }
 
     private void SyncDataForJob()
