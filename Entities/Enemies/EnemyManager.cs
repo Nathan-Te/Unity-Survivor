@@ -16,6 +16,7 @@ public class EnemyManager : MonoBehaviour
     public event Action<int> OnEnemyCountChanged; // Pour l'UI (ennemis actifs)
     public event Action<int> OnKillCountChanged; // Pour l'UI (total tués)
     public event Action<Vector3> OnEnemyDeathPosition; // Pour les Autels
+    public event Action<int, Vector3> OnEnemyKilledWithScore; // (scoreValue, position) Pour le système de score
 
     [Header("R�glages")]
     [SerializeField] private Transform playerTransform;
@@ -281,13 +282,14 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    public void NotifyEnemyDeath(Vector3 position)
+    public void NotifyEnemyDeath(Vector3 position, int scoreValue = 10)
     {
         // Incrémenter le compteur de kills
         _totalKills++;
         OnKillCountChanged?.Invoke(_totalKills);
 
         OnEnemyDeathPosition?.Invoke(position);
+        OnEnemyKilledWithScore?.Invoke(scoreValue, position);
     }
 
     public void DebugKillAllEnemies()

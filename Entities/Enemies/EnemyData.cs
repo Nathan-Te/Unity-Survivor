@@ -5,7 +5,7 @@ public enum EnemyType { Melee, Ranged, Charger }
 [CreateAssetMenu(fileName = "NewEnemyData", menuName = "SO/Enemy Data")]
 public class EnemyData : ScriptableObject
 {
-    [Header("Identité")]
+    [Header("Identitï¿½")]
     public string enemyName = "Squelette";
     public GameObject prefab;
     public EnemyType type = EnemyType.Melee;
@@ -18,13 +18,14 @@ public class EnemyData : ScriptableObject
     public float baseDamage = 10f;
     public float baseSpeed = 4f;
     public int xpDropAmount = 10;
+    public int scoreValue = 10; // Valeur de score de base pour le systÃ¨me arcade
 
     [Header("Comportement")]
-    public float stopDistance = 0f; // S'arrête à X mètres (pour les tireurs)
-    public float fleeDistance = 0f; // Fuit si le joueur est à moins de X mètres
+    public float stopDistance = 0f; // S'arrï¿½te ï¿½ X mï¿½tres (pour les tireurs)
+    public float fleeDistance = 0f; // Fuit si le joueur est ï¿½ moins de X mï¿½tres
 
     [Header("Attaque (Pour Tireurs)")]
-    public GameObject projectilePrefab; // Si null, c'est du corps à corps
+    public GameObject projectilePrefab; // Si null, c'est du corps ï¿½ corps
     public float attackCooldown = 2f;
 
     [Header("Physique")]

@@ -21,11 +21,18 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI killCountText;
     [SerializeField] private TextMeshProUGUI timerText;
 
+    [Header("Arcade Score System")]
+    [SerializeField] private TextMeshProUGUI scoreText;
+    [SerializeField] private TextMeshProUGUI comboText;
+    [SerializeField] private TextMeshProUGUI multiplierText;
+    [SerializeField] private Slider comboTimerSlider;
+
     private SpellManager _spellManager;
     private PlayerController _playerController;
     private LevelManager _levelManager;
     private EnemyManager _enemyManager;
     private GameTimer _gameTimer;
+    private ArcadeScoreSystem _scoreSystem;
 
     private void Start()
     {
@@ -69,6 +76,19 @@ public class PlayerHUD : MonoBehaviour
         {
             _gameTimer.OnTimeChanged += UpdateTimer;
             UpdateTimer(0f);
+        }
+
+        _scoreSystem = ArcadeScoreSystem.Instance;
+        if (_scoreSystem != null)
+        {
+            _scoreSystem.OnScoreChanged += UpdateScore;
+            _scoreSystem.OnComboChanged += UpdateCombo;
+            _scoreSystem.OnMultiplierChanged += UpdateMultiplier;
+            _scoreSystem.OnComboTimerChanged += UpdateComboTimer;
+            UpdateScore(0);
+            UpdateCombo(0);
+            UpdateMultiplier(1f);
+            UpdateComboTimer(0f, _scoreSystem.ComboTimerMax);
         }
     }
 
@@ -123,6 +143,69 @@ public class PlayerHUD : MonoBehaviour
         if (timerText != null)
         {
             timerText.text = GameTimer.FormatTime(elapsedTime, hideHoursIfZero: true);
+        }
+    }
+
+    // --- ARCADE SCORE SYSTEM ---
+
+    private void UpdateScore(int score)
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = $"Score : {score:N0}";
+        }
+    }
+
+    private void UpdateCombo(int combo)
+    {
+        if (comboText != null)
+        {
+            if (combo > 0)
+            {
+                comboText.text = $"Combo x{combo}";
+                comboText.gameObject.SetActive(true);
+            }
+            else
+            {
+                comboText.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void UpdateMultiplier(float multiplier)
+    {
+        if (multiplierText != null)
+        {
+            multiplierText.text = $"x{multiplier:F1}";
+
+            // Changer la couleur selon le multiplicateur
+            if (multiplier >= 5f)
+                multiplierText.color = new Color(1f, 0.3f, 0f); // Orange vif
+            else if (multiplier >= 3f)
+                multiplierText.color = new Color(1f, 0.7f, 0f); // Orange
+            else if (multiplier >= 2f)
+                multiplierText.color = new Color(1f, 1f, 0f); // Jaune
+            else
+                multiplierText.color = Color.white;
+        }
+    }
+
+    private void UpdateComboTimer(float current, float max)
+    {
+        if (comboTimerSlider != null)
+        {
+            comboTimerSlider.maxValue = max;
+            comboTimerSlider.value = current;
+
+            // Masquer le slider si le combo est à 0
+            if (current <= 0f)
+            {
+                comboTimerSlider.gameObject.SetActive(false);
+            }
+            else
+            {
+                comboTimerSlider.gameObject.SetActive(true);
+            }
         }
     }
 
@@ -181,6 +264,14 @@ public class PlayerHUD : MonoBehaviour
         if (_gameTimer != null)
         {
             _gameTimer.OnTimeChanged -= UpdateTimer;
+        }
+
+        if (_scoreSystem != null)
+        {
+            _scoreSystem.OnScoreChanged -= UpdateScore;
+            _scoreSystem.OnComboChanged -= UpdateCombo;
+            _scoreSystem.OnMultiplierChanged -= UpdateMultiplier;
+            _scoreSystem.OnComboTimerChanged -= UpdateComboTimer;
         }
     }
 }

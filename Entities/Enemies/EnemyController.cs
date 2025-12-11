@@ -206,8 +206,13 @@ public class EnemyController : MonoBehaviour
 
     private void Die()
     {
-        if (EnemyManager.Instance != null) EnemyManager.Instance.NotifyEnemyDeath(transform.position);
-        if (GemPool.Instance != null) GemPool.Instance.Spawn(transform.position, _xpValue);
+        // Notifier avec la valeur de score
+        int scoreValue = data != null ? data.scoreValue : 10;
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.NotifyEnemyDeath(transform.position, scoreValue);
+
+        if (GemPool.Instance != null)
+            GemPool.Instance.Spawn(transform.position, _xpValue);
 
         if (EnemyPool.Instance != null && data != null && data.prefab != null)
             EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
