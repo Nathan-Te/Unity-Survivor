@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,7 +9,12 @@ public class EnemyPool : MonoBehaviour
     // Dictionnaire : ID du Prefab -> File d'attente
     private Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
 
+    [Header("Pool Settings")]
     [SerializeField] private int maxPoolSizePerPrefab = 50;
+
+    [Header("Spawn Pop Effect")]
+    [SerializeField] private float spawnPopDuration = 0.3f;
+    [SerializeField] private AnimationCurve spawnPopCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     private void Awake()
     {
@@ -21,7 +27,7 @@ public class EnemyPool : MonoBehaviour
         Instance = null;
     }
 
-    // On demande un ennemi spécifique (prefab)
+    // On demande un ennemi spï¿½cifique (prefab)
     public GameObject GetEnemy(GameObject prefab, Vector3 position, Quaternion rotation)
     {
         int key = prefab.GetInstanceID();
@@ -31,23 +37,67 @@ public class EnemyPool : MonoBehaviour
             _pools.Add(key, new Queue<GameObject>());
         }
 
+        GameObject obj;
+
         if (_pools[key].Count > 0)
         {
-            GameObject obj = _pools[key].Dequeue();
+            obj = _pools[key].Dequeue();
             if (obj == null)
             {
-                return Instantiate(prefab, position, rotation, transform);
+                obj = Instantiate(prefab, position, rotation, transform);
             }
-            obj.transform.position = position;
-            obj.transform.rotation = rotation;
-            obj.SetActive(true);
-            return obj;
+            else
+            {
+                obj.transform.position = position;
+                obj.transform.rotation = rotation;
+                obj.SetActive(true);
+            }
         }
         else
         {
             // On instancie si la file est vide
-            GameObject newObj = Instantiate(prefab, position, rotation, transform);
-            return newObj;
+            obj = Instantiate(prefab, position, rotation, transform);
+        }
+
+        // --- SPAWN POP EFFECT ---
+        StartCoroutine(SpawnPopAnimation(obj));
+
+        return obj;
+    }
+
+    private IEnumerator SpawnPopAnimation(GameObject enemy)
+    {
+        if (enemy == null) yield break;
+
+        Transform enemyTransform = enemy.transform;
+        Vector3 originalScale = enemyTransform.localScale;
+
+        // Commence Ã  scale 0
+        enemyTransform.localScale = Vector3.zero;
+
+        float elapsed = 0f;
+
+        while (elapsed < spawnPopDuration)
+        {
+            if (enemy == null || !enemy.activeInHierarchy)
+            {
+                yield break; // ArrÃªte si l'ennemi est dÃ©truit ou dÃ©sactivÃ©
+            }
+
+            elapsed += Time.deltaTime;
+            float t = elapsed / spawnPopDuration;
+
+            // Utilise la courbe d'animation pour plus de contrÃ´le
+            float curveValue = spawnPopCurve.Evaluate(t);
+
+            enemyTransform.localScale = originalScale * curveValue;
+            yield return null;
+        }
+
+        // S'assurer que le scale final est exact
+        if (enemy != null && enemy.activeInHierarchy)
+        {
+            enemyTransform.localScale = originalScale;
         }
     }
 
@@ -85,19 +135,19 @@ public class EnemyPool : MonoBehaviour
         }
         _pools.Clear();
 
-        Debug.Log("[EnemyPool] Pool vidé et objets détruits");
+        Debug.Log("[EnemyPool] Pool vidï¿½ et objets dï¿½truits");
     }
 
     public void DestroyAll()
     {
         ClearAll();
 
-        // Détruit aussi tous les enfants de ce GameObject (ennemis actifs)
+        // Dï¿½truit aussi tous les enfants de ce GameObject (ennemis actifs)
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             Destroy(transform.GetChild(i).gameObject);
         }
 
-        Debug.Log("[EnemyPool] TOUS les ennemis détruits (pool + actifs)");
+        Debug.Log("[EnemyPool] TOUS les ennemis dï¿½truits (pool + actifs)");
     }
 }

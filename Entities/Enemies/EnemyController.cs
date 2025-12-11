@@ -8,6 +8,10 @@ public class EnemyController : MonoBehaviour
     [Header("Animation (Optionnel)")]
     [SerializeField] private EnemyAnimator enemyAnimator;
 
+    [Header("Visual Effects")]
+    [SerializeField] private float hitFlashDuration = 0.1f;
+    [SerializeField] private Material hitFlashMaterial; // Matériau blanc pour le blink
+
     [Header("État (Read Only)")]
     public float currentHp;
     public float currentDamage;
@@ -18,6 +22,12 @@ public class EnemyController : MonoBehaviour
     private int _xpValue;
     public EnemyData Data => data;
     private float _attackTimer;
+
+    // --- HIT FLASH EFFECT ---
+    private Renderer _renderer;
+    private Material[] _originalMaterials; // Support pour plusieurs matériaux
+    private Material[] _flashMaterialsArray; // Array de matériaux de flash
+    private float _flashTimer;
 
     // --- STATUTS ---
     private float _burnTimer;
@@ -39,6 +49,40 @@ public class EnemyController : MonoBehaviour
         // Si on n'a pas assigné l'animator manuellement, on essaie de le trouver
         if (enemyAnimator == null) enemyAnimator = GetComponentInChildren<EnemyAnimator>();
 
+        // Initialiser le Renderer pour le Hit Flash
+        _renderer = GetComponentInChildren<Renderer>();
+        if (_renderer != null)
+        {
+            // Sauvegarder TOUS les matériaux d'origine (support multi-matériaux)
+            _originalMaterials = _renderer.sharedMaterials;
+
+            // Créer un array de matériaux de flash (un pour chaque slot)
+            _flashMaterialsArray = new Material[_originalMaterials.Length];
+
+            // Créer le matériau de flash
+            Material flashMat;
+            if (hitFlashMaterial != null)
+            {
+                flashMat = new Material(hitFlashMaterial);
+            }
+            else
+            {
+                // Créer un matériau blanc par défaut si aucun n'est assigné
+                Shader flashShader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (flashShader == null) flashShader = Shader.Find("Unlit/Color"); // Fallback Built-in
+                if (flashShader == null) flashShader = Shader.Find("Standard"); // Fallback Standard
+
+                flashMat = new Material(flashShader);
+                flashMat.color = Color.white;
+            }
+
+            // Remplir tous les slots avec le même matériau de flash
+            for (int i = 0; i < _flashMaterialsArray.Length; i++)
+            {
+                _flashMaterialsArray[i] = flashMat;
+            }
+        }
+
         InitializeStats();
 
         // On donne un offset aléatoire pour éviter que tous les ennemis calculent
@@ -48,7 +92,22 @@ public class EnemyController : MonoBehaviour
 
     private void Update()
     {
-        // 1. Logique lourde (Attaque + Statuts) -> Throttled (Time Sliced)
+        // 1. Gestion du Hit Flash (chaque frame pour une réactivité immédiate)
+        if (_flashTimer > 0)
+        {
+            _flashTimer -= Time.deltaTime;
+
+            if (_flashTimer <= 0)
+            {
+                // Retour aux matériaux normaux
+                if (_renderer != null && _originalMaterials != null)
+                {
+                    _renderer.materials = _originalMaterials;
+                }
+            }
+        }
+
+        // 2. Logique lourde (Attaque + Statuts) -> Throttled (Time Sliced)
         if ((Time.frameCount + _frameIntervalOffset) % LOGIC_FRAME_INTERVAL == 0)
         {
             // On passe le temps écoulé depuis la dernière exécution logique
@@ -112,6 +171,13 @@ public class EnemyController : MonoBehaviour
                 anim.Rebind(); // ⭐ Réinitialise complètement l'animator
             }
         }
+
+        // Réinitialiser le Hit Flash
+        _flashTimer = 0f;
+        if (_renderer != null && _originalMaterials != null)
+        {
+            _renderer.materials = _originalMaterials;
+        }
     }
 
     public void TakeDamage(float amount)
@@ -122,7 +188,20 @@ public class EnemyController : MonoBehaviour
             Vector3 popPos = transform.position + Random.insideUnitSphere * 0.5f;
             DamageTextPool.Instance.Spawn(amount, popPos);
         }
+
+        // --- HIT FLASH EFFECT ---
+        TriggerHitFlash();
+
         if (currentHp <= 0) Die();
+    }
+
+    private void TriggerHitFlash()
+    {
+        if (_renderer != null && _flashMaterialsArray != null)
+        {
+            _flashTimer = hitFlashDuration;
+            _renderer.materials = _flashMaterialsArray;
+        }
     }
 
     private void Die()
