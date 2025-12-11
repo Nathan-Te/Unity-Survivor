@@ -14,14 +14,21 @@ public class ArcadeScoreSystem : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private ComboMode comboMode = ComboMode.Modern;
 
-    [Header("Combo Timer")]
+    [Header("Combo Timer - Base Settings")]
     [SerializeField] private float comboTimerMax = 3f; // Durée max du timer de combo
-    [SerializeField] private float comboTimerDecayRate = 1f; // Vitesse de décroissance par seconde
-    [SerializeField] private float timeAddedPerKill = 1.5f; // Temps ajouté à chaque kill
+    [SerializeField] private float baseDecayRate = 1f; // Vitesse de décroissance de base (palier 0)
+    [SerializeField] private float baseTimeAddedPerKill = 1.5f; // Temps ajouté à chaque kill (palier 0)
 
     [Header("Multiplier Settings")]
     [SerializeField] private int[] comboThresholds = { 0, 5, 10, 20, 50, 100 }; // Paliers de combo
     [SerializeField] private float[] multipliers = { 1f, 1.5f, 2f, 3f, 5f, 10f }; // Multiplicateurs correspondants
+
+    [Header("Dynamic Difficulty Per Tier")]
+    [Tooltip("Multiplicateur de vitesse de décroissance par palier (1 = normal, 1.5 = 50% plus rapide)")]
+    [SerializeField] private float[] decayRateMultipliers = { 1f, 1.2f, 1.5f, 2f, 2.5f, 3f };
+
+    [Tooltip("Multiplicateur de temps ajouté par kill par palier (1 = normal, 0.8 = 20% moins de temps)")]
+    [SerializeField] private float[] timeAddedMultipliers = { 1f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f };
 
     [Header("Visual Feedback")]
     [SerializeField] private bool clampTimerToMax = true; // Empêche le timer de dépasser le max
@@ -38,6 +45,10 @@ public class ArcadeScoreSystem : MonoBehaviour
     private int _currentCombo = 0;
     private float _comboTimer = 0f;
     private float _currentMultiplier = 1f;
+
+    // --- DYNAMIC DIFFICULTY ---
+    private float _currentDecayRate = 1f;
+    private float _currentTimeAddedPerKill = 1.5f;
 
     public int TotalScore => _totalScore;
     public int CurrentCombo => _currentCombo;
@@ -57,6 +68,10 @@ public class ArcadeScoreSystem : MonoBehaviour
 
     private void Start()
     {
+        // Initialiser les valeurs dynamiques au palier de base
+        _currentDecayRate = baseDecayRate;
+        _currentTimeAddedPerKill = baseTimeAddedPerKill;
+
         // S'abonner aux morts d'ennemis
         if (EnemyManager.Instance != null)
         {
@@ -66,10 +81,10 @@ public class ArcadeScoreSystem : MonoBehaviour
 
     private void Update()
     {
-        // Décrémenter le timer de combo
+        // Décrémenter le timer de combo avec la vitesse dynamique
         if (_comboTimer > 0f)
         {
-            _comboTimer -= comboTimerDecayRate * Time.deltaTime;
+            _comboTimer -= _currentDecayRate * Time.deltaTime;
 
             if (_comboTimer <= 0f)
             {
@@ -95,16 +110,17 @@ public class ArcadeScoreSystem : MonoBehaviour
         _currentCombo++;
         OnComboChanged?.Invoke(_currentCombo);
 
-        // Calculer et mettre à jour le multiplicateur
+        // Calculer et mettre à jour le multiplicateur ET la difficulté dynamique
         UpdateMultiplier();
+        UpdateDynamicDifficulty();
 
         // Ajouter le score avec multiplicateur
         int scoreToAdd = Mathf.RoundToInt(baseScore * _currentMultiplier);
         _totalScore += scoreToAdd;
         OnScoreChanged?.Invoke(_totalScore);
 
-        // Recharger le timer de combo
-        _comboTimer += timeAddedPerKill;
+        // Recharger le timer de combo avec la valeur dynamique
+        _comboTimer += _currentTimeAddedPerKill;
 
         if (clampTimerToMax)
         {
@@ -135,6 +151,33 @@ public class ArcadeScoreSystem : MonoBehaviour
         {
             _currentMultiplier = newMultiplier;
             OnMultiplierChanged?.Invoke(_currentMultiplier);
+        }
+    }
+
+    /// <summary>
+    /// Met à jour la difficulté dynamique (decay rate et time added) en fonction du palier actuel
+    /// </summary>
+    private void UpdateDynamicDifficulty()
+    {
+        int tierIndex = GetCurrentTierIndex();
+
+        // Vérifier que l'index est valide
+        if (tierIndex < 0 || tierIndex >= decayRateMultipliers.Length)
+        {
+            tierIndex = 0;
+        }
+
+        // Calculer la nouvelle vitesse de décroissance
+        _currentDecayRate = baseDecayRate * decayRateMultipliers[tierIndex];
+
+        // Calculer le nouveau temps ajouté par kill
+        if (tierIndex < timeAddedMultipliers.Length)
+        {
+            _currentTimeAddedPerKill = baseTimeAddedPerKill * timeAddedMultipliers[tierIndex];
+        }
+        else
+        {
+            _currentTimeAddedPerKill = baseTimeAddedPerKill * timeAddedMultipliers[timeAddedMultipliers.Length - 1];
         }
     }
 
@@ -180,6 +223,9 @@ public class ArcadeScoreSystem : MonoBehaviour
         }
 
         _comboTimer = 0f;
+
+        // Réinitialiser la difficulté dynamique
+        UpdateDynamicDifficulty();
     }
 
     /// <summary>
@@ -206,6 +252,10 @@ public class ArcadeScoreSystem : MonoBehaviour
         _currentCombo = 0;
         _comboTimer = 0f;
         _currentMultiplier = 1f;
+
+        // Réinitialiser la difficulté dynamique au palier de base
+        _currentDecayRate = baseDecayRate;
+        _currentTimeAddedPerKill = baseTimeAddedPerKill;
 
         OnScoreChanged?.Invoke(_totalScore);
         OnComboChanged?.Invoke(_currentCombo);
