@@ -18,11 +18,14 @@ public class PlayerHUD : MonoBehaviour
 
     [Header("Infos Combat")]
     [SerializeField] private TextMeshProUGUI enemyCountText;
+    [SerializeField] private TextMeshProUGUI killCountText;
+    [SerializeField] private TextMeshProUGUI timerText;
 
     private SpellManager _spellManager;
     private PlayerController _playerController;
     private LevelManager _levelManager;
     private EnemyManager _enemyManager;
+    private GameTimer _gameTimer;
 
     private void Start()
     {
@@ -56,7 +59,16 @@ public class PlayerHUD : MonoBehaviour
         if (_enemyManager != null)
         {
             _enemyManager.OnEnemyCountChanged += UpdateEnemyCount;
+            _enemyManager.OnKillCountChanged += UpdateKillCount;
             UpdateEnemyCount(0);
+            UpdateKillCount(0);
+        }
+
+        _gameTimer = GameTimer.Instance;
+        if (_gameTimer != null)
+        {
+            _gameTimer.OnTimeChanged += UpdateTimer;
+            UpdateTimer(0f);
         }
     }
 
@@ -95,6 +107,22 @@ public class PlayerHUD : MonoBehaviour
             // Optionnel : Changer la couleur si ça devient critique (+ de 300)
             if (count > 300) enemyCountText.color = Color.red;
             else enemyCountText.color = Color.white;
+        }
+    }
+
+    private void UpdateKillCount(int count)
+    {
+        if (killCountText != null)
+        {
+            killCountText.text = $"Kills : {count}";
+        }
+    }
+
+    private void UpdateTimer(float elapsedTime)
+    {
+        if (timerText != null)
+        {
+            timerText.text = GameTimer.FormatTime(elapsedTime, hideHoursIfZero: true);
         }
     }
 
@@ -145,6 +173,14 @@ public class PlayerHUD : MonoBehaviour
         }
 
         if (_enemyManager != null)
+        {
             _enemyManager.OnEnemyCountChanged -= UpdateEnemyCount;
+            _enemyManager.OnKillCountChanged -= UpdateKillCount;
+        }
+
+        if (_gameTimer != null)
+        {
+            _gameTimer.OnTimeChanged -= UpdateTimer;
+        }
     }
 }

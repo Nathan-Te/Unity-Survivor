@@ -13,10 +13,11 @@ public class EnemyManager : MonoBehaviour
     public static EnemyManager Instance { get; private set; }
 
     // --- EVENTS ---
-    public event Action<int> OnEnemyCountChanged; // Pour l'UI
+    public event Action<int> OnEnemyCountChanged; // Pour l'UI (ennemis actifs)
+    public event Action<int> OnKillCountChanged; // Pour l'UI (total tuÃ©s)
     public event Action<Vector3> OnEnemyDeathPosition; // Pour les Autels
 
-    [Header("Réglages")]
+    [Header("Rï¿½glages")]
     [SerializeField] private Transform playerTransform;
     [SerializeField] private LayerMask obstacleLayer;
 
@@ -25,6 +26,10 @@ public class EnemyManager : MonoBehaviour
 
     // --- C'est cette ligne qui manquait ! ---
     public bool IsAtCapacity => _activeEnemies.Count >= maxEnemiesCapacity;
+
+    // --- KILL COUNTER ---
+    private int _totalKills = 0;
+    public int TotalKills => _totalKills;
 
     [Header("Steering Settings")]
     [SerializeField] private float separationWeight = 1.5f;
@@ -37,7 +42,7 @@ public class EnemyManager : MonoBehaviour
     private List<EnemyController> _activeEnemies = new List<EnemyController>();
     private TransformAccessArray _transformAccessArray;
 
-    // Données Job
+    // Donnï¿½es Job
     private NativeList<float> _moveSpeeds;
     private NativeList<float> _stopDistances;
     private NativeList<float> _fleeDistances;
@@ -80,7 +85,7 @@ public class EnemyManager : MonoBehaviour
 
     private void CleanupNativeCollections()
     {
-        if (_isDisposed) return; // Évite double Dispose
+        if (_isDisposed) return; // ï¿½vite double Dispose
         _isDisposed = true;
 
         _activeEnemies.Clear();
@@ -98,14 +103,14 @@ public class EnemyManager : MonoBehaviour
         if (_rayResults.IsCreated) _rayResults.Dispose();
         if (_previousDirections.IsCreated) _previousDirections.Dispose();
 
-        Debug.Log("[EnemyManager] Native Collections libérées");
+        Debug.Log("[EnemyManager] Native Collections libï¿½rï¿½es");
     }
 
     /// <summary>
-    /// Tente de libérer une place en supprimant l'ennemi le plus éloigné
+    /// Tente de libï¿½rer une place en supprimant l'ennemi le plus ï¿½loignï¿½
     /// </summary>
     /// <param name="minDistanceRecycle">Distance minimum pour accepter le recyclage (ex: 40m)</param>
-    /// <returns>True si une place a été libérée</returns>
+    /// <returns>True si une place a ï¿½tï¿½ libï¿½rï¿½e</returns>
     public bool TryFreeSpaceByRecycling(float minDistanceRecycle)
     {
         if (_activeEnemies.Count == 0) return false;
@@ -116,7 +121,7 @@ public class EnemyManager : MonoBehaviour
         Vector3 playerPos = playerTransform.position;
 
         // On parcourt la liste pour trouver le plus loin
-        // C'est rapide (O(N)) et on ne le fait que si le spawn est bloqué
+        // C'est rapide (O(N)) et on ne le fait que si le spawn est bloquï¿½
         for (int i = 0; i < _activeEnemies.Count; i++)
         {
             if (_activeEnemies[i] == null) continue;
@@ -131,7 +136,7 @@ public class EnemyManager : MonoBehaviour
             }
         }
 
-        // Si on a trouvé un candidat assez loin
+        // Si on a trouvï¿½ un candidat assez loin
         if (bestIndex != -1 && maxDistSq > minDistSq)
         {
             // On le supprime silencieusement
@@ -151,7 +156,7 @@ public class EnemyManager : MonoBehaviour
         // 1. Raycasts
         PrepareRaycasts();
 
-        // 2. Exécution des Raycasts
+        // 2. Exï¿½cution des Raycasts
         int activeRayCount = _activeEnemies.Count * 3;
         if (activeRayCount > _rayCommands.Length) activeRayCount = _rayCommands.Length;
 
@@ -219,7 +224,7 @@ public class EnemyManager : MonoBehaviour
 
     public bool RegisterEnemy(EnemyController enemy, Collider col)
     {
-        // Si plein, on renvoie FAUX (Échec)
+        // Si plein, on renvoie FAUX (ï¿½chec)
         if (_activeEnemies.Count >= maxEnemiesCapacity)
         {
             return false;
@@ -239,7 +244,7 @@ public class EnemyManager : MonoBehaviour
             OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
         }
 
-        return true; // SUCCÈS
+        return true; // SUCCï¿½S
     }
 
     public void UnregisterEnemy(EnemyController enemy, Collider col)
@@ -278,6 +283,10 @@ public class EnemyManager : MonoBehaviour
 
     public void NotifyEnemyDeath(Vector3 position)
     {
+        // IncrÃ©menter le compteur de kills
+        _totalKills++;
+        OnKillCountChanged?.Invoke(_totalKills);
+
         OnEnemyDeathPosition?.Invoke(position);
     }
 
@@ -287,6 +296,12 @@ public class EnemyManager : MonoBehaviour
         {
             if (_activeEnemies[i] != null) _activeEnemies[i].TakeDamage(99999f);
         }
+    }
+
+    public void ResetKillCounter()
+    {
+        _totalKills = 0;
+        OnKillCountChanged?.Invoke(_totalKills);
     }
 
     public bool TryGetEnemyByCollider(Collider col, out EnemyController enemy) => _colliderCache.TryGetValue(col.GetInstanceID(), out enemy);
