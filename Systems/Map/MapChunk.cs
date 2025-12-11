@@ -48,7 +48,6 @@ public class MapChunk : MonoBehaviour
     private void GenerateContent(Vector2Int coord, int worldSeed)
     {
         // 1. RECYCLAGE (POOLING)
-        // Au lieu de Destroy, on rend les objets au MapObjectPool
         if (MapObjectPool.Instance != null)
         {
             foreach (var item in _spawnedItems)
@@ -58,7 +57,6 @@ public class MapChunk : MonoBehaviour
         }
         else
         {
-            // Fallback si pas de pool (sécurité)
             foreach (var item in _spawnedItems) Destroy(item.instance);
         }
         _spawnedItems.Clear();
@@ -70,20 +68,21 @@ public class MapChunk : MonoBehaviour
         int combinedSeed = coord.GetHashCode() ^ worldSeed;
         System.Random rng = new System.Random(combinedSeed);
 
-        // 3. GÉNÉRATION OBSTACLES
+        // 3. GÉNÉRATION OBSTACLES (Rotation Aléatoire = OUI)
         int obsCount = rng.Next(profile.minObstaclesPerChunk, profile.maxObstaclesPerChunk + 1);
         for (int i = 0; i < obsCount; i++)
         {
             GameObject prefab = profile.PickRandomObstacle(rng);
-            if (prefab != null) SpawnObject(prefab, rng);
+            // Par défaut, SpawnObject utilise randomRotation = true
+            if (prefab != null) SpawnObject(prefab, rng, true);
         }
 
-        // 4. GÉNÉRATION DÉCORS (NOUVEAU)
+        // 4. GÉNÉRATION DÉCORS (Rotation Aléatoire = OUI)
         int decoCount = rng.Next(profile.minDecorationsPerChunk, profile.maxDecorationsPerChunk + 1);
         for (int i = 0; i < decoCount; i++)
         {
             GameObject prefab = profile.PickRandomDecoration(rng);
-            if (prefab != null) SpawnObject(prefab, rng);
+            if (prefab != null) SpawnObject(prefab, rng, true);
         }
 
         // 5. GÉNÉRATION POI
@@ -102,17 +101,18 @@ public class MapChunk : MonoBehaviour
             GameObject poiPrefab = profile.PickRandomPOI(rng);
             if (poiPrefab != null)
             {
-                // Pour les POI, on doit gérer la persistance AVANT de spawn
-                // Si le POI est déjà détruit dans le WorldState, on ne le spawn même pas (économie)
                 string uniqueID = $"Chunk_{coord.x}_{coord.y}_POI_0";
 
                 if (WorldStateManager.Instance != null && WorldStateManager.Instance.IsInteracted(uniqueID))
                 {
-                    // Déjà fait, on ne spawn rien
+                    // Déjà fait
                 }
                 else
                 {
-                    GameObject obj = SpawnObject(poiPrefab, rng);
+                    // --- MODIFICATION ICI : randomRotation = false ---
+                    GameObject obj = SpawnObject(poiPrefab, rng, false);
+                    // ------------------------------------------------
+
                     if (obj.TryGetComponent<PointOfInterest>(out var poiScript))
                     {
                         poiScript.Initialize(uniqueID);
@@ -122,14 +122,24 @@ public class MapChunk : MonoBehaviour
         }
     }
 
-    private GameObject SpawnObject(GameObject prefab, System.Random rng)
+    // Nouvelle signature avec paramètre par défaut à true
+    private GameObject SpawnObject(GameObject prefab, System.Random rng, bool randomRotation = true)
     {
         Vector3 pos = GetRandomPositionInChunk(rng);
-        Quaternion rot = Quaternion.Euler(0, (float)rng.NextDouble() * 360f, 0);
+
+        // Choix de la rotation
+        Quaternion rot;
+        if (randomRotation)
+        {
+            rot = Quaternion.Euler(0, (float)rng.NextDouble() * 360f, 0);
+        }
+        else
+        {
+            rot = Quaternion.identity; // Rotation (0, 0, 0) pour les POI
+        }
 
         GameObject obj;
 
-        // Utilisation du Pool
         if (MapObjectPool.Instance != null)
         {
             obj = MapObjectPool.Instance.Get(prefab, pos, rot, obstaclesContainer);
@@ -139,7 +149,6 @@ public class MapChunk : MonoBehaviour
             obj = Instantiate(prefab, pos, rot, obstaclesContainer);
         }
 
-        // On mémorise le couple (Instance, PrefabSource) pour pouvoir le rendre plus tard
         _spawnedItems.Add(new SpawnedItem { instance = obj, sourcePrefab = prefab });
 
         return obj;

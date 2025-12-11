@@ -1,13 +1,28 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class PointOfInterest : MonoBehaviour
 {
+    public static List<PointOfInterest> ActivePOIs = new List<PointOfInterest>();
+
     [Header("POI Settings")]
     public string poiName;
     public bool isCompleted = false;
 
+    public Sprite iconHUD;
+
     // NOUVEAU : Gestion centrale de l'ID et de la persistance
     protected string _uniqueID;
+
+    protected virtual void OnEnable()
+    {
+        ActivePOIs.Add(this);
+    }
+
+    protected virtual void OnDisable()
+    {
+        ActivePOIs.Remove(this);
+    }
 
     public void Initialize(string id)
     {
