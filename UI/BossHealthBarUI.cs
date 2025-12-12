@@ -2,20 +2,22 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class BossHealthBarUI : MonoBehaviour
+public class BossHealthBarUI : Singleton<BossHealthBarUI>
 {
-    public static BossHealthBarUI Instance { get; private set; }
-
     [SerializeField] private GameObject panel;
     [SerializeField] private Slider hpSlider;
     [SerializeField] private TextMeshProUGUI bossNameText;
 
     private EnemyController _currentBoss;
 
-    private void Awake()
+    protected override void Awake()
     {
-        Instance = this;
-        panel.SetActive(false);
+        base.Awake();
+
+        if (Instance == this)
+        {
+            panel.SetActive(false);
+        }
     }
 
     public void Show(EnemyController boss)
@@ -23,7 +25,7 @@ public class BossHealthBarUI : MonoBehaviour
         _currentBoss = boss;
         panel.SetActive(true);
         bossNameText.text = boss.Data.enemyName;
-        hpSlider.maxValue = boss.Data.baseHp; // Ou boss.currentHp si scalé
+        hpSlider.maxValue = boss.Data.baseHp; // Ou boss.currentHp si scalï¿½
         hpSlider.value = boss.currentHp;
     }
 
@@ -37,7 +39,7 @@ public class BossHealthBarUI : MonoBehaviour
     {
         if (_currentBoss != null)
         {
-            // Mise à jour fluide (Lerp possible ici)
+            // Mise ï¿½ jour fluide (Lerp possible ici)
             hpSlider.value = _currentBoss.currentHp;
 
             if (_currentBoss.currentHp <= 0) Hide();

@@ -1,9 +1,8 @@
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour, IDamageable
+public class PlayerController : Singleton<PlayerController>, IDamageable
 {
-    public static PlayerController Instance { get; private set; }
 
     [Header("Stats de Base")]
     [SerializeField] private float moveSpeed = 8f;
@@ -39,13 +38,17 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     public event System.Action<float, float> OnHealthChanged;
 
-    private void Awake()
+    protected override void Awake()
     {
-        Instance = this;
-        _controller = GetComponent<CharacterController>();
-        _mainCamera = Camera.main;
-        _currentHp = maxHp;
-        _baseMoveSpeed = moveSpeed;
+        base.Awake();
+
+        if (Instance == this)
+        {
+            _controller = GetComponent<CharacterController>();
+            _mainCamera = Camera.main;
+            _currentHp = maxHp;
+            _baseMoveSpeed = moveSpeed;
+        }
     }
 
     private void Start()
@@ -86,7 +89,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         OnHealthChanged?.Invoke(_currentHp, maxHp);
     }
 
-    // --- Méthodes Stats ---
+    // --- Mï¿½thodes Stats ---
     public void ModifySpeed(float percentAdd)
     {
         moveSpeed = _baseMoveSpeed * (1.0f + percentAdd);

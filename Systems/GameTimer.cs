@@ -1,10 +1,8 @@
 using System;
 using UnityEngine;
 
-public class GameTimer : MonoBehaviour
+public class GameTimer : Singleton<GameTimer>
 {
-    public static GameTimer Instance { get; private set; }
-
     // --- EVENTS ---
     public event Action<float> OnTimeChanged;
 
@@ -14,16 +12,6 @@ public class GameTimer : MonoBehaviour
 
     public float ElapsedTime => _elapsedTime;
     public bool IsPaused => _isPaused;
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-    }
 
     private void Update()
     {
@@ -80,11 +68,4 @@ public class GameTimer : MonoBehaviour
         OnTimeChanged?.Invoke(_elapsedTime);
     }
 
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
-    }
 }

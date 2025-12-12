@@ -8,23 +8,25 @@ public class SpellSlotUI : MonoBehaviour
     [SerializeField] private Image formIcon;
     [SerializeField] private TextMeshProUGUI formLevelText;
     [SerializeField] private Image effectIcon;
-    [SerializeField] private TextMeshProUGUI effectLevelText; // Assure-toi que c'est lié
+    [SerializeField] private TextMeshProUGUI effectLevelText; // Assure-toi que c'est liï¿½
     [SerializeField] private Image[] modIcons;
-    [SerializeField] private TextMeshProUGUI[] modLevelTexts; // Assure-toi que c'est lié
+    [SerializeField] private TextMeshProUGUI[] modLevelTexts; // Assure-toi que c'est liï¿½
 
     [SerializeField] private Button clickButton;
     [SerializeField] private GameObject emptyStateVisual; // (Optionnel) un texte ou image "Empty"
 
     private int _slotIndex;
     private LevelUpUI _levelUpManager;
+    private UpgradeData _pendingUpgrade;
 
     // Affichage Standard
-    public void Initialize(SpellSlot slot, int index, LevelUpUI levelUpManager = null)
+    public void Initialize(SpellSlot slot, int index, LevelUpUI levelUpManager = null, UpgradeData pendingUpgrade = null)
     {
         _slotIndex = index;
         _levelUpManager = levelUpManager;
+        _pendingUpgrade = pendingUpgrade;
 
-        if (emptyStateVisual) emptyStateVisual.SetActive(false); // On cache l'état vide
+        if (emptyStateVisual) emptyStateVisual.SetActive(false); // On cache l'ï¿½tat vide
 
         // 1. Forme
         if (slot.formRune != null && slot.formRune.Data.icon != null)
@@ -84,10 +86,11 @@ public class SpellSlotUI : MonoBehaviour
     }
 
     // Affichage Slot Vide
-    public void InitializeEmpty(int index, LevelUpUI levelUpManager)
+    public void InitializeEmpty(int index, LevelUpUI levelUpManager, UpgradeData pendingUpgrade = null)
     {
         _slotIndex = index;
         _levelUpManager = levelUpManager;
+        _pendingUpgrade = pendingUpgrade;
 
         if (emptyStateVisual) emptyStateVisual.SetActive(true);
 
@@ -109,7 +112,7 @@ public class SpellSlotUI : MonoBehaviour
         clickButton.onClick.RemoveAllListeners();
         if (manager != null)
         {
-            clickButton.onClick.AddListener(() => manager.OnSlotClicked(_slotIndex));
+            clickButton.onClick.AddListener(() => manager.OnSlotClicked(_slotIndex, _pendingUpgrade));
         }
     }
 }

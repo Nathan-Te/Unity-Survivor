@@ -1,17 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MapManager : MonoBehaviour
+public class MapManager : Singleton<MapManager>
 {
-    public static MapManager Instance { get; private set; }
-
     [Header("Configuration")]
     [SerializeField] private MapGenerationProfile currentProfile; // <-- NOUVEAU
     [SerializeField] private GameObject chunkPrefab;
     [SerializeField] private float chunkSize = 40f;
     [SerializeField] private int viewDistance = 1;
 
-    [Header("Génération")]
+    [Header("Gï¿½nï¿½ration")]
     [SerializeField] private bool randomizeSeed = true;
     [SerializeField] private int worldSeed = 12345;
 
@@ -25,29 +23,33 @@ public class MapManager : MonoBehaviour
     [Header("Rendu")]
     [SerializeField] private Material groundMaterial;
 
-    private void Awake()
+    protected override void Awake()
     {
-        Instance = this;
-        if (randomizeSeed) worldSeed = Random.Range(-1000000, 1000000);
+        base.Awake();
 
-        if (groundMaterial != null)
+        if (Instance == this)
         {
-            // On génère un décalage énorme basé sur la seed
-            // (Les shaders aiment les Vector2 pour les offsets)
-            float offsetX = Random.Range(-10000f, 10000f);
-            float offsetY = Random.Range(-10000f, 10000f);
+            if (randomizeSeed) worldSeed = Random.Range(-1000000, 1000000);
 
-            // On envoie ça au Shader
-            // Assurez-vous que le nom "Noise_Offset" correspond exactement à celui du Shader Graph
-            groundMaterial.SetVector("_Noise_Offset", new Vector2(offsetX, offsetY));
-            Debug.Log("Vector : " + groundMaterial.GetVector("_Noise_Offset"));
+            if (groundMaterial != null)
+            {
+                // On gï¿½nï¿½re un dï¿½calage ï¿½norme basï¿½ sur la seed
+                // (Les shaders aiment les Vector2 pour les offsets)
+                float offsetX = Random.Range(-10000f, 10000f);
+                float offsetY = Random.Range(-10000f, 10000f);
+
+                // On envoie ï¿½a au Shader
+                // Assurez-vous que le nom "Noise_Offset" correspond exactement ï¿½ celui du Shader Graph
+                groundMaterial.SetVector("_Noise_Offset", new Vector2(offsetX, offsetY));
+                Debug.Log("Vector : " + groundMaterial.GetVector("_Noise_Offset"));
+            }
+
+            // Sï¿½curitï¿½
+            if (currentProfile == null) Debug.LogError("MapManager : Aucun Profil de gï¿½nï¿½ration assignï¿½ !");
         }
-
-        // Sécurité
-        if (currentProfile == null) Debug.LogError("MapManager : Aucun Profil de génération assigné !");
     }
 
-    // ... (Start, Update et UpdateChunks restent inchangés) ...
+    // ... (Start, Update et UpdateChunks restent inchangï¿½s) ...
     // Le code existant est bon, car il appelle chunk.Reposition(..., worldSeed)
     // Nous allons modifier MapChunk pour qu'il lise le profil via le Singleton.
 

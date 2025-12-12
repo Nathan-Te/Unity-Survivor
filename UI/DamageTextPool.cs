@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class DamageTextPool : MonoBehaviour
+public class DamageTextPool : Singleton<DamageTextPool>
 {
-    public static DamageTextPool Instance { get; private set; }
-
     [SerializeField] private DamageText textPrefab;
     [SerializeField] private int initialSize = 50;
 
@@ -14,25 +12,29 @@ public class DamageTextPool : MonoBehaviour
     private Queue<DamageText> _pool = new Queue<DamageText>();
     private List<DamageText> _activeTexts = new List<DamageText>(); // Pour le nettoyage
 
-    private void Awake()
+    protected override void Awake()
     {
-        Instance = this;
+        base.Awake();
 
-        // ⭐ CORRECTION : Créer ET ajouter au pool directement
-        for (int i = 0; i < initialSize; i++)
+        if (Instance == this)
         {
-            DamageText t = Instantiate(textPrefab, transform);
-            t.gameObject.SetActive(false);
-            _pool.Enqueue(t);
+            // ⭐ CORRECTION : Créer ET ajouter au pool directement
+            for (int i = 0; i < initialSize; i++)
+            {
+                DamageText t = Instantiate(textPrefab, transform);
+                t.gameObject.SetActive(false);
+                _pool.Enqueue(t);
+            }
         }
     }
 
     // ⭐ AJOUT : Nettoyage à la destruction
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         _pool?.Clear();
         _activeTexts?.Clear();
-        Instance = null;
+
+        base.OnDestroy();
     }
 
     private DamageText CreateNew()

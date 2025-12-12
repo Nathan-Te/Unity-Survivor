@@ -1,25 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ProjectilePool : MonoBehaviour
+public class ProjectilePool : Singleton<ProjectilePool>
 {
-    public static ProjectilePool Instance { get; private set; }
-
     // Dictionnaire : Prefab ID -> File d'attente d'objets
     private Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
 
     private List<ProjectileController> _activeProjectiles = new List<ProjectileController>();
 
-    private void Awake()
-    {
-        Instance = this;
-    }
-
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         _activeProjectiles.Clear();
         _pools.Clear();
-        Instance = null;
+
+        base.OnDestroy();
     }
 
     private void Update()
@@ -66,7 +60,7 @@ public class ProjectilePool : MonoBehaviour
 
     public void ReturnToPool(GameObject obj, GameObject originalPrefab)
     {
-        // DÉSINSCRIPTION DE L'UPDATE
+        // Dï¿½SINSCRIPTION DE L'UPDATE
         if (obj.TryGetComponent<ProjectileController>(out var ctrl))
         {
             _activeProjectiles.Remove(ctrl);
@@ -91,6 +85,6 @@ public class ProjectilePool : MonoBehaviour
         _pools.Clear();
         _activeProjectiles.Clear();
 
-        Debug.Log("[ProjectilePool] Pool vidé");
+        Debug.Log("[ProjectilePool] Pool vidï¿½");
     }
 }

@@ -1,5 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 
+/// <summary>
+/// Main controller for enemies - handles stats, health, and lifecycle.
+/// Delegates visual effects, status effects, and combat to specialized components.
+/// </summary>
 public class EnemyController : MonoBehaviour
 {
     [Header("Configuration")]
@@ -7,10 +11,6 @@ public class EnemyController : MonoBehaviour
 
     [Header("Animation (Optionnel)")]
     [SerializeField] private EnemyAnimator enemyAnimator;
-
-    [Header("Visual Effects")]
-    [SerializeField] private float hitFlashDuration = 0.1f;
-    [SerializeField] private Material hitFlashMaterial; // Matériau blanc pour le blink
 
     [Header("État (Read Only)")]
     public float currentHp;
@@ -20,25 +20,16 @@ public class EnemyController : MonoBehaviour
     private Rigidbody _rb;
     private Collider _myCollider;
     private int _xpValue;
+
     public EnemyData Data => data;
-    private float _attackTimer;
 
-    // --- HIT FLASH EFFECT ---
-    private Renderer _renderer;
-    private Material[] _originalMaterials; // Support pour plusieurs matériaux
-    private Material[] _flashMaterialsArray; // Array de matériaux de flash
-    private float _flashTimer;
-
-    // --- STATUTS ---
-    private float _burnTimer;
-    private float _burnDamagePerSec;
-    private float _burnTickTimer;
-    private float _slowTimer;
-    private float _originalSpeed;
-    private bool _isSlowed;
+    // Sub-components for specialized functionality
+    private EnemyStatusEffects _statusEffects;
+    private EnemyVisuals _visuals;
+    private EnemyRangedCombat _rangedCombat;
 
     private int _frameIntervalOffset;
-    private const int LOGIC_FRAME_INTERVAL = 10; // Exécute la logique 1 frame sur 10
+    private const int LOGIC_FRAME_INTERVAL = 10; // Execute logic 1 frame out of 10
 
     private void Awake()
     {
@@ -46,79 +37,44 @@ public class EnemyController : MonoBehaviour
         _myCollider = GetComponent<Collider>();
         if (_myCollider == null) _myCollider = GetComponentInChildren<Collider>();
 
-        // Si on n'a pas assigné l'animator manuellement, on essaie de le trouver
-        if (enemyAnimator == null) enemyAnimator = GetComponentInChildren<EnemyAnimator>();
+        // Find or assign animator
+        if (enemyAnimator == null)
+            enemyAnimator = GetComponentInChildren<EnemyAnimator>();
 
-        // Initialiser le Renderer pour le Hit Flash
-        _renderer = GetComponentInChildren<Renderer>();
-        if (_renderer != null)
-        {
-            // Sauvegarder TOUS les matériaux d'origine (support multi-matériaux)
-            _originalMaterials = _renderer.sharedMaterials;
+        // Get or add sub-components
+        _statusEffects = GetComponent<EnemyStatusEffects>();
+        if (_statusEffects == null)
+            _statusEffects = gameObject.AddComponent<EnemyStatusEffects>();
 
-            // Créer un array de matériaux de flash (un pour chaque slot)
-            _flashMaterialsArray = new Material[_originalMaterials.Length];
+        _visuals = GetComponent<EnemyVisuals>();
+        if (_visuals == null)
+            _visuals = gameObject.AddComponent<EnemyVisuals>();
 
-            // Créer le matériau de flash
-            Material flashMat;
-            if (hitFlashMaterial != null)
-            {
-                flashMat = new Material(hitFlashMaterial);
-            }
-            else
-            {
-                // Créer un matériau blanc par défaut si aucun n'est assigné
-                Shader flashShader = Shader.Find("Universal Render Pipeline/Unlit");
-                if (flashShader == null) flashShader = Shader.Find("Unlit/Color"); // Fallback Built-in
-                if (flashShader == null) flashShader = Shader.Find("Standard"); // Fallback Standard
-
-                flashMat = new Material(flashShader);
-                flashMat.color = Color.white;
-            }
-
-            // Remplir tous les slots avec le même matériau de flash
-            for (int i = 0; i < _flashMaterialsArray.Length; i++)
-            {
-                _flashMaterialsArray[i] = flashMat;
-            }
-        }
+        _rangedCombat = GetComponent<EnemyRangedCombat>();
+        if (_rangedCombat == null)
+            _rangedCombat = gameObject.AddComponent<EnemyRangedCombat>();
 
         InitializeStats();
 
-        // On donne un offset aléatoire pour éviter que tous les ennemis calculent
-        // EXACTEMENT à la même frame (lissage du pic CPU)
+        // Random frame offset to smooth CPU spikes
         _frameIntervalOffset = Random.Range(0, LOGIC_FRAME_INTERVAL);
     }
 
     private void Update()
     {
-        // 1. Gestion du Hit Flash (chaque frame pour une réactivité immédiate)
-        if (_flashTimer > 0)
-        {
-            _flashTimer -= Time.deltaTime;
-
-            if (_flashTimer <= 0)
-            {
-                // Retour aux matériaux normaux
-                if (_renderer != null && _originalMaterials != null)
-                {
-                    _renderer.materials = _originalMaterials;
-                }
-            }
-        }
-
-        // 2. Logique lourde (Attaque + Statuts) -> Throttled (Time Sliced)
+        // Time-sliced logic (heavy operations run every 10 frames)
         if ((Time.frameCount + _frameIntervalOffset) % LOGIC_FRAME_INTERVAL == 0)
         {
-            // On passe le temps écoulé depuis la dernière exécution logique
             float logicDeltaTime = Time.deltaTime * LOGIC_FRAME_INTERVAL;
 
+            // Handle ranged attacks if enemy has projectile
             if (data != null && data.projectilePrefab != null)
             {
-                HandleRangedAttack(logicDeltaTime);
+                _rangedCombat.UpdateRangedAttack(logicDeltaTime, data);
             }
 
-            HandleStatusEffects(logicDeltaTime);
+            // Handle status effects (burn, slow)
+            _statusEffects.UpdateStatusEffects(logicDeltaTime);
         }
     }
 
@@ -126,26 +82,72 @@ public class EnemyController : MonoBehaviour
     {
         if (data == null)
         {
-            currentHp = 10f; currentDamage = 5f; currentSpeed = 3f; _xpValue = 10;
+            currentHp = 10f;
+            currentDamage = 5f;
+            currentSpeed = 3f;
+            _xpValue = 10;
         }
         else
         {
-            currentHp = data.baseHp; currentDamage = data.baseDamage; currentSpeed = data.baseSpeed;
-            if (_rb) _rb.mass = data.mass; _xpValue = data.xpDropAmount;
+            currentHp = data.baseHp;
+            currentDamage = data.baseDamage;
+            currentSpeed = data.baseSpeed;
+            if (_rb) _rb.mass = data.mass;
+            _xpValue = data.xpDropAmount;
         }
-        _originalSpeed = currentSpeed;
     }
 
+    public void TakeDamage(float amount)
+    {
+        currentHp -= amount;
+
+        // Spawn damage text
+        if (DamageTextPool.Instance != null)
+        {
+            Vector3 popPos = transform.position + Random.insideUnitSphere * 0.5f;
+            DamageTextPool.Instance.Spawn(amount, popPos);
+        }
+
+        // Trigger hit flash effect
+        _visuals.TriggerHitFlash();
+
+        if (currentHp <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        // Notify manager with score value
+        int scoreValue = data != null ? data.scoreValue : 10;
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.NotifyEnemyDeath(transform.position, scoreValue);
+
+        // Drop XP gem
+        if (GemPool.Instance != null)
+            GemPool.Instance.Spawn(transform.position, _xpValue);
+
+        // Return to pool
+        if (EnemyPool.Instance != null && data != null && data.prefab != null)
+            EnemyPool.Instance.ReturnToPool(gameObject, data.prefab);
+        else
+            Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// Despawns enemy without dropping XP or notifying events (used for capacity management)
+    /// </summary>
     public void SilentDespawn()
     {
-        // On désinscrit l'ennemi du Manager proprement
+        // Unregister from manager
         if (EnemyManager.Instance != null)
             EnemyManager.Instance.UnregisterEnemy(this, _myCollider);
 
-        // On le renvoie au pool sans lâcher d'XP ni d'event
+        // Return to pool
         if (EnemyPool.Instance != null && data != null && data.prefab != null)
         {
-            EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
+            EnemyPool.Instance.ReturnToPool(gameObject, data.prefab);
         }
         else
         {
@@ -153,9 +155,14 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Resets enemy to initial state (called when retrieved from pool)
+    /// </summary>
     public void ResetEnemy()
     {
         InitializeStats();
+
+        // Reset physics
         if (TryGetComponent<Rigidbody>(out var rb))
         {
             rb.linearVelocity = Vector3.zero;
@@ -163,181 +170,68 @@ public class EnemyController : MonoBehaviour
             rb.Sleep();
         }
 
+        // Reset animator
         if (enemyAnimator != null)
         {
             Animator anim = enemyAnimator.GetComponent<Animator>();
             if (anim != null)
             {
-                anim.Rebind(); // ⭐ Réinitialise complètement l'animator
+                anim.Rebind();
             }
         }
 
-        // Réinitialiser le Hit Flash
-        _flashTimer = 0f;
-        if (_renderer != null && _originalMaterials != null)
-        {
-            _renderer.materials = _originalMaterials;
-        }
+        // Reset sub-components
+        _visuals.RestoreOriginalMaterials();
+        _statusEffects.ResetStatusEffects();
+        _rangedCombat.ResetAttackTimer();
     }
 
-    public void TakeDamage(float amount)
-    {
-        currentHp -= amount;
-        if (DamageTextPool.Instance != null)
-        {
-            Vector3 popPos = transform.position + Random.insideUnitSphere * 0.5f;
-            DamageTextPool.Instance.Spawn(amount, popPos);
-        }
-
-        // --- HIT FLASH EFFECT ---
-        TriggerHitFlash();
-
-        if (currentHp <= 0) Die();
-    }
-
-    private void TriggerHitFlash()
-    {
-        if (_renderer != null && _flashMaterialsArray != null)
-        {
-            _flashTimer = hitFlashDuration;
-            _renderer.materials = _flashMaterialsArray;
-        }
-    }
-
-    private void Die()
-    {
-        // Notifier avec la valeur de score
-        int scoreValue = data != null ? data.scoreValue : 10;
-        if (EnemyManager.Instance != null)
-            EnemyManager.Instance.NotifyEnemyDeath(transform.position, scoreValue);
-
-        if (GemPool.Instance != null)
-            GemPool.Instance.Spawn(transform.position, _xpValue);
-
-        if (EnemyPool.Instance != null && data != null && data.prefab != null)
-            EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
-        else
-            Destroy(gameObject);
-    }
-
-    private void HandleStatusEffects(float dt)
-    {
-        // On utilise 'dt' (qui vaut ~0.16s) au lieu de Time.deltaTime (~0.016s)
-
-        if (_burnTimer > 0)
-        {
-            _burnTimer -= dt;
-            _burnTickTimer += dt;
-            // Si on a accumulé assez de temps pour un tick (1s)
-            if (_burnTickTimer >= 1.0f)
-            {
-                TakeDamage(_burnDamagePerSec);
-                _burnTickTimer -= 1.0f; // On retire 1s au lieu de reset à 0 pour garder la précision
-            }
-        }
-        if (_slowTimer > 0)
-        {
-            _slowTimer -= dt;
-            if (_slowTimer <= 0) { currentSpeed = _originalSpeed; _isSlowed = false; }
-        }
-    }
-
+    /// <summary>
+    /// Applies burn damage over time
+    /// </summary>
     public void ApplyBurn(float dps, float duration)
     {
-        if (_burnTimer <= 0 || dps > _burnDamagePerSec) _burnDamagePerSec = dps;
-        _burnTimer = duration;
+        _statusEffects.ApplyBurn(dps, duration);
     }
 
+    /// <summary>
+    /// Applies slow effect
+    /// </summary>
     public void ApplySlow(float factor, float duration)
     {
-        if (!_isSlowed) { _originalSpeed = currentSpeed; currentSpeed *= factor; _isSlowed = true; }
-        _slowTimer = duration;
-    }
-
-    // -----------------------------------------------------------
-    // GESTION DE L'ATTAQUE SYNCHRONISÉE
-    // -----------------------------------------------------------
-
-    private void HandleRangedAttack(float dt)
-    {
-        if (PlayerController.Instance == null) return;
-
-        float distSqr = (PlayerController.Instance.transform.position - transform.position).sqrMagnitude;
-        float fleeDistSqr = data.fleeDistance * data.fleeDistance;
-        float attackRange = data.stopDistance + 2f;
-        float attackRangeSqr = attackRange * attackRange;
-
-        if (data.fleeDistance > 0 && distSqr < fleeDistSqr) return;
-
-        if (distSqr <= attackRangeSqr)
-        {
-            _attackTimer += dt; // On ajoute le temps accumulé
-            if (_attackTimer >= data.attackCooldown)
-            {
-                if (enemyAnimator != null) enemyAnimator.TriggerAttackAnimation();
-                else SpawnProjectile();
-
-                _attackTimer = 0f;
-            }
-        }
-        else
-        {
-            // Réduction du timer si hors de portée (plus lente)
-            _attackTimer = Mathf.Max(0, _attackTimer - dt);
-        }
-    }
-
-    // Cette méthode est appelée par l'Animation Event (ou directement si pas d'anim)
-    public void SpawnProjectile()
-    {
-        if (PlayerController.Instance == null) return;
-
-        // Calcul de la direction de tir
-        // Note : L'ennemi regarde déjà le joueur grâce au Job System, 
-        // mais on recalcule le vecteur pour être précis.
-        Vector3 dir = (PlayerController.Instance.transform.position - transform.position).normalized;
-
-        // Point de spawn : On part du centre + un peu devant/haut
-        Vector3 spawnPos = transform.position + Vector3.up + dir;
-
-        // Récupération du projectile
-        GameObject proj = ProjectilePool.Instance.Get(data.projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
-
-        if (proj.TryGetComponent<ProjectileController>(out var ctrl))
-        {
-            ctrl.InitializeEnemyProjectile(data.baseDamage, data.projectilePrefab);
-        }
+        _statusEffects.ApplySlow(factor, duration);
     }
 
     private void OnEnable()
     {
         if (EnemyManager.Instance != null)
         {
-            // TENTATIVE D'ENREGISTREMENT
+            // Try to register with manager
             bool isRegistered = EnemyManager.Instance.RegisterEnemy(this, _myCollider);
 
-            // SÉCURITÉ ANTI-CRASH : Si le manager est plein, on se détruit tout de suite !
+            // If manager is at capacity, despawn immediately
             if (!isRegistered)
             {
-                // Retour au pool si possible, sinon Destroy
                 if (EnemyPool.Instance != null && data != null)
                 {
-                    EnemyPool.Instance.ReturnToPool(this.gameObject, data.prefab);
+                    EnemyPool.Instance.ReturnToPool(gameObject, data.prefab);
                 }
                 else
                 {
                     Destroy(gameObject);
                 }
-                return; // On arrête tout ici
+                return;
             }
         }
 
+        // Show boss health bar if this is a boss
         if (data != null && data.isBoss && BossHealthBarUI.Instance != null)
             BossHealthBarUI.Instance.Show(this);
     }
 
     private void OnDisable()
     {
-        if (EnemyManager.Instance != null) EnemyManager.Instance.UnregisterEnemy(this, _myCollider);
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.UnregisterEnemy(this, _myCollider);
     }
 }

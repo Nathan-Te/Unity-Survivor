@@ -1,6 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Main controller for projectiles - handles initialization, movement, and collision detection.
+/// Delegates damage and chain reactions to specialized components.
+/// </summary>
 public class ProjectileController : MonoBehaviour
 {
     private SpellDefinition _def;
@@ -19,10 +23,25 @@ public class ProjectileController : MonoBehaviour
 
     private bool _shouldDestroyEffect;
 
+    // Sub-components for specialized functionality
+    private ProjectileDamageHandler _damageHandler;
+    private ProjectileChainReaction _chainReaction;
+
+    public SpellDefinition Definition => _def;
+
     private void Awake()
     {
         // On récupère le renderer une seule fois à la création
         _renderer = GetComponentInChildren<Renderer>();
+
+        // Get or add sub-components
+        _damageHandler = GetComponent<ProjectileDamageHandler>();
+        if (_damageHandler == null)
+            _damageHandler = gameObject.AddComponent<ProjectileDamageHandler>();
+
+        _chainReaction = GetComponent<ProjectileChainReaction>();
+        if (_chainReaction == null)
+            _chainReaction = gameObject.AddComponent<ProjectileChainReaction>();
     }
 
     public void Initialize(SpellDefinition def, Vector3 direction, int index = 0, int totalCount = 1)
@@ -88,14 +107,6 @@ public class ProjectileController : MonoBehaviour
         _motionStrategy = new LinearMotion(transform.position, 30f, 10f, false, true);
     }
 
-    //private void Update()
-    //{
-    //    if (_motionStrategy != null)
-    //    {
-    //        _motionStrategy.Update(this, Time.deltaTime);
-    //    }
-    //}
-
     public void ManualUpdate(float dt)
     {
         if (_def == null) return;
@@ -111,7 +122,7 @@ public class ProjectileController : MonoBehaviour
 
     public void TriggerSmiteExplosion()
     {
-        ApplyAreaDamage(transform.position);
+        _damageHandler.ApplyAreaDamage(transform.position, _def);
         Despawn();
     }
 
@@ -186,97 +197,21 @@ public class ProjectileController : MonoBehaviour
         }
         else if (layer == LayerMask.NameToLayer("Obstacle"))
         {
-            if (_def.Effect.aoeRadius > 0) ApplyAreaDamage(transform.position);
+            if (_def.Effect.aoeRadius > 0)
+                _damageHandler.ApplyAreaDamage(transform.position, _def);
             Despawn();
         }
     }
 
     private void ApplyHit(EnemyController target)
     {
-        if (_def.Effect.aoeRadius > 0)
+        // Delegate to damage handler
+        _damageHandler.ApplyHit(target, _def);
+
+        // Handle chain reaction if enabled
+        if (_def.ChainCount > 0)
         {
-            ApplyAreaDamage(transform.position);
-        }
-        else
-        {
-            ApplyDamage(target);
-        }
-    }
-
-    private void ApplyAreaDamage(Vector3 center)
-    {
-        float radius = _def.Effect.aoeRadius > 0 ? _def.Effect.aoeRadius : 3f;
-        var enemies = EnemyManager.Instance.GetEnemiesInRange(center, radius);
-        foreach (var e in enemies) ApplyDamage(e);
-
-        // TODO: Instantiate VFX Explosion
-    }
-
-    private void ApplyDamage(EnemyController enemy)
-    {
-        enemy.TakeDamage(_def.Damage);
-
-        if (_def.Effect.applyBurn) enemy.ApplyBurn(_def.Damage * 0.2f, 3f);
-        if (_def.Effect.applySlow) enemy.ApplySlow(0.5f, 2f);
-
-        if (_def.Knockback > 0 && enemy.TryGetComponent<Rigidbody>(out var rb))
-        {
-            Vector3 pushDir = (enemy.transform.position - transform.position).normalized;
-            rb.AddForce(pushDir * _def.Knockback, ForceMode.Impulse);
-        }
-
-        // Logique Minion / Chain
-        bool isFatal = (enemy.currentHp - _def.Damage) <= 0;
-        if (isFatal && _def.MinionChance > 0 && _def.MinionPrefab != null)
-        {
-            if (Random.value <= _def.MinionChance)
-                Instantiate(_def.MinionPrefab, enemy.transform.position, Quaternion.identity);
-        }
-
-        if (_def.ChainCount > 0) HandleChainReaction(enemy);
-    }
-
-    private void HandleChainReaction(EnemyController currentTarget)
-    {
-        // Logique Chain inchangée, je la remets pour que le script soit complet
-        var candidates = EnemyManager.Instance.GetEnemiesInRange(transform.position, _def.ChainRange);
-        EnemyController bestCandidate = null;
-        float closestDistSqr = float.MaxValue;
-
-        foreach (var candidate in candidates)
-        {
-            if (candidate == currentTarget || candidate.currentHp <= 0) continue;
-            float dSqr = (candidate.transform.position - currentTarget.transform.position).sqrMagnitude;
-            if (dSqr < closestDistSqr)
-            {
-                closestDistSqr = dSqr;
-                bestCandidate = candidate;
-            }
-        }
-
-        if (bestCandidate != null)
-        {
-            SpellDefinition chainDef = new SpellDefinition();
-            // Copie manuelle simple
-            chainDef.Form = _def.Form;
-            chainDef.Effect = _def.Effect;
-            chainDef.Speed = _def.Speed;
-            chainDef.Size = _def.Size * 0.8f;
-            chainDef.Range = _def.ChainRange * 1.2f;
-
-            chainDef.Damage = _def.Damage * _def.ChainDamageReduction;
-            chainDef.ChainCount = _def.ChainCount - 1;
-            chainDef.ChainRange = _def.ChainRange;
-            chainDef.ChainDamageReduction = _def.ChainDamageReduction;
-
-            Vector3 spawnPos = currentTarget.transform.position + Vector3.up;
-            Vector3 dir = (bestCandidate.transform.position - spawnPos).normalized;
-
-            GameObject p = ProjectilePool.Instance.Get(_def.Form.prefab, spawnPos, Quaternion.LookRotation(dir));
-            if (p.TryGetComponent<ProjectileController>(out var ctrl))
-            {
-                ctrl.Initialize(chainDef, dir);
-            }
+            _chainReaction.HandleChainReaction(target, _def);
         }
     }
 }

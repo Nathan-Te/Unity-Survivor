@@ -1,30 +1,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GemPool : MonoBehaviour
+public class GemPool : Singleton<GemPool>
 {
-    public static GemPool Instance { get; private set; }
-
     [Header("Configuration")]
     [SerializeField] private GameObject gemPrefab;
-    [SerializeField] private int maxActiveGems = 400; // Limite dure pour éviter le crash
+    [SerializeField] private int maxActiveGems = 400; // Limite dure pour ï¿½viter le crash
 
     // File pour le recyclage standard
     private Queue<GameObject> _inactivePool = new Queue<GameObject>();
 
-    // Liste des gemmes actives pour gérer la limite (Fusion/Despawn)
+    // Liste des gemmes actives pour gï¿½rer la limite (Fusion/Despawn)
     private List<ExperienceGem> _activeGems = new List<ExperienceGem>();
 
-    private void Awake()
-    {
-        Instance = this;
-    }
-
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         _activeGems.Clear();
         _inactivePool.Clear();
-        Instance = null;
+
+        base.OnDestroy();
     }
 
     public void Spawn(Vector3 position, int xpValue)
@@ -37,17 +31,17 @@ public class GemPool : MonoBehaviour
             gemScript = _activeGems[0];
             _activeGems.RemoveAt(0);
         }
-        // CAS 2 : Récupération du pool inactif
+        // CAS 2 : Rï¿½cupï¿½ration du pool inactif
         else if (_inactivePool.Count > 0)
         {
             GameObject obj = _inactivePool.Dequeue();
             obj.SetActive(true);
             gemScript = obj.GetComponent<ExperienceGem>();
         }
-        // CAS 3 : Création d'une nouvelle
+        // CAS 3 : Crï¿½ation d'une nouvelle
         else
         {
-            // On instancie sous le Manager pour garder la hiérarchie propre
+            // On instancie sous le Manager pour garder la hiï¿½rarchie propre
             GameObject newObj = Instantiate(gemPrefab, transform);
             gemScript = newObj.GetComponent<ExperienceGem>();
         }
@@ -56,7 +50,7 @@ public class GemPool : MonoBehaviour
         gemScript.transform.position = position;
         // ----------------------------------------------------------------
 
-        // Initialisation et Ajout à la liste active
+        // Initialisation et Ajout ï¿½ la liste active
         gemScript.Initialize(xpValue);
         _activeGems.Add(gemScript);
     }
@@ -65,7 +59,7 @@ public class GemPool : MonoBehaviour
     {
         if (gemObj.TryGetComponent<ExperienceGem>(out var script))
         {
-            // On l'enlève de la liste active
+            // On l'enlï¿½ve de la liste active
             if (_activeGems.Contains(script))
             {
                 _activeGems.Remove(script);
@@ -91,6 +85,6 @@ public class GemPool : MonoBehaviour
             if (obj != null) Destroy(obj);
         }
 
-        Debug.Log("[GemPool] Pool vidé");
+        Debug.Log("[GemPool] Pool vidï¿½");
     }
 }

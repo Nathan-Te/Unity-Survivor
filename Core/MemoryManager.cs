@@ -2,34 +2,32 @@
 using UnityEngine.SceneManagement;
 
 [DefaultExecutionOrder(-100)]
-public class MemoryManager : MonoBehaviour
+public class MemoryManager : Singleton<MemoryManager>
 {
-    public static MemoryManager Instance { get; private set; }
-
     [Header("Settings")]
     [SerializeField] private bool autoCleanOnSceneChange = true;
     [SerializeField] private bool verboseLogging = true;
     [SerializeField] private bool aggressiveCleanup = true;
 
-    private void Awake()
+    protected override void Awake()
     {
-        if (Instance != null)
+        base.Awake();
+
+        if (Instance == this)
         {
-            Destroy(gameObject);
-            return;
+            DontDestroyOnLoad(gameObject);
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
-
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        SceneManager.sceneUnloaded += OnSceneUnloaded;
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
         SceneManager.sceneUnloaded -= OnSceneUnloaded;
+
+        base.OnDestroy();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)

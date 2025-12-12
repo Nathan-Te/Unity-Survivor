@@ -1,17 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MapObjectPool : MonoBehaviour
+public class MapObjectPool : Singleton<MapObjectPool>
 {
-    public static MapObjectPool Instance { get; private set; }
-
     // Dictionnaire : ID du Prefab -> File d'attente d'objets inactifs
     private Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
-
-    private void Awake()
-    {
-        Instance = this;
-    }
 
     public GameObject Get(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent)
     {
@@ -34,7 +27,7 @@ public class MapObjectPool : MonoBehaviour
         }
         else
         {
-            // Si la réserve est vide, on crée du neuf
+            // Si la rï¿½serve est vide, on crï¿½e du neuf
             obj = Instantiate(prefab, position, rotation, parent);
         }
 
@@ -46,7 +39,7 @@ public class MapObjectPool : MonoBehaviour
         if (obj == null) return;
 
         obj.SetActive(false);
-        obj.transform.SetParent(transform); // On le range sous le Manager pour pas polluer la hiérarchie
+        obj.transform.SetParent(transform); // On le range sous le Manager pour pas polluer la hiï¿½rarchie
 
         int key = originalPrefab.GetInstanceID();
         if (!_pools.ContainsKey(key))

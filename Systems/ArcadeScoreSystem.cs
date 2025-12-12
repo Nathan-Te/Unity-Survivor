@@ -7,10 +7,8 @@ public enum ComboMode
     Modern   // Multiplicateur baisse d'un cran si le timer expire
 }
 
-public class ArcadeScoreSystem : MonoBehaviour
+public class ArcadeScoreSystem : Singleton<ArcadeScoreSystem>
 {
-    public static ArcadeScoreSystem Instance { get; private set; }
-
     [Header("Settings")]
     [SerializeField] private ComboMode comboMode = ComboMode.Modern;
 
@@ -56,26 +54,24 @@ public class ArcadeScoreSystem : MonoBehaviour
     public float ComboTimer => _comboTimer;
     public float ComboTimerMax => comboTimerMax;
 
-    private void Awake()
+    protected override void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        base.Awake();
     }
 
     private void Start()
     {
-        // Initialiser les valeurs dynamiques au palier de base
-        _currentDecayRate = baseDecayRate;
-        _currentTimeAddedPerKill = baseTimeAddedPerKill;
-
-        // S'abonner aux morts d'ennemis
-        if (EnemyManager.Instance != null)
+        if (Instance == this)
         {
-            EnemyManager.Instance.OnEnemyKilledWithScore += OnEnemyKilled;
+            // Initialiser les valeurs dynamiques au palier de base
+            _currentDecayRate = baseDecayRate;
+            _currentTimeAddedPerKill = baseTimeAddedPerKill;
+
+            // S'abonner aux morts d'ennemis
+            if (EnemyManager.Instance != null)
+            {
+                EnemyManager.Instance.OnEnemyKilledWithScore += OnEnemyKilled;
+            }
         }
     }
 
@@ -270,9 +266,6 @@ public class ArcadeScoreSystem : MonoBehaviour
             EnemyManager.Instance.OnEnemyKilledWithScore -= OnEnemyKilled;
         }
 
-        if (Instance == this)
-        {
-            Instance = null;
-        }
+        // Instance is managed by Singleton<T> base class, no need to set to null
     }
 }

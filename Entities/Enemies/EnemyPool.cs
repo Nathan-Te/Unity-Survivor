@@ -2,10 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyPool : MonoBehaviour
+public class EnemyPool : Singleton<EnemyPool>
 {
-    public static EnemyPool Instance { get; private set; }
-
     // Dictionnaire : ID du Prefab -> File d'attente
     private Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
 
@@ -16,15 +14,11 @@ public class EnemyPool : MonoBehaviour
     [SerializeField] private float spawnPopDuration = 0.3f;
     [SerializeField] private AnimationCurve spawnPopCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
-    private void Awake()
-    {
-        Instance = this;
-    }
-
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         _pools?.Clear();
-        Instance = null;
+
+        base.OnDestroy();
     }
 
     // On demande un ennemi sp�cifique (prefab)

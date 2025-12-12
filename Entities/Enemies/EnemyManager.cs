@@ -1,36 +1,20 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Jobs;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Burst;
-using Unity.Mathematics;
-using System;
 
+/// <summary>
+/// Main coordinator for the enemy system.
+/// Delegates movement to EnemyMovementSystem, registration to EnemyRegistry, and events to EnemyEventBroadcaster.
+/// </summary>
 [DefaultExecutionOrder(-50)]
-public class EnemyManager : MonoBehaviour
+public class EnemyManager : Singleton<EnemyManager>
 {
-    public static EnemyManager Instance { get; private set; }
-
-    // --- EVENTS ---
-    public event Action<int> OnEnemyCountChanged; // Pour l'UI (ennemis actifs)
-    public event Action<int> OnKillCountChanged; // Pour l'UI (total tués)
-    public event Action<Vector3> OnEnemyDeathPosition; // Pour les Autels
-    public event Action<int, Vector3> OnEnemyKilledWithScore; // (scoreValue, position) Pour le système de score
-
-    [Header("R�glages")]
+    [Header("Réglages")]
     [SerializeField] private Transform playerTransform;
     [SerializeField] private LayerMask obstacleLayer;
 
     [Header("Performance")]
     [SerializeField] private int maxEnemiesCapacity = 2000;
-
-    // --- C'est cette ligne qui manquait ! ---
-    public bool IsAtCapacity => _activeEnemies.Count >= maxEnemiesCapacity;
-
-    // --- KILL COUNTER ---
-    private int _totalKills = 0;
-    public int TotalKills => _totalKills;
 
     [Header("Steering Settings")]
     [SerializeField] private float separationWeight = 1.5f;
@@ -39,379 +23,203 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private float rotationSpeed = 8f;
     [SerializeField] private float avoidanceBlendSpeed = 3f;
 
-    // Listes C#
-    private List<EnemyController> _activeEnemies = new List<EnemyController>();
-    private TransformAccessArray _transformAccessArray;
+    // Sub-components
+    private EnemyMovementSystem _movementSystem;
+    private EnemyRegistry _registry;
+    private EnemyEventBroadcaster _eventBroadcaster;
 
-    // Donn�es Job
-    private NativeList<float> _moveSpeeds;
-    private NativeList<float> _stopDistances;
-    private NativeList<float> _fleeDistances;
+    // Property delegations for public API compatibility
+    public bool IsAtCapacity => _registry != null && _registry.IsAtCapacity;
+    public int TotalKills => _eventBroadcaster != null ? _eventBroadcaster.TotalKills : 0;
 
-    // Buffers Fixes
-    private NativeArray<RaycastCommand> _rayCommands;
-    private NativeArray<RaycastHit> _rayResults;
-    private NativeArray<float3> _previousDirections;
-
-    private Dictionary<int, EnemyController> _colliderCache = new Dictionary<int, EnemyController>();
-
-    private bool _isDisposed = false;
-
-    private void Awake()
+    // Event delegations
+    public event Action<int> OnEnemyCountChanged
     {
-        Instance = this;
-
-        _moveSpeeds = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
-        _stopDistances = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
-        _fleeDistances = new NativeList<float>(maxEnemiesCapacity, Allocator.Persistent);
-
-        _transformAccessArray = new TransformAccessArray(maxEnemiesCapacity);
-
-        int rayCapacity = maxEnemiesCapacity * 3;
-        _rayCommands = new NativeArray<RaycastCommand>(rayCapacity, Allocator.Persistent);
-        _rayResults = new NativeArray<RaycastHit>(rayCapacity, Allocator.Persistent);
-
-        _previousDirections = new NativeArray<float3>(maxEnemiesCapacity, Allocator.Persistent);
+        add { if (_eventBroadcaster != null) _eventBroadcaster.OnEnemyCountChanged += value; }
+        remove { if (_eventBroadcaster != null) _eventBroadcaster.OnEnemyCountChanged -= value; }
     }
 
-    private void OnApplicationQuit()
+    public event Action<int> OnKillCountChanged
     {
-        CleanupNativeCollections();
+        add { if (_eventBroadcaster != null) _eventBroadcaster.OnKillCountChanged += value; }
+        remove { if (_eventBroadcaster != null) _eventBroadcaster.OnKillCountChanged -= value; }
     }
 
-    private void OnDestroy()
+    public event Action<Vector3> OnEnemyDeathPosition
     {
-        CleanupNativeCollections();
+        add { if (_eventBroadcaster != null) _eventBroadcaster.OnEnemyDeathPosition += value; }
+        remove { if (_eventBroadcaster != null) _eventBroadcaster.OnEnemyDeathPosition -= value; }
     }
 
-    private void CleanupNativeCollections()
+    public event Action<int, Vector3> OnEnemyKilledWithScore
     {
-        if (_isDisposed) return; // �vite double Dispose
-        _isDisposed = true;
-
-        _activeEnemies.Clear();
-        _colliderCache.Clear();
-
-        // Complete any pending jobs first
-        JobHandle.ScheduleBatchedJobs();
-
-        if (_moveSpeeds.IsCreated) _moveSpeeds.Dispose();
-        if (_stopDistances.IsCreated) _stopDistances.Dispose();
-        if (_fleeDistances.IsCreated) _fleeDistances.Dispose();
-        if (_transformAccessArray.isCreated) _transformAccessArray.Dispose();
-
-        if (_rayCommands.IsCreated) _rayCommands.Dispose();
-        if (_rayResults.IsCreated) _rayResults.Dispose();
-        if (_previousDirections.IsCreated) _previousDirections.Dispose();
-
-        Debug.Log("[EnemyManager] Native Collections lib�r�es");
+        add { if (_eventBroadcaster != null) _eventBroadcaster.OnEnemyKilledWithScore += value; }
+        remove { if (_eventBroadcaster != null) _eventBroadcaster.OnEnemyKilledWithScore -= value; }
     }
 
-    /// <summary>
-    /// Tente de lib�rer une place en supprimant l'ennemi le plus �loign�
-    /// </summary>
-    /// <param name="minDistanceRecycle">Distance minimum pour accepter le recyclage (ex: 40m)</param>
-    /// <returns>True si une place a �t� lib�r�e</returns>
-    public bool TryFreeSpaceByRecycling(float minDistanceRecycle)
+    protected override void Awake()
     {
-        if (_activeEnemies.Count == 0) return false;
+        base.Awake();
 
-        float maxDistSq = -1f;
-        int bestIndex = -1;
-        float minDistSq = minDistanceRecycle * minDistanceRecycle;
-        Vector3 playerPos = playerTransform.position;
-
-        // On parcourt la liste pour trouver le plus loin
-        // C'est rapide (O(N)) et on ne le fait que si le spawn est bloqu�
-        for (int i = 0; i < _activeEnemies.Count; i++)
+        if (Instance == this)
         {
-            if (_activeEnemies[i] == null) continue;
+            // Get or add sub-components
+            _movementSystem = GetComponent<EnemyMovementSystem>();
+            if (_movementSystem == null)
+                _movementSystem = gameObject.AddComponent<EnemyMovementSystem>();
 
-            // On utilise le Transform directement (plus fiable que le buffer qui a 1 frame de retard)
-            float dSq = (_activeEnemies[i].transform.position - playerPos).sqrMagnitude;
+            _registry = GetComponent<EnemyRegistry>();
+            if (_registry == null)
+                _registry = gameObject.AddComponent<EnemyRegistry>();
 
-            if (dSq > maxDistSq)
-            {
-                maxDistSq = dSq;
-                bestIndex = i;
-            }
+            _eventBroadcaster = GetComponent<EnemyEventBroadcaster>();
+            if (_eventBroadcaster == null)
+                _eventBroadcaster = gameObject.AddComponent<EnemyEventBroadcaster>();
+
+            // Initialize sub-components with parameters
+            _movementSystem.Initialize(
+                playerTransform,
+                obstacleLayer,
+                maxEnemiesCapacity,
+                separationWeight,
+                rayDistance,
+                rayAngle,
+                rotationSpeed,
+                avoidanceBlendSpeed
+            );
+            _registry.Initialize(_movementSystem, maxEnemiesCapacity, playerTransform);
         }
-
-        // Si on a trouv� un candidat assez loin
-        if (bestIndex != -1 && maxDistSq > minDistSq)
-        {
-            // On le supprime silencieusement
-            _activeEnemies[bestIndex].SilentDespawn();
-            return true; // Une place est libre !
-        }
-
-        return false; // Tous les ennemis sont trop proches, on ne peut rien faire
     }
 
     private void Update()
     {
-        if (playerTransform == null || _activeEnemies.Count == 0) return;
-
-        SyncDataForJob();
-
-        // 1. Raycasts
-        PrepareRaycasts();
-
-        // 2. Ex�cution des Raycasts
-        int activeRayCount = _activeEnemies.Count * 3;
-        if (activeRayCount > _rayCommands.Length) activeRayCount = _rayCommands.Length;
-
-        NativeArray<RaycastCommand> cmdSlice = _rayCommands.GetSubArray(0, activeRayCount);
-        NativeArray<RaycastHit> resSlice = _rayResults.GetSubArray(0, activeRayCount);
-
-        JobHandle rayHandle = RaycastCommand.ScheduleBatch(cmdSlice, resSlice, 10);
-
-        // 3. Mouvement
-        MoveEnemiesJob moveJob = new MoveEnemiesJob
+        if (_movementSystem != null && _registry != null)
         {
-            PlayerPosition = playerTransform.position,
-            DeltaTime = Time.deltaTime,
-
-            MoveSpeeds = _moveSpeeds.AsArray(),
-            StopDistances = _stopDistances.AsArray(),
-            FleeDistances = _fleeDistances.AsArray(),
-
-            RayResults = _rayResults,
-            PreviousDirections = _previousDirections,
-
-            AvoidanceWeight = separationWeight,
-            RotationSpeed = rotationSpeed,
-            AvoidanceBlendSpeed = avoidanceBlendSpeed
-        };
-
-        JobHandle moveHandle = moveJob.Schedule(_transformAccessArray, rayHandle);
-        moveHandle.Complete();
-
-        Physics.SyncTransforms();
-    }
-
-    private void SyncDataForJob()
-    {
-        for (int i = 0; i < _activeEnemies.Count; i++)
-        {
-            if (_activeEnemies[i] != null)
-                _moveSpeeds[i] = _activeEnemies[i].currentSpeed;
+            _movementSystem.UpdateMovement(_registry.ActiveEnemies);
         }
     }
 
-    private void PrepareRaycasts()
+    /// <summary>
+    /// Tries to free space by despawning the farthest enemy
+    /// </summary>
+    public bool TryFreeSpaceByRecycling(float minDistanceRecycle)
     {
-        QueryParameters queryParams = new QueryParameters { layerMask = obstacleLayer, hitTriggers = QueryTriggerInteraction.Ignore };
-
-        int count = _activeEnemies.Count;
-        if (count > maxEnemiesCapacity) count = maxEnemiesCapacity;
-
-        for (int i = 0; i < count; i++)
-        {
-            EnemyController enemy = _activeEnemies[i];
-            if (enemy == null) continue;
-
-            int baseIndex = i * 3;
-            Vector3 fwd = enemy.transform.forward;
-            Vector3 pos = enemy.transform.position + Vector3.up * 1.0f;
-
-            _rayCommands[baseIndex] = new RaycastCommand(pos, fwd, queryParams, rayDistance);
-            _rayCommands[baseIndex + 1] = new RaycastCommand(pos, Quaternion.Euler(0, -rayAngle, 0) * fwd, queryParams, rayDistance);
-            _rayCommands[baseIndex + 2] = new RaycastCommand(pos, Quaternion.Euler(0, rayAngle, 0) * fwd, queryParams, rayDistance);
-        }
+        return _registry != null && _registry.TryFreeSpaceByRecycling(minDistanceRecycle);
     }
 
-    // --- GESTION LISTES ---
-
+    /// <summary>
+    /// Registers an enemy to the active pool
+    /// </summary>
     public bool RegisterEnemy(EnemyController enemy, Collider col)
     {
-        // Si plein, on renvoie FAUX (�chec)
-        if (_activeEnemies.Count >= maxEnemiesCapacity)
-        {
-            return false;
-        }
+        if (_registry == null) return false;
 
-        if (!_activeEnemies.Contains(enemy))
-        {
-            _activeEnemies.Add(enemy);
-            _transformAccessArray.Add(enemy.transform);
+        bool success = _registry.RegisterEnemy(enemy, col);
 
-            _moveSpeeds.Add(enemy.currentSpeed);
-            _stopDistances.Add(enemy.Data.stopDistance);
-            _fleeDistances.Add(enemy.Data.fleeDistance);
+        if (success && _eventBroadcaster != null)
+            _eventBroadcaster.BroadcastEnemyCountChanged(_registry.ActiveCount);
 
-            if (col != null) _colliderCache.TryAdd(col.GetInstanceID(), enemy);
-
-            OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
-        }
-
-        return true; // SUCC�S
+        return success;
     }
 
+    /// <summary>
+    /// Unregisters an enemy from the active pool
+    /// </summary>
     public void UnregisterEnemy(EnemyController enemy, Collider col)
     {
-        if (_activeEnemies.Contains(enemy))
-        {
-            int index = _activeEnemies.IndexOf(enemy);
-            int last = _activeEnemies.Count - 1;
+        if (_registry == null) return;
 
-            if (index != last)
-            {
-                _activeEnemies[index] = _activeEnemies[last];
-                _moveSpeeds[index] = _moveSpeeds[last];
-                _stopDistances[index] = _stopDistances[last];
-                _fleeDistances[index] = _fleeDistances[last];
+        _registry.UnregisterEnemy(enemy, col);
 
-                _previousDirections[index] = _previousDirections[last];
-                _previousDirections[last] = float3.zero;
-            }
-            else
-            {
-                _previousDirections[last] = float3.zero;
-            }
-
-            _activeEnemies.RemoveAt(last);
-            _moveSpeeds.RemoveAtSwapBack(last);
-            _stopDistances.RemoveAtSwapBack(last);
-            _fleeDistances.RemoveAtSwapBack(last);
-            _transformAccessArray.RemoveAtSwapBack(index);
-
-            if (col != null) _colliderCache.Remove(col.GetInstanceID());
-
-            OnEnemyCountChanged?.Invoke(_activeEnemies.Count);
-        }
+        if (_eventBroadcaster != null)
+            _eventBroadcaster.BroadcastEnemyCountChanged(_registry.ActiveCount);
     }
 
+    /// <summary>
+    /// Notifies the system of an enemy death
+    /// </summary>
     public void NotifyEnemyDeath(Vector3 position, int scoreValue = 10)
     {
-        // Incrémenter le compteur de kills
-        _totalKills++;
-        OnKillCountChanged?.Invoke(_totalKills);
-
-        OnEnemyDeathPosition?.Invoke(position);
-        OnEnemyKilledWithScore?.Invoke(scoreValue, position);
+        if (_eventBroadcaster != null)
+            _eventBroadcaster.NotifyEnemyDeath(position, scoreValue);
     }
 
+    /// <summary>
+    /// Debug utility to kill all enemies
+    /// </summary>
     public void DebugKillAllEnemies()
     {
-        for (int i = _activeEnemies.Count - 1; i >= 0; i--)
-        {
-            if (_activeEnemies[i] != null) _activeEnemies[i].TakeDamage(99999f);
-        }
+        if (_registry != null)
+            _registry.DebugKillAllEnemies();
     }
 
+    /// <summary>
+    /// Resets the kill counter
+    /// </summary>
     public void ResetKillCounter()
     {
-        _totalKills = 0;
-        OnKillCountChanged?.Invoke(_totalKills);
+        if (_eventBroadcaster != null)
+            _eventBroadcaster.ResetKillCounter();
     }
 
-    public bool TryGetEnemyByCollider(Collider col, out EnemyController enemy) => _colliderCache.TryGetValue(col.GetInstanceID(), out enemy);
+    /// <summary>
+    /// Fast lookup of enemy by collider
+    /// </summary>
+    public bool TryGetEnemyByCollider(Collider col, out EnemyController enemy)
+    {
+        enemy = null;
+        return _registry != null && _registry.TryGetEnemyByCollider(col, out enemy);
+    }
 
+    /// <summary>
+    /// Gets all enemies within range
+    /// </summary>
     public List<EnemyController> GetEnemiesInRange(Vector3 center, float radius)
     {
-        List<EnemyController> results = new List<EnemyController>();
-        float radiusSqr = radius * radius;
-        for (int i = 0; i < _activeEnemies.Count; i++)
-        {
-            if (_activeEnemies[i] == null) continue;
-            if ((_activeEnemies[i].transform.position - center).sqrMagnitude <= radiusSqr)
-                results.Add(_activeEnemies[i]);
-        }
-        return results;
+        return _registry != null ? _registry.GetEnemiesInRange(center, radius) : new List<EnemyController>();
     }
 
+    /// <summary>
+    /// Gets target based on targeting mode
+    /// </summary>
     public Transform GetTarget(Vector3 sourcePos, float range, TargetingMode mode, float areaSize = 2f, bool checkVisibility = true)
     {
+        if (_registry == null) return null;
+
+        List<EnemyController> activeEnemies = _registry.ActiveEnemies;
+
         switch (mode)
         {
             case TargetingMode.Nearest:
-                return TargetingUtils.GetNearestEnemy(_activeEnemies, sourcePos, range, checkVisibility, obstacleLayer);
+                return TargetingUtils.GetNearestEnemy(activeEnemies, sourcePos, range, checkVisibility, obstacleLayer);
             case TargetingMode.HighestDensity:
-                return TargetingUtils.GetDensestCluster(_activeEnemies, sourcePos, range, areaSize, checkVisibility, obstacleLayer);
+                return TargetingUtils.GetDensestCluster(activeEnemies, sourcePos, range, areaSize, checkVisibility, obstacleLayer);
             case TargetingMode.Random:
-                return TargetingUtils.GetRandomEnemy(_activeEnemies, sourcePos, range, checkVisibility, obstacleLayer);
+                return TargetingUtils.GetRandomEnemy(activeEnemies, sourcePos, range, checkVisibility, obstacleLayer);
             default:
                 return null;
         }
     }
-}
 
-[BurstCompile]
-public struct MoveEnemiesJob : IJobParallelForTransform
-{
-    public float3 PlayerPosition;
-    public float DeltaTime;
-    public float AvoidanceWeight;
-    public float RotationSpeed;
-    public float AvoidanceBlendSpeed;
-
-    [ReadOnly] public NativeArray<float> MoveSpeeds;
-    [ReadOnly] public NativeArray<float> StopDistances;
-    [ReadOnly] public NativeArray<float> FleeDistances;
-    [ReadOnly] public NativeArray<RaycastHit> RayResults;
-    public NativeArray<float3> PreviousDirections;
-
-    public void Execute(int index, TransformAccess transform)
+    protected override void OnApplicationQuit()
     {
-        float3 currentPos = transform.position;
-        float3 vectorToPlayer = PlayerPosition - currentPos;
-        float distanceToPlayerSqr = math.lengthsq(vectorToPlayer);
+        if (_movementSystem != null)
+            _movementSystem.Cleanup();
 
-        float3 dirToPlayer = math.normalize(vectorToPlayer);
-        dirToPlayer.y = 0;
+        if (_registry != null)
+            _registry.Clear();
 
-        float stopDist = StopDistances[index];
-        float fleeDist = FleeDistances[index];
+        base.OnApplicationQuit();
+    }
 
-        float3 behaviorDir = dirToPlayer;
-        float currentSpeedMultiplier = 1f;
+    protected override void OnDestroy()
+    {
+        if (_movementSystem != null)
+            _movementSystem.Cleanup();
 
-        if (fleeDist > 0 && distanceToPlayerSqr < (fleeDist * fleeDist))
-        {
-            behaviorDir = -dirToPlayer;
-        }
-        else if (stopDist > 0 && distanceToPlayerSqr < (stopDist * stopDist))
-        {
-            behaviorDir = float3.zero;
-            currentSpeedMultiplier = 0f;
-        }
+        if (_registry != null)
+            _registry.Clear();
 
-        float3 finalDirection = behaviorDir;
-
-        if (currentSpeedMultiplier > 0.01f)
-        {
-            int baseIndex = index * 3;
-
-            bool hitCenter = RayResults[baseIndex].colliderInstanceID != 0;
-            bool hitLeft = RayResults[baseIndex + 1].colliderInstanceID != 0;
-            bool hitRight = RayResults[baseIndex + 2].colliderInstanceID != 0;
-
-            if (hitCenter || hitLeft || hitRight)
-            {
-                float3 right = transform.rotation * new float3(1, 0, 0);
-                float3 left = transform.rotation * new float3(-1, 0, 0);
-                float3 nudge = float3.zero;
-                if (hitCenter) nudge = (index % 2 == 0) ? right : left;
-                if (hitLeft) nudge += right;
-                if (hitRight) nudge += left;
-
-                finalDirection = math.normalize(behaviorDir + nudge * AvoidanceWeight);
-            }
-        }
-
-        if (math.lengthsq(PreviousDirections[index]) > 0.01f)
-        {
-            finalDirection = math.normalize(math.lerp(PreviousDirections[index], finalDirection, AvoidanceBlendSpeed * DeltaTime));
-        }
-        PreviousDirections[index] = finalDirection;
-
-        transform.position += (Vector3)(finalDirection * MoveSpeeds[index] * currentSpeedMultiplier * DeltaTime);
-
-        if (math.lengthsq(finalDirection) > 0.01f)
-        {
-            quaternion targetRot = quaternion.LookRotation(finalDirection, new float3(0, 1, 0));
-            transform.rotation = math.slerp(transform.rotation, targetRot, RotationSpeed * DeltaTime);
-        }
+        base.OnDestroy();
     }
 }

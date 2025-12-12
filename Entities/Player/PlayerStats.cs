@@ -1,11 +1,9 @@
 using UnityEngine;
 
-public class PlayerStats : MonoBehaviour
+public class PlayerStats : Singleton<PlayerStats>
 {
-    public static PlayerStats Instance { get; private set; }
-
     [Header("Global Combat Stats (Multiplicateurs)")]
-    public float Might = 1.0f;          // Dégâts
+    public float Might = 1.0f;          // Dï¿½gï¿½ts
     public float CooldownSpeed = 1.0f;  // Vitesse recharge
     public float AreaSize = 1.0f;       // Taille
     public float ProjectileSpeed = 1.0f;
@@ -17,11 +15,15 @@ public class PlayerStats : MonoBehaviour
     private PlayerController _controller;
     private PlayerCollector _collector;
 
-    private void Awake()
+    protected override void Awake()
     {
-        Instance = this;
-        _controller = GetComponent<PlayerController>();
-        _collector = GetComponent<PlayerCollector>();
+        base.Awake();
+
+        if (Instance == this)
+        {
+            _controller = GetComponent<PlayerController>();
+            _collector = GetComponent<PlayerCollector>();
+        }
     }
 
     public void ApplyUpgrade(StatType type, float value)

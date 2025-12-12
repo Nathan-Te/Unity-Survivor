@@ -10,11 +10,9 @@ public struct XpTier
     public int growthAmount;
 }
 
-public class LevelManager : MonoBehaviour
+public class LevelManager : Singleton<LevelManager>
 {
-    public static LevelManager Instance { get; private set; }
-
-    [Header("État")]
+    [Header("ï¿½tat")]
     public int currentLevel = 1;
     public int currentExperience = 0;
     public int experienceToNextLevel = 100;
@@ -23,8 +21,8 @@ public class LevelManager : MonoBehaviour
     private int _pendingLevelUps = 0;
 
     [Header("Meta-Progression")]
-    public int availableRerolls = 2; // Stock de départ
-    public int availableBans = 1;    // Stock de départ
+    public int availableRerolls = 2; // Stock de dï¿½part
+    public int availableBans = 1;    // Stock de dï¿½part
 
     // Liste des runes bannies pour cette partie
     private List<string> _bannedRunes = new List<string>();
@@ -35,11 +33,6 @@ public class LevelManager : MonoBehaviour
 
     public UnityEvent OnLevelUp;
     public UnityEvent<float> OnExperienceChanged;
-
-    private void Awake()
-    {
-        Instance = this;
-    }
 
     public void AddExperience(int amount)
     {
@@ -65,7 +58,7 @@ public class LevelManager : MonoBehaviour
             _pendingLevelUps++; // On empile les niveaux
         }
 
-        // Si l'UI n'est pas déjà ouverte, on déclenche le premier
+        // Si l'UI n'est pas dï¿½jï¿½ ouverte, on dï¿½clenche le premier
         if (_pendingLevelUps > 0 && Time.timeScale > 0)
         {
             TriggerNextLevelUp();
@@ -89,11 +82,11 @@ public class LevelManager : MonoBehaviour
             _bannedRunes.Add(runeName);
             availableBans--;
         }
-        // Après un ban, on considère le niveau comme "passé" (ou on reroll, selon le design).
-        // Ici, tu as demandé : "cela passe le niveau sans choisir".
+        // Aprï¿½s un ban, on considï¿½re le niveau comme "passï¿½" (ou on reroll, selon le design).
+        // Ici, tu as demandï¿½ : "cela passe le niveau sans choisir".
         // Donc on relance la boucle.
 
-        // On ferme l'UI actuelle via l'événement (sera géré par LevelUpUI)
+        // On ferme l'UI actuelle via l'ï¿½vï¿½nement (sera gï¿½rï¿½ par LevelUpUI)
     }
 
     public bool IsRuneBanned(string runeName) => _bannedRunes.Contains(runeName);
@@ -108,7 +101,7 @@ public class LevelManager : MonoBehaviour
         return false;
     }
 
-    // ... (GetGrowthForLevel et UpdateInterface inchangés) ...
+    // ... (GetGrowthForLevel et UpdateInterface inchangï¿½s) ...
     private int GetGrowthForLevel(int level)
     {
         foreach (var tier in growthTiers)

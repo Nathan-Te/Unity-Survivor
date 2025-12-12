@@ -1,17 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WorldStateManager : MonoBehaviour
+public class WorldStateManager : Singleton<WorldStateManager>
 {
-    public static WorldStateManager Instance { get; private set; }
-
-    // Dictionnaire : ID Unique de l'objet -> Est-il détruit/activé ?
+    // Dictionnaire : ID Unique de l'objet -> Est-il dï¿½truit/activï¿½ ?
     private HashSet<string> _interactedObjects = new HashSet<string>();
-
-    private void Awake()
-    {
-        Instance = this;
-    }
 
     public bool IsInteracted(string id)
     {
