@@ -52,6 +52,10 @@ public class UpgradeOptionGenerator : MonoBehaviour
                 if (picks.Exists(x => x.TargetRuneSO == selectedSO))
                     continue;
 
+                // CRITICAL: Check compatibility with player's current spell inventory
+                if (!IsCompatibleWithPlayerInventory(selectedSO, selectedType))
+                    continue;
+
                 UpgradeData data = new UpgradeData(selectedSO, rarity);
                 picks.Add(data);
             }
@@ -110,5 +114,78 @@ public class UpgradeOptionGenerator : MonoBehaviour
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Checks if the selected rune is compatible with at least one spell in the player's inventory.
+    /// This prevents offering Effects/Modifiers that can't be used with any current spell.
+    /// </summary>
+    private bool IsCompatibleWithPlayerInventory(RuneSO selectedSO, UpgradeType type)
+    {
+        // Stat boosts and new spells are always compatible
+        if (type == UpgradeType.StatBoost || type == UpgradeType.NewSpell)
+            return true;
+
+        // Get player's current spells
+        SpellManager spellManager = FindFirstObjectByType<SpellManager>();
+        if (spellManager == null)
+            return true; // If no spell manager, don't filter (for safety)
+
+        var slots = spellManager.GetSlots();
+        if (slots == null || slots.Count == 0)
+            return true; // If no spells yet, allow everything (player will get forms first)
+
+        // For Effects: Check if compatible with at least one form in player's inventory
+        if (type == UpgradeType.Effect)
+        {
+            SpellEffect effect = selectedSO as SpellEffect;
+            if (effect == null)
+                return false;
+
+            foreach (var slot in slots)
+            {
+                if (slot.formRune != null && slot.formRune.AsForm != null)
+                {
+                    // Check tag-based compatibility
+                    if (CompatibilityValidator.IsCompatible(slot.formRune.AsForm, effect))
+                    {
+                        // Also check prefab mapping compatibility if registry exists
+                        if (SpellPrefabRegistry.Instance != null)
+                        {
+                            if (SpellPrefabRegistry.Instance.IsCompatible(slot.formRune.AsForm, effect))
+                                return true;
+                        }
+                        else
+                        {
+                            // No registry, rely on tag-based compatibility only
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false; // No compatible form found
+        }
+
+        // For Modifiers: Check if compatible with at least one form in player's inventory
+        if (type == UpgradeType.Modifier)
+        {
+            SpellModifier modifier = selectedSO as SpellModifier;
+            if (modifier == null)
+                return false;
+
+            foreach (var slot in slots)
+            {
+                if (slot.formRune != null && slot.formRune.AsForm != null)
+                {
+                    if (CompatibilityValidator.IsCompatible(slot.formRune.AsForm, modifier))
+                        return true;
+                }
+            }
+
+            return false; // No compatible form found
+        }
+
+        return true; // Unknown type, allow by default
     }
 }

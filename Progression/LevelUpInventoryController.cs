@@ -15,6 +15,7 @@ public class LevelUpInventoryController : MonoBehaviour
     private Transform replaceContainer;
     private GameObject slotPrefab;
     private GameObject replaceButtonPrefab;
+    private Button backButton;
 
     private LevelUpUI _mainUI;
     private UpgradeData _pendingUpgrade;
@@ -28,7 +29,8 @@ public class LevelUpInventoryController : MonoBehaviour
         Transform inventoryContainerRef,
         Transform replaceContainerRef,
         GameObject slotPrefabRef,
-        GameObject replaceButtonPrefabRef)
+        GameObject replaceButtonPrefabRef,
+        Button backButtonRef)
     {
         _mainUI = mainUI;
         inventoryPanel = inventoryPanelRef;
@@ -38,6 +40,13 @@ public class LevelUpInventoryController : MonoBehaviour
         replaceContainer = replaceContainerRef;
         slotPrefab = slotPrefabRef;
         replaceButtonPrefab = replaceButtonPrefabRef;
+        backButton = backButtonRef;
+
+        if (backButton != null)
+        {
+            backButton.onClick.RemoveAllListeners();
+            backButton.onClick.AddListener(OnBackButtonClicked);
+        }
     }
 
     /// <summary>
@@ -49,6 +58,10 @@ public class LevelUpInventoryController : MonoBehaviour
 
         inventoryPanel.SetActive(true);
         instructionText.gameObject.SetActive(true);
+
+        // Show back button
+        if (backButton != null)
+            backButton.gameObject.SetActive(true);
 
         if (!instructionText.text.Contains("!"))
             instructionText.text = $"Appliquer {_pendingUpgrade.Name} sur ?";
@@ -84,6 +97,16 @@ public class LevelUpInventoryController : MonoBehaviour
         inventoryPanel.SetActive(false);
         if (modifierReplacePanel)
             modifierReplacePanel.SetActive(false);
+        if (backButton != null)
+            backButton.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Called when back button is clicked - returns to draft phase
+    /// </summary>
+    private void OnBackButtonClicked()
+    {
+        _mainUI.ReturnToDraftPhase();
     }
 
     /// <summary>

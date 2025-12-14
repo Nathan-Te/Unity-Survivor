@@ -44,10 +44,10 @@ public class ProjectileController : MonoBehaviour
             _chainReaction = gameObject.AddComponent<ProjectileChainReaction>();
     }
 
-    public void Initialize(SpellDefinition def, Vector3 direction, int index = 0, int totalCount = 1)
+    public void Initialize(SpellDefinition def, Vector3 direction, GameObject sourcePrefab, int index = 0, int totalCount = 1)
     {
         _def = def;
-        _sourcePrefab = def.Form.prefab;
+        _sourcePrefab = sourcePrefab; // Use the actual prefab passed from the pool, not def.Prefab
         _hitCount = 0;
         _isHostile = false;
         _hitTargets.Clear();

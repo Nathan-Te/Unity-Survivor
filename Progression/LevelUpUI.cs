@@ -21,6 +21,9 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField] private Button banButton;
     [SerializeField] private TextMeshProUGUI banStockText;
 
+    [Header("Boutons Inventory")]
+    [SerializeField] private Button backButton;
+
     [Header("Conteneurs")]
     [SerializeField] private Transform cardsContainer;
     [SerializeField] private Transform inventoryContainer;
@@ -86,7 +89,8 @@ public class LevelUpUI : MonoBehaviour
             inventoryContainer,
             replaceContainer,
             slotPrefab,
-            replaceButtonPrefab
+            replaceButtonPrefab,
+            backButton
         );
 
         _optionGenerator.Initialize(
@@ -209,6 +213,15 @@ public class LevelUpUI : MonoBehaviour
     public void OnSlotClicked(int slotIndex, UpgradeData pendingUpgrade)
     {
         _inventoryController.OnSlotClicked(slotIndex, pendingUpgrade);
+    }
+
+    /// <summary>
+    /// Returns from targeting phase back to draft phase
+    /// </summary>
+    public void ReturnToDraftPhase()
+    {
+        _inventoryController.Hide();
+        ShowDraftPhase();
     }
 
     /// <summary>

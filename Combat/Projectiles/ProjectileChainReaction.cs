@@ -49,14 +49,14 @@ public class ProjectileChainReaction : MonoBehaviour
         Vector3 direction = (bestCandidate.transform.position - spawnPos).normalized;
 
         GameObject chainProjectile = ProjectilePool.Instance.Get(
-            def.Form.prefab,
+            def.Prefab,
             spawnPos,
             Quaternion.LookRotation(direction)
         );
 
-        if (chainProjectile.TryGetComponent<ProjectileController>(out var chainController))
+        if (chainProjectile != null && chainProjectile.TryGetComponent<ProjectileController>(out var chainController))
         {
-            chainController.Initialize(chainDef, direction);
+            chainController.Initialize(chainDef, direction, def.Prefab);
         }
     }
 
@@ -70,6 +70,7 @@ public class ProjectileChainReaction : MonoBehaviour
         // Copy form and effect
         chainDef.Form = original.Form;
         chainDef.Effect = original.Effect;
+        chainDef.Prefab = original.Prefab; // CRITICAL: Copy the prefab reference!
 
         // Copy basic stats with slight reduction
         chainDef.Speed = original.Speed;

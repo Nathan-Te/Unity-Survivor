@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5c2c0dc29d5e0645b8e11aeb4760441, type: 3}
+  m_Name: SpellMapping
+  m_EditorClassIdentifier: Assembly-CSharp::FormEffectPrefabMapping
+  mappings:
+  - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
+    effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
+    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    isCompatible: 1
+  - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
+    effect: {fileID: 11400000, guid: e13ba59ff0c9ebb4ab7256bf11314057, type: 2}
+    prefab: {fileID: 490920572835360463, guid: 9b34eeee241046644a202a9b3d67111c, type: 3}
+    isCompatible: 1

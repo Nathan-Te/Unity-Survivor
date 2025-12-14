@@ -10,11 +10,11 @@ public static class SpellBuilder
         SpellForm form = slot.formRune.AsForm;
         SpellEffect effect = slot.effectRune.AsEffect;
 
-        // On récupère les bonus accumulés
+        // On rï¿½cupï¿½re les bonus accumulï¿½s
         RuneStats formStats = slot.formRune.AccumulatedStats;
         RuneStats effectStats = slot.effectRune.AccumulatedStats;
 
-        // Récupération des stats globales
+        // Rï¿½cupï¿½ration des stats globales
         var stats = PlayerStats.Instance;
         float globalMight = stats != null ? stats.Might : 1f;
         float globalCD = stats != null ? stats.CooldownSpeed : 1f;
@@ -28,9 +28,27 @@ public static class SpellBuilder
         def.Mode = form.targetingMode;
         def.RequiresLoS = form.requiresLineOfSight;
 
+        // Get the appropriate prefab for this (form, effect) combination
+        if (SpellPrefabRegistry.Instance != null)
+        {
+            def.Prefab = SpellPrefabRegistry.Instance.GetPrefab(form, effect);
+            Debug.Log($"[SpellBuilder] Registry returned prefab '{(def.Prefab != null ? def.Prefab.name : "NULL")}' for {form.runeName} + {effect.runeName}");
+        }
+        else
+        {
+            Debug.LogWarning($"[SpellBuilder] SpellPrefabRegistry.Instance is NULL! Using form.prefab for {form.runeName}");
+            def.Prefab = form.prefab;
+        }
+
+        // CRITICAL: Ensure we always have a valid prefab
+        if (def.Prefab == null)
+        {
+            Debug.LogError($"[SpellBuilder] No prefab found for {form.runeName} + {effect.runeName}. Registry: {(SpellPrefabRegistry.Instance != null ? "EXISTS" : "NULL")}, form.prefab: {(form.prefab != null ? form.prefab.name : "NULL")}");
+        }
+
         // 2. Calcul Stats Forme (Base SO + Bonus Forme)
         // Cooldown : Base * (1 + Somme des % reduction)
-        // Note : CooldownMult est typiquement négatif (ex: -0.1). On clamp à 0.1s min.
+        // Note : CooldownMult est typiquement nï¿½gatif (ex: -0.1). On clamp ï¿½ 0.1s min.
         float cdMult = Mathf.Max(0.1f, 1f + formStats.CooldownMult);
         def.Cooldown = form.baseCooldown * cdMult;
 
@@ -48,7 +66,7 @@ public static class SpellBuilder
 
         def.Knockback = effect.baseKnockback + effectStats.FlatKnockback;
 
-        // Stats spéciales (peuvent être boostées via RuneStats si on veut)
+        // Stats spï¿½ciales (peuvent ï¿½tre boostï¿½es via RuneStats si on veut)
         def.ChainCount = effect.baseChainCount + effectStats.FlatChainCount;
         def.ChainRange = effect.chainRange;
         def.ChainDamageReduction = effect.chainDamageReduction;
@@ -62,7 +80,7 @@ public static class SpellBuilder
             if (modRune == null || modRune.AsModifier == null) continue;
             SpellModifier modSO = modRune.AsModifier;
 
-            // Check compatibilité
+            // Check compatibilitï¿½
             if (modSO.requiredTag != SpellTag.None && !form.tags.HasFlag(modSO.requiredTag)) continue;
 
             // Les stats du mod (Base + Upgrades) sont dans AccumulatedStats
@@ -75,14 +93,14 @@ public static class SpellBuilder
             def.Duration *= (1f + modStats.DurationMult);
 
             // Taille : Multiplicatif sur la base
-            // Note : On n'a pas traité la taille dans Form/Effect avant, on le fait ici
+            // Note : On n'a pas traitï¿½ la taille dans Form/Effect avant, on le fait ici
             // On part du principe que la taille de base est 1 (ou scale du prefab)
             // On accumule les bonus de taille de partout
             float totalSizeMult = (1f + formStats.SizeMult + effectStats.SizeMult + modStats.SizeMult);
-            // Pour simplifier, on multiplie la taille courante (si plusieurs mods, ça se multiplie)
+            // Pour simplifier, on multiplie la taille courante (si plusieurs mods, ï¿½a se multiplie)
             // Mais l'addition des % est souvent plus stable : 
             // Ici, faisons simple : chaque mod multiplie la taille finale.
-            // def.Size est calculé à la fin.
+            // def.Size est calculï¿½ ï¿½ la fin.
 
             // Application Additive pour les Flats
             def.Count += modStats.FlatCount;
@@ -102,12 +120,12 @@ public static class SpellBuilder
         float finalSizeBonus = formStats.SizeMult + effectStats.SizeMult;
         foreach (var m in slot.modifierRunes) if (m?.Data != null) finalSizeBonus += m.AccumulatedStats.SizeMult;
 
-        float prefabScale = (form.prefab ? form.prefab.transform.localScale.x : 1f);
+        float prefabScale = (def.Prefab ? def.Prefab.transform.localScale.x : 1f);
         def.Size = prefabScale * (1f + finalSizeBonus);
 
         if (def.Range <= 0) def.Range = 20f;
 
-        // APPLICATION DES GLOBAUX À LA FIN
+        // APPLICATION DES GLOBAUX ï¿½ LA FIN
         // Cooldown : Base / Vitesse (ex: 1s / 1.5 = 0.66s)
         def.Cooldown /= globalCD;
 

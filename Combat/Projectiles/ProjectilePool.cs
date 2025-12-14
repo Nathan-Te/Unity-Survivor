@@ -33,6 +33,12 @@ public class ProjectilePool : Singleton<ProjectilePool>
 
     public GameObject Get(GameObject prefab, Vector3 position, Quaternion rotation)
     {
+        if (prefab == null)
+        {
+            Debug.LogError("[ProjectilePool] Attempted to get a projectile with null prefab!");
+            return null;
+        }
+
         int key = prefab.GetInstanceID();
         if (!_pools.ContainsKey(key)) _pools.Add(key, new Queue<GameObject>());
 
@@ -67,6 +73,15 @@ public class ProjectilePool : Singleton<ProjectilePool>
         }
 
         obj.SetActive(false);
+
+        // Null check for originalPrefab
+        if (originalPrefab == null)
+        {
+            Debug.LogError("[ProjectilePool] Attempted to return a projectile with null originalPrefab! Destroying instead.");
+            Destroy(obj);
+            return;
+        }
+
         int key = originalPrefab.GetInstanceID();
         if (!_pools.ContainsKey(key)) _pools.Add(key, new Queue<GameObject>());
         _pools[key].Enqueue(obj);

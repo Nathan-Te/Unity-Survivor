@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: Lightning
   m_EditorClassIdentifier: Assembly-CSharp::SpellEffect
   runeName: Lightning
-  description: Adding chain
   icon: {fileID: 21300000, guid: 35248eba49097cd4ca3602b0a789d6d6, type: 3}
+  CommonUpgrades: []
+  RareUpgrades: []
+  EpicUpgrades: []
+  LegendaryUpgrades: []
+  compatibleTags: 15
   element: 3
   tintColor: {r: 0.9780209, g: 1, b: 0, a: 1}
   baseDamage: 10
-  damageMultiplier: 1.5
-  knockbackForce: 0
-  damageGrowth: 2
-  multiplierGrowth: 0.1
+  baseKnockback: 0
+  baseDamageMultiplier: 1
   applyBurn: 0
   applySlow: 0
-  chainLightning: 0
-  spawnMinionOnDeath: 0
   baseChainCount: 3
   chainRange: 8
   chainDamageReduction: 0.7

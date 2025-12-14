@@ -5,7 +5,11 @@ public class SpellEffect : RuneSO
 {
     public override RuneType Type => RuneType.Effect;
 
-    [Header("Élément")]
+    [Header("Compatibilitï¿½")]
+    [Tooltip("Tags requis pour qu'une Form puisse utiliser cet Effect. Si None, compatible avec tout.")]
+    public SpellTag compatibleTags = SpellTag.Projectile | SpellTag.Area | SpellTag.Smite | SpellTag.Orbit;
+
+    [Header("ï¿½lï¿½ment")]
     public ElementType element;
     public Color tintColor = Color.white;
 
@@ -16,7 +20,7 @@ public class SpellEffect : RuneSO
     // Note: damageMultiplier de base est souvent 1.0 (100%)
     public float baseDamageMultiplier = 1.0f;
 
-    [Header("Spécial")]
+    [Header("Spï¿½cial")]
     public bool applyBurn;
     public bool applySlow;
 

@@ -108,14 +108,14 @@ public class SpellCaster : MonoBehaviour
 
             // Spawn projectile
             GameObject projectile = ProjectilePool.Instance.Get(
-                def.Form.prefab,
+                def.Prefab,
                 spawnPos,
                 Quaternion.LookRotation(finalDir)
             );
 
-            if (projectile.TryGetComponent<ProjectileController>(out var ctrl))
+            if (projectile != null && projectile.TryGetComponent<ProjectileController>(out var ctrl))
             {
-                ctrl.Initialize(def, finalDir, i, count);
+                ctrl.Initialize(def, finalDir, def.Prefab, i, count);
             }
         }
     }

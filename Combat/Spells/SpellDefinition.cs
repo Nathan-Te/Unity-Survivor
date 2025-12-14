@@ -5,6 +5,7 @@ public class SpellDefinition
 {
     public SpellForm Form;
     public SpellEffect Effect;
+    public GameObject Prefab;
 
     // Stats
     public float Damage;
@@ -23,7 +24,7 @@ public class SpellDefinition
     public bool RequiresLoS;
     public bool IsHoming;
 
-    // Stats Spéciales
+    // Stats Spï¿½ciales
     public int ChainCount;
     public float ChainRange;
     public float ChainDamageReduction;
