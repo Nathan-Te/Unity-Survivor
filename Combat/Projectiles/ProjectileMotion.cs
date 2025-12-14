@@ -41,7 +41,7 @@ public class LinearMotion : IMotionStrategy
             }
         }
 
-        // VÈrification PortÈe
+        // V√©rification Port√©e
         if (Vector3.Distance(_startPos, pc.transform.position) >= _range)
         {
             pc.Despawn();
@@ -53,16 +53,18 @@ public class LinearMotion : IMotionStrategy
 public class OrbitMotion : IMotionStrategy
 {
     private float _currentAngle;
-    private float _duration;
     private float _speed;
     private int _index;
     private int _totalCount;
     private float _orbitTimer;
     private float _radius;
 
+    public int Index => _index;
+    public int TotalCount => _totalCount;
+
     public OrbitMotion(float duration, float speed, int index, int count, float radius = 2.0f)
     {
-        _duration = duration;
+        // NOTE: duration ignor√©e pour Orbit - ils tournent √† l'infini
         _speed = speed;
         _index = index;
         _totalCount = count;
@@ -90,16 +92,20 @@ public class OrbitMotion : IMotionStrategy
 
         pc.transform.position = PlayerController.Instance.transform.position + Vector3.up + offset;
 
-        // Gestion DurÈe
-        _duration -= dt;
-        if (_duration <= 0f)
-        {
-            pc.Despawn();
-        }
+        // PLUS DE DESPAWN SUR DUR√âE - Les Orbit tournent √† l'infini
+    }
+
+    /// <summary>
+    /// Met √† jour le nombre total et r√©indexe ce projectile
+    /// </summary>
+    public void UpdateCount(int newIndex, int newTotalCount)
+    {
+        _index = newIndex;
+        _totalCount = newTotalCount;
     }
 }
 
-// 3. Comportement Smite (MÈtÈore / Retardement)
+// 3. Comportement Smite (M√©t√©ore / Retardement)
 public class SmiteMotion : IMotionStrategy
 {
     private float _delayTimer;
@@ -118,7 +124,7 @@ public class SmiteMotion : IMotionStrategy
         if (_delayTimer <= 0f)
         {
             _hasExploded = true;
-            // On dÈclenche l'explosion via le contrÙleur
+            // On d√©clenche l'explosion via le contr√¥leur
             pc.TriggerSmiteExplosion();
         }
     }

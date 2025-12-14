@@ -16,7 +16,7 @@ public class ProjectileChainReaction : MonoBehaviour
     /// <summary>
     /// Creates a chain reaction that spawns a new projectile towards another enemy
     /// </summary>
-    public void HandleChainReaction(EnemyController currentTarget, SpellDefinition def)
+    public void HandleChainReaction(EnemyController currentTarget, SpellDefinition def, System.Collections.Generic.HashSet<int> alreadyHitInChain)
     {
         if (def.ChainCount <= 0) return;
 
@@ -27,8 +27,10 @@ public class ProjectileChainReaction : MonoBehaviour
 
         foreach (var candidate in candidates)
         {
-            // Skip the current target and dead enemies
-            if (candidate == currentTarget || candidate.currentHp <= 0)
+            int candidateID = candidate.GetInstanceID();
+
+            // Skip the current target, dead enemies, and any enemy already hit in this chain
+            if (candidate == currentTarget || candidate.currentHp <= 0 || alreadyHitInChain.Contains(candidateID))
                 continue;
 
             float distSqr = (candidate.transform.position - currentTarget.transform.position).sqrMagnitude;
@@ -39,14 +41,19 @@ public class ProjectileChainReaction : MonoBehaviour
             }
         }
 
-        if (bestCandidate == null) return;
+        if (bestCandidate == null)
+            return;
 
         // Create a new spell definition for the chained projectile
         SpellDefinition chainDef = CreateChainDefinition(def);
 
-        // Spawn the chain projectile
+        // Spawn the chain projectile at chest height (same Y level)
         Vector3 spawnPos = currentTarget.transform.position + Vector3.up;
-        Vector3 direction = (bestCandidate.transform.position - spawnPos).normalized;
+
+        // Calculate direction on horizontal plane only (ignore Y differences)
+        Vector3 targetPosFlat = bestCandidate.transform.position;
+        targetPosFlat.y = spawnPos.y; // Same Y level
+        Vector3 direction = (targetPosFlat - spawnPos).normalized;
 
         GameObject chainProjectile = ProjectilePool.Instance.Get(
             def.Prefab,
@@ -56,7 +63,8 @@ public class ProjectileChainReaction : MonoBehaviour
 
         if (chainProjectile != null && chainProjectile.TryGetComponent<ProjectileController>(out var chainController))
         {
-            chainController.Initialize(chainDef, direction, def.Prefab);
+            // Pass the updated hit list to the chained projectile
+            chainController.InitializeWithChain(chainDef, direction, def.Prefab, alreadyHitInChain);
         }
     }
 

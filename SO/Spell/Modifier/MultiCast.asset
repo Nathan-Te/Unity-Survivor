@@ -14,10 +14,66 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellModifier
   runeName: Multishot
   icon: {fileID: 21300000, guid: a078e44c4645d0b4caf7be05afc6c06e, type: 3}
-  CommonUpgrades: []
-  RareUpgrades: []
-  EpicUpgrades: []
-  LegendaryUpgrades: []
+  CommonUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 1
+      FlatPierce: 0
+      FlatSpread: 5
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      StatValue: 0
+  RareUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 1
+      FlatPierce: 0
+      FlatSpread: 5
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      StatValue: 0
+  EpicUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 2
+      FlatPierce: 0
+      FlatSpread: 10
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      StatValue: 0
+  LegendaryUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 2
+      FlatPierce: 0
+      FlatSpread: 10
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      StatValue: 0
   requiredTag: 64
   baseStats:
     DamageMult: 0

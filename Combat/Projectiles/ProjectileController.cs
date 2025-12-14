@@ -18,6 +18,13 @@ public class ProjectileController : MonoBehaviour
 
     private HashSet<int> _hitTargets = new HashSet<int>();
 
+    // Pour les chaînes : ennemis déjà touchés dans toute la chaîne (pour éviter les boucles)
+    private HashSet<int> _chainHitTargets = new HashSet<int>();
+
+    // Pour les Orbit : cooldown par ennemi pour éviter les hits multiples
+    private Dictionary<int, float> _orbitHitCooldowns = new Dictionary<int, float>();
+    private const float ORBIT_HIT_COOLDOWN = 0.5f; // 0.5 secondes entre chaque hit sur le même ennemi
+
     private static MaterialPropertyBlock _propBlock;
     private Renderer _renderer;
 
@@ -28,6 +35,8 @@ public class ProjectileController : MonoBehaviour
     private ProjectileChainReaction _chainReaction;
 
     public SpellDefinition Definition => _def;
+    public IMotionStrategy MotionStrategy => _motionStrategy;
+    public bool IsOrbit => _def?.Form != null && _def.Form.tags.HasFlag(SpellTag.Orbit);
 
     private void Awake()
     {
@@ -51,6 +60,7 @@ public class ProjectileController : MonoBehaviour
         _hitCount = 0;
         _isHostile = false;
         _hitTargets.Clear();
+        _chainHitTargets.Clear();
         _shouldDestroyEffect = false;
 
         // 1. Choix de la Stratégie
@@ -87,6 +97,18 @@ public class ProjectileController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Initialize a chained projectile with a list of enemies already hit in the chain
+    /// </summary>
+    public void InitializeWithChain(SpellDefinition def, Vector3 direction, GameObject sourcePrefab, HashSet<int> chainHitTargets)
+    {
+        // Normal initialization
+        Initialize(def, direction, sourcePrefab);
+
+        // Copy the chain hit list (create a new HashSet to avoid reference issues)
+        _chainHitTargets = new HashSet<int>(chainHitTargets);
+    }
+
     public void InitializeEnemyProjectile(float damage, GameObject sourcePrefab)
     {
         _def = new SpellDefinition();
@@ -115,6 +137,20 @@ public class ProjectileController : MonoBehaviour
         if (_motionStrategy != null)
         {
             _motionStrategy.Update(this, dt);
+        }
+
+        // Décrémenter les cooldowns de hit pour les Orbit
+        if (IsOrbit && _orbitHitCooldowns.Count > 0)
+        {
+            var keys = new System.Collections.Generic.List<int>(_orbitHitCooldowns.Keys);
+            foreach (var enemyID in keys)
+            {
+                _orbitHitCooldowns[enemyID] -= dt;
+                if (_orbitHitCooldowns[enemyID] <= 0f)
+                {
+                    _orbitHitCooldowns.Remove(enemyID);
+                }
+            }
         }
     }
 
@@ -148,10 +184,19 @@ public class ProjectileController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite)) return;
+        // Smite ignore toutes les collisions (explose sur timer)
+        if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite))
+            return;
 
         // OPTIMISATION : Utiliser les layers au lieu de GetComponent
         int layer = other.gameObject.layer;
+
+        // Orbit ignore seulement les Obstacles et Destructibles (peut toucher les ennemis)
+        if (IsOrbit)
+        {
+            if (layer == LayerMask.NameToLayer("Obstacle") || layer == LayerMask.NameToLayer("Destructible"))
+                return;
+        }
 
         if (_isHostile)
         {
@@ -180,7 +225,33 @@ public class ProjectileController : MonoBehaviour
             if (EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy))
             {
                 int enemyID = enemy.GetInstanceID();
+
+                // Comportement spécial pour les Orbit
+                if (IsOrbit)
+                {
+                    // Vérifier si on peut toucher cet ennemi (cooldown écoulé)
+                    if (_orbitHitCooldowns.ContainsKey(enemyID))
+                        return; // Encore en cooldown pour cet ennemi
+
+                    // Appliquer le hit
+                    ApplyHit(enemy);
+
+                    // Ajouter un cooldown pour cet ennemi
+                    _orbitHitCooldowns[enemyID] = ORBIT_HIT_COOLDOWN;
+
+                    // Les Orbit ne se despawn jamais sur collision
+                    return;
+                }
+
+                // Comportement normal pour les autres projectiles
                 if (_hitTargets.Contains(enemyID)) return;
+
+                // Si c'est un projectile chainé, ignorer les ennemis déjà touchés dans la chaîne
+                if (_def.ChainCount > 0 && _chainHitTargets.Contains(enemyID))
+                {
+                    return; // Traverse this enemy without hitting it
+                }
+
                 _hitTargets.Add(enemyID);
                 ApplyHit(enemy);
                 _hitCount++;
@@ -205,13 +276,22 @@ public class ProjectileController : MonoBehaviour
 
     private void ApplyHit(EnemyController target)
     {
+        int targetID = target.GetInstanceID();
+
+        // Add this target to the chain hit list BEFORE handling chain (to prevent immediate loops)
+        if (_def.ChainCount > 0)
+        {
+            _chainHitTargets.Add(targetID);
+        }
+
         // Delegate to damage handler
         _damageHandler.ApplyHit(target, _def);
 
         // Handle chain reaction if enabled
         if (_def.ChainCount > 0)
         {
-            _chainReaction.HandleChainReaction(target, _def);
+            // Pass the updated chain hit list to the chain reaction
+            _chainReaction.HandleChainReaction(target, _def, _chainHitTargets);
         }
     }
 }

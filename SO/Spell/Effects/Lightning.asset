@@ -18,17 +18,16 @@ MonoBehaviour:
   RareUpgrades: []
   EpicUpgrades: []
   LegendaryUpgrades: []
-  compatibleTags: 15
   element: 3
   tintColor: {r: 0.9780209, g: 1, b: 0, a: 1}
-  baseDamage: 10
+  baseDamage: 5
   baseKnockback: 0
   baseDamageMultiplier: 1
   applyBurn: 0
   applySlow: 0
   baseChainCount: 3
   chainRange: 8
-  chainDamageReduction: 0.7
+  chainDamageReduction: 0.6
   minionSpawnChance: 0
   minionPrefab: {fileID: 0}
   aoeRadius: 0

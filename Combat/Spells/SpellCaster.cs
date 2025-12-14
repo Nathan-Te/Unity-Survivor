@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Handles spell casting - targeting, firing, and cooldown management.
@@ -8,6 +9,10 @@ public class SpellCaster : MonoBehaviour
 {
     private Transform _playerTransform;
     private SpellInventory _inventory;
+
+    // Track active Orbit projectiles per slot (pour mise à jour dynamique)
+    private Dictionary<int, List<ProjectileController>> _orbitProjectiles
+        = new Dictionary<int, List<ProjectileController>>();
 
     private void Awake()
     {
@@ -27,21 +32,97 @@ public class SpellCaster : MonoBehaviour
         var slots = _inventory.GetSlots();
         for (int i = 0; i < slots.Count; i++)
         {
-            ProcessSlot(slots[i]);
+            ProcessSlot(slots[i], i);
         }
     }
 
-    private void ProcessSlot(SpellSlot slot)
+    private void ProcessSlot(SpellSlot slot, int slotIndex)
     {
         if (slot.Definition == null) return;
 
-        slot.currentCooldown -= Time.deltaTime;
-
-        if (slot.currentCooldown <= 0f)
+        // Pour les Orbit, on ne lance qu'une fois, puis on met à jour dynamiquement
+        if (slot.Definition.Form.tags.HasFlag(SpellTag.Orbit))
         {
-            if (AttemptAttack(slot.Definition))
+            ProcessOrbitSlot(slot, slotIndex);
+        }
+        else
+        {
+            // Comportement normal pour les autres types de spells
+            slot.currentCooldown -= Time.deltaTime;
+
+            if (slot.currentCooldown <= 0f)
             {
-                slot.currentCooldown = slot.Definition.Cooldown;
+                if (AttemptAttack(slot.Definition))
+                {
+                    slot.currentCooldown = slot.Definition.Cooldown;
+                }
+            }
+        }
+    }
+
+    private void ProcessOrbitSlot(SpellSlot slot, int slotIndex)
+    {
+        // S'assurer que nous avons une liste pour ce slot
+        if (!_orbitProjectiles.ContainsKey(slotIndex))
+        {
+            _orbitProjectiles[slotIndex] = new List<ProjectileController>();
+        }
+
+        var activeOrbits = _orbitProjectiles[slotIndex];
+
+        // Nettoyer les projectiles détruits
+        activeOrbits.RemoveAll(p => p == null || !p.gameObject.activeInHierarchy);
+
+        // Vérifier si la définition a changé (upgrade, changement d'effect, etc.)
+        bool needsRefresh = false;
+
+        if (activeOrbits.Count > 0 && activeOrbits[0] != null)
+        {
+            // Comparer la définition actuelle avec celle des projectiles existants
+            var currentDef = activeOrbits[0].Definition;
+
+            // Si n'importe quelle propriété importante a changé, on relance tout
+            if (currentDef.Count != slot.Definition.Count ||
+                currentDef.Damage != slot.Definition.Damage ||
+                currentDef.Speed != slot.Definition.Speed ||
+                currentDef.Effect != slot.Definition.Effect ||
+                currentDef.Prefab != slot.Definition.Prefab)
+            {
+                needsRefresh = true;
+            }
+        }
+
+        // Si aucun orbit ou si la définition a changé, tout détruire et relancer
+        if (activeOrbits.Count == 0 || needsRefresh)
+        {
+            // Détruire tous les orbits existants
+            foreach (var orbit in activeOrbits)
+            {
+                if (orbit != null && orbit.gameObject != null)
+                {
+                    orbit.Despawn();
+                }
+            }
+            activeOrbits.Clear();
+
+            // Créer les nouveaux orbits avec la définition à jour
+            int desiredCount = slot.Definition.Count;
+            for (int i = 0; i < desiredCount; i++)
+            {
+                Vector3 spawnPos = _playerTransform.position + Vector3.up;
+                Vector3 dummyDir = Vector3.forward;
+
+                GameObject projectile = ProjectilePool.Instance.Get(
+                    slot.Definition.Prefab,
+                    spawnPos,
+                    Quaternion.identity
+                );
+
+                if (projectile != null && projectile.TryGetComponent<ProjectileController>(out var ctrl))
+                {
+                    ctrl.Initialize(slot.Definition, dummyDir, slot.Definition.Prefab, i, desiredCount);
+                    activeOrbits.Add(ctrl);
+                }
             }
         }
     }
@@ -165,5 +246,21 @@ public class SpellCaster : MonoBehaviour
             // BOLT / NOVA / ORBIT: spawn from player
             return _playerTransform.position + Vector3.up + direction * 0.5f;
         }
+    }
+
+    private void OnDisable()
+    {
+        // Nettoyer tous les orbits quand le caster est désactivé
+        foreach (var orbits in _orbitProjectiles.Values)
+        {
+            foreach (var orbit in orbits)
+            {
+                if (orbit != null && orbit.gameObject != null)
+                {
+                    orbit.Despawn();
+                }
+            }
+        }
+        _orbitProjectiles.Clear();
     }
 }
