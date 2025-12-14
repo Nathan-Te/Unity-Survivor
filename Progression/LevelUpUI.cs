@@ -182,6 +182,7 @@ public class LevelUpUI : MonoBehaviour
             }
 
             // Otherwise show targeting phase
+            _draftController.Hide();
             _inventoryController.ShowTargetingPhase(upgrade);
 
             if (hasDuplicate)
@@ -193,7 +194,13 @@ public class LevelUpUI : MonoBehaviour
         }
 
         // Modifiers and Effects always require targeting
+        _draftController.Hide();
         _inventoryController.ShowTargetingPhase(upgrade);
+
+        if (upgrade.Type == UpgradeType.Effect)
+            _inventoryController.UpdateInstructionText("Appliquer l'EFFET sur quel sort ?");
+        else if (upgrade.Type == UpgradeType.Modifier)
+            _inventoryController.UpdateInstructionText("Appliquer le MODIFICATEUR sur quel sort ?");
     }
 
     /// <summary>

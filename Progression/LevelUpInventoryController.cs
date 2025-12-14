@@ -48,6 +48,7 @@ public class LevelUpInventoryController : MonoBehaviour
         _pendingUpgrade = pendingUpgrade;
 
         inventoryPanel.SetActive(true);
+        instructionText.gameObject.SetActive(true);
 
         if (!instructionText.text.Contains("!"))
             instructionText.text = $"Appliquer {_pendingUpgrade.Name} sur ?";
@@ -210,22 +211,48 @@ public class LevelUpInventoryController : MonoBehaviour
                 continue;
 
             GameObject btnObj = Instantiate(replaceButtonPrefab, replaceContainer);
-            var txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
-            var btn = btnObj.GetComponent<Button>();
+            var replaceBtn = btnObj.GetComponent<ModifierReplaceButton>();
 
-            txt.text = slot.modifierRunes[i].Data.runeName;
-
-            int indexToReplace = i;
-            btn.onClick.AddListener(() =>
+            if (replaceBtn != null)
             {
-                FindFirstObjectByType<SpellManager>().TryApplyModifierToSlot(
-                    (SpellModifier)_pendingUpgrade.TargetRuneSO,
-                    _targetSlotIndex,
-                    indexToReplace,
-                    _pendingUpgrade.UpgradeDefinition
-                );
-                _mainUI.EndLevelUp();
-            });
+                // Initialize with icon and level
+                replaceBtn.Initialize(slot.modifierRunes[i]);
+
+                int indexToReplace = i;
+                replaceBtn.Button.onClick.AddListener(() =>
+                {
+                    FindFirstObjectByType<SpellManager>().TryApplyModifierToSlot(
+                        (SpellModifier)_pendingUpgrade.TargetRuneSO,
+                        _targetSlotIndex,
+                        indexToReplace,
+                        _pendingUpgrade.UpgradeDefinition
+                    );
+                    _mainUI.EndLevelUp();
+                });
+            }
+            else
+            {
+                // Fallback to old text-based approach if component not found
+                var txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
+                var btn = btnObj.GetComponent<Button>();
+
+                if (txt != null) txt.text = slot.modifierRunes[i].Data.runeName;
+
+                int indexToReplace = i;
+                if (btn != null)
+                {
+                    btn.onClick.AddListener(() =>
+                    {
+                        FindFirstObjectByType<SpellManager>().TryApplyModifierToSlot(
+                            (SpellModifier)_pendingUpgrade.TargetRuneSO,
+                            _targetSlotIndex,
+                            indexToReplace,
+                            _pendingUpgrade.UpgradeDefinition
+                        );
+                        _mainUI.EndLevelUp();
+                    });
+                }
+            }
         }
     }
 
