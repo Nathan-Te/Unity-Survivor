@@ -140,12 +140,13 @@ public class LevelUpUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Shows the draft phase with upgrade cards
+    /// Shows the draft phase with upgrade cards (generates new options)
     /// </summary>
     public void ShowDraftPhase()
     {
         _inventoryController.Hide();
-        _draftController.ShowDraftPhase(_currentMinRarity, _currentFilter);
+        // Force regeneration for new level-ups and rerolls
+        _draftController.ShowDraftPhase(_currentMinRarity, _currentFilter, forceRegenerate: true);
     }
 
     /// <summary>
@@ -216,12 +217,13 @@ public class LevelUpUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns from targeting phase back to draft phase
+    /// Returns from targeting phase back to draft phase (without regenerating options)
     /// </summary>
     public void ReturnToDraftPhase()
     {
         _inventoryController.Hide();
-        ShowDraftPhase();
+        // Don't force regeneration - reuse the cached options
+        _draftController.ShowDraftPhase(_currentMinRarity, _currentFilter, forceRegenerate: false);
     }
 
     /// <summary>

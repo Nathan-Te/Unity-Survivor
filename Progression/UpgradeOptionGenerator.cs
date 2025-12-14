@@ -146,21 +146,9 @@ public class UpgradeOptionGenerator : MonoBehaviour
             {
                 if (slot.formRune != null && slot.formRune.AsForm != null)
                 {
-                    // Check tag-based compatibility
+                    // Check compatibility using the mapping (single source of truth)
                     if (CompatibilityValidator.IsCompatible(slot.formRune.AsForm, effect))
-                    {
-                        // Also check prefab mapping compatibility if registry exists
-                        if (SpellPrefabRegistry.Instance != null)
-                        {
-                            if (SpellPrefabRegistry.Instance.IsCompatible(slot.formRune.AsForm, effect))
-                                return true;
-                        }
-                        else
-                        {
-                            // No registry, rely on tag-based compatibility only
-                            return true;
-                        }
-                    }
+                        return true;
                 }
             }
 

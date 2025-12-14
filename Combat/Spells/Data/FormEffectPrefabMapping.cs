@@ -15,8 +15,6 @@ public class FormEffectPrefabMapping : ScriptableObject
         public SpellForm form;
         public SpellEffect effect;
         public GameObject prefab;
-        [Tooltip("Si vrai, cette combinaison est compatible et peut être proposée au joueur")]
-        public bool isCompatible = true;
     }
 
     [Header("Mappings")]
@@ -45,25 +43,25 @@ public class FormEffectPrefabMapping : ScriptableObject
     }
 
     /// <summary>
-    /// Checks if a (form, effect) combination is compatible and has a prefab
+    /// Checks if a (form, effect) combination is compatible.
+    /// A combination is compatible if it exists in the mapping with a valid prefab.
     /// </summary>
     public bool IsCompatible(SpellForm form, SpellEffect effect)
     {
         if (form == null || effect == null)
             return false;
 
-        // Check explicit mapping
+        // Check if this combination exists in the mapping
         foreach (var entry in mappings)
         {
             if (entry.form == form && entry.effect == effect)
             {
-                return entry.isCompatible && entry.prefab != null;
+                return entry.prefab != null;
             }
         }
 
-        // If no explicit mapping, check if form has a default prefab
-        // This allows backward compatibility
-        return form.prefab != null;
+        // Not in mapping = not compatible
+        return false;
     }
 
     /// <summary>
@@ -78,7 +76,7 @@ public class FormEffectPrefabMapping : ScriptableObject
 
         foreach (var entry in mappings)
         {
-            if (entry.form == form && entry.isCompatible && entry.prefab != null)
+            if (entry.form == form && entry.prefab != null)
             {
                 if (!compatible.Contains(entry.effect))
                     compatible.Add(entry.effect);
@@ -100,7 +98,7 @@ public class FormEffectPrefabMapping : ScriptableObject
 
         foreach (var entry in mappings)
         {
-            if (entry.effect == effect && entry.isCompatible && entry.prefab != null)
+            if (entry.effect == effect && entry.prefab != null)
             {
                 if (!compatible.Contains(entry.form))
                     compatible.Add(entry.form);

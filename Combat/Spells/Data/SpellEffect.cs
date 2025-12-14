@@ -5,10 +5,6 @@ public class SpellEffect : RuneSO
 {
     public override RuneType Type => RuneType.Effect;
 
-    [Header("Compatibilit�")]
-    [Tooltip("Tags requis pour qu'une Form puisse utiliser cet Effect. Si None, compatible avec tout.")]
-    public SpellTag compatibleTags = SpellTag.Projectile | SpellTag.Area | SpellTag.Smite | SpellTag.Orbit;
-
     [Header("�l�ment")]
     public ElementType element;
     public Color tintColor = Color.white;

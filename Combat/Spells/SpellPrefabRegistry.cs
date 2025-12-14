@@ -76,21 +76,22 @@ public class SpellPrefabRegistry : MonoBehaviour
     }
 
     /// <summary>
-    /// Checks if a (form, effect) combination is compatible
+    /// Checks if a (form, effect) combination is compatible.
+    /// Compatibility is determined solely by the prefab mapping.
     /// </summary>
     public bool IsCompatible(SpellForm form, SpellEffect effect)
     {
-        // First check tag-based compatibility
-        if (!CompatibilityValidator.IsCompatible(form, effect))
+        if (form == null || effect == null)
             return false;
 
-        // Then check prefab mapping compatibility if configured
+        // Use the mapping as the single source of truth
         if (prefabMapping != null)
         {
             return prefabMapping.IsCompatible(form, effect);
         }
 
-        // If no mapping, fall back to checking if form has a prefab
-        return form != null && form.prefab != null;
+        // If no mapping configured, log warning and return false
+        Debug.LogWarning("[SpellPrefabRegistry] No prefab mapping configured! Cannot validate compatibility.");
+        return false;
     }
 }

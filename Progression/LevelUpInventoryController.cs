@@ -21,6 +21,25 @@ public class LevelUpInventoryController : MonoBehaviour
     private UpgradeData _pendingUpgrade;
     private int _targetSlotIndex;
 
+    private void OnEnable()
+    {
+        SpellInventory.OnIncompatibilityWarning += HandleIncompatibilityWarning;
+    }
+
+    private void OnDisable()
+    {
+        SpellInventory.OnIncompatibilityWarning -= HandleIncompatibilityWarning;
+    }
+
+    private void HandleIncompatibilityWarning(string message)
+    {
+        if (instructionText != null)
+        {
+            instructionText.text = message;
+            instructionText.color = Color.red; // Highlight the warning
+        }
+    }
+
     public void Initialize(
         LevelUpUI mainUI,
         GameObject inventoryPanelRef,
@@ -131,8 +150,12 @@ public class LevelUpInventoryController : MonoBehaviour
         // CASE 2: EFFECT
         else if (_pendingUpgrade.Type == UpgradeType.Effect && isOccupied)
         {
-            sm.ApplyEffectToSlot((SpellEffect)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
-            _mainUI.EndLevelUp();
+            bool success = sm.ApplyEffectToSlot((SpellEffect)_pendingUpgrade.TargetRuneSO, slotIndex, _pendingUpgrade.UpgradeDefinition);
+            if (success)
+            {
+                _mainUI.EndLevelUp();
+            }
+            // If not successful, the warning event will have been triggered and displayed
         }
         // CASE 3: MODIFIER
         else if (_pendingUpgrade.Type == UpgradeType.Modifier && isOccupied)
@@ -281,6 +304,10 @@ public class LevelUpInventoryController : MonoBehaviour
 
     public void UpdateInstructionText(string text)
     {
-        instructionText.text = text;
+        if (instructionText != null)
+        {
+            instructionText.text = text;
+            instructionText.color = Color.white; // Reset to normal color
+        }
     }
 }

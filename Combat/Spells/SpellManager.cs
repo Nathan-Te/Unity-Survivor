@@ -74,9 +74,11 @@ public class SpellManager : MonoBehaviour
         if (_inventory != null) _inventory.ReplaceSpell(newForm, slotIndex, upgradeDef);
     }
 
-    public void ApplyEffectToSlot(SpellEffect effectSO, int slotIndex, RuneDefinition upgradeDef)
+    public bool ApplyEffectToSlot(SpellEffect effectSO, int slotIndex, RuneDefinition upgradeDef)
     {
-        if (_inventory != null) _inventory.ApplyEffectToSlot(effectSO, slotIndex, upgradeDef);
+        if (_inventory != null)
+            return _inventory.ApplyEffectToSlot(effectSO, slotIndex, upgradeDef);
+        return false;
     }
 
     public bool TryApplyModifierToSlot(SpellModifier mod, int slotIndex, int replaceIndex, RuneDefinition upgradeDef)

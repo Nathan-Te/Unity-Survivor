@@ -21,6 +21,9 @@ public class LevelUpDraftController : MonoBehaviour
     private LevelUpUI _mainUI;
     private UpgradeOptionGenerator _optionGenerator;
 
+    // Cache the current options to avoid re-generating when returning from targeting phase
+    private List<UpgradeData> _currentOptions;
+
     public bool IsBanMode => _isBanMode;
 
     public void Initialize(
@@ -54,7 +57,8 @@ public class LevelUpDraftController : MonoBehaviour
     /// <summary>
     /// Shows the draft phase with upgrade cards
     /// </summary>
-    public void ShowDraftPhase(Rarity minRarity, RewardFilter filter)
+    /// <param name="forceRegenerate">If true, generates new options. If false, reuses cached options if available.</param>
+    public void ShowDraftPhase(Rarity minRarity, RewardFilter filter, bool forceRegenerate = true)
     {
         _isBanMode = false;
         draftPanel.SetActive(true);
@@ -66,10 +70,14 @@ public class LevelUpDraftController : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        // Generate and display new options
-        List<UpgradeData> options = _optionGenerator.GenerateOptions(3, minRarity, filter);
+        // Generate new options only if forced or no cached options exist
+        if (forceRegenerate || _currentOptions == null || _currentOptions.Count == 0)
+        {
+            _currentOptions = _optionGenerator.GenerateOptions(3, minRarity, filter);
+        }
 
-        foreach (var option in options)
+        // Display options (either new or cached)
+        foreach (var option in _currentOptions)
         {
             GameObject cardObj = Instantiate(cardPrefab, cardsContainer);
             if (cardObj.TryGetComponent<UpgradeCard>(out var card))

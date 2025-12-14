@@ -6,19 +6,22 @@ using UnityEngine;
 public static class CompatibilityValidator
 {
     /// <summary>
-    /// Checks if a Form is compatible with an Effect based on tags
+    /// Checks if a Form is compatible with an Effect using the prefab mapping registry
     /// </summary>
     public static bool IsCompatible(SpellForm form, SpellEffect effect)
     {
         if (form == null || effect == null)
             return false;
 
-        // If effect has no tag restrictions (None), it's compatible with everything
-        if (effect.compatibleTags == SpellTag.None)
-            return true;
+        // Use the SpellPrefabRegistry as the single source of truth
+        if (SpellPrefabRegistry.Instance != null)
+        {
+            return SpellPrefabRegistry.Instance.IsCompatible(form, effect);
+        }
 
-        // Check if form has at least one tag that matches effect's requirements
-        return (form.tags & effect.compatibleTags) != 0;
+        // Fallback if no registry exists (shouldn't happen in normal gameplay)
+        Debug.LogWarning("[CompatibilityValidator] No SpellPrefabRegistry found! Cannot validate compatibility.");
+        return false;
     }
 
     /// <summary>
