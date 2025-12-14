@@ -22,3 +22,9 @@ MonoBehaviour:
   - form: {fileID: 11400000, guid: 62a868e43ed9eb94e8976a54fb0a2d14, type: 2}
     effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
     prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+  - form: {fileID: 11400000, guid: b7a2c2ebb3f8344499655726c823162f, type: 2}
+    effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
+    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+  - form: {fileID: 11400000, guid: 9d9185daf321cfd45887941240f436d7, type: 2}
+    effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
+    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}

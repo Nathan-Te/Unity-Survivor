@@ -20,6 +20,8 @@ public class FormEffectPrefabMapping : ScriptableObject
     [Header("Mappings")]
     [SerializeField] private List<PrefabEntry> mappings = new List<PrefabEntry>();
 
+    public List<PrefabEntry> PrefabMappings => mappings;
+
     /// <summary>
     /// Returns the prefab for a given (form, effect) combination.
     /// Falls back to form.prefab if no specific mapping exists.
