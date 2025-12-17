@@ -36,7 +36,10 @@ public class LinearMotion : IMotionStrategy
             Transform target = EnemyManager.Instance.GetTarget(pc.transform.position, 10f, TargetingMode.Nearest, 0, false);
             if (target != null)
             {
-                Vector3 dir = (target.position - pc.transform.position).normalized;
+                // Calculate direction on horizontal plane only (ignore Y differences)
+                Vector3 targetPosFlat = target.position;
+                targetPosFlat.y = pc.transform.position.y; // Same Y level to prevent going into the ground
+                Vector3 dir = (targetPosFlat - pc.transform.position).normalized;
                 pc.transform.rotation = Quaternion.Slerp(pc.transform.rotation, Quaternion.LookRotation(dir), 5f * dt);
             }
         }

@@ -259,12 +259,14 @@ public class ArcadeScoreSystem : Singleton<ArcadeScoreSystem>
         OnComboTimerChanged?.Invoke(_comboTimer, comboTimerMax);
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         if (EnemyManager.Instance != null)
         {
             EnemyManager.Instance.OnEnemyKilledWithScore -= OnEnemyKilled;
         }
+
+        base.OnDestroy();
 
         // Instance is managed by Singleton<T> base class, no need to set to null
     }

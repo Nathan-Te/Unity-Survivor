@@ -24,7 +24,7 @@ MonoBehaviour:
       DurationMult: 0
       FlatCount: 1
       FlatPierce: 0
-      FlatSpread: 5
+      FlatSpread: 10
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
       DurationMult: 0
       FlatCount: 1
       FlatPierce: 0
-      FlatSpread: 5
+      FlatSpread: 10
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
@@ -54,7 +54,7 @@ MonoBehaviour:
       DurationMult: 0
       FlatCount: 2
       FlatPierce: 0
-      FlatSpread: 10
+      FlatSpread: 20
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
@@ -69,7 +69,7 @@ MonoBehaviour:
       DurationMult: 0
       FlatCount: 2
       FlatPierce: 0
-      FlatSpread: 10
+      FlatSpread: 20
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0

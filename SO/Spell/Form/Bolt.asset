@@ -26,7 +26,7 @@ MonoBehaviour:
   baseCount: 1
   basePierce: 0
   baseSpread: 0
-  baseSpeed: 5
+  baseSpeed: 10
   baseDuration: 5
   baseRange: 20
   procCoefficient: 1
