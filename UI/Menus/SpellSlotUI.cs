@@ -19,6 +19,11 @@ public class SpellSlotUI : MonoBehaviour
     private LevelUpUI _levelUpManager;
     private UpgradeData _pendingUpgrade;
 
+    // Tooltip triggers
+    private RuneTooltipTrigger _formTooltipTrigger;
+    private RuneTooltipTrigger _effectTooltipTrigger;
+    private RuneTooltipTrigger[] _modTooltipTriggers;
+
     // Affichage Standard
     public void Initialize(SpellSlot slot, int index, LevelUpUI levelUpManager = null, UpgradeData pendingUpgrade = null)
     {
@@ -28,6 +33,9 @@ public class SpellSlotUI : MonoBehaviour
 
         if (emptyStateVisual) emptyStateVisual.SetActive(false); // On cache l'�tat vide
 
+        // Setup tooltip triggers if not already done
+        SetupTooltipTriggers();
+
         // 1. Forme
         if (slot.formRune != null && slot.formRune.Data.icon != null)
         {
@@ -35,6 +43,10 @@ public class SpellSlotUI : MonoBehaviour
             formIcon.enabled = true;
             formIcon.color = Color.white;
             if (formLevelText) formLevelText.text = $"Lvl {slot.formRune.Level}";
+
+            // Set tooltip data
+            if (_formTooltipTrigger != null)
+                _formTooltipTrigger.SetRune(slot.formRune);
         }
 
         // 2. Effet
@@ -52,6 +64,10 @@ public class SpellSlotUI : MonoBehaviour
             }
             effectIcon.enabled = true;
             if (effectLevelText) effectLevelText.text = $"{slot.effectRune.Level}";
+
+            // Set tooltip data
+            if (_effectTooltipTrigger != null)
+                _effectTooltipTrigger.SetRune(slot.effectRune);
         }
 
         // 3. Mods
@@ -74,11 +90,19 @@ public class SpellSlotUI : MonoBehaviour
                     modLevelTexts[i].gameObject.SetActive(true);
                     modLevelTexts[i].text = $"{modRune.Level}";
                 }
+
+                // Set tooltip data
+                if (_modTooltipTriggers != null && i < _modTooltipTriggers.Length && _modTooltipTriggers[i] != null)
+                    _modTooltipTriggers[i].SetRune(modRune);
             }
             else
             {
                 modIcons[i].enabled = false;
                 if (i < modLevelTexts.Length && modLevelTexts[i]) modLevelTexts[i].gameObject.SetActive(false);
+
+                // Clear tooltip data
+                if (_modTooltipTriggers != null && i < _modTooltipTriggers.Length && _modTooltipTriggers[i] != null)
+                    _modTooltipTriggers[i].SetRune(null);
             }
         }
 
@@ -113,6 +137,41 @@ public class SpellSlotUI : MonoBehaviour
         if (manager != null)
         {
             clickButton.onClick.AddListener(() => manager.OnSlotClicked(_slotIndex, _pendingUpgrade));
+        }
+    }
+
+    private void SetupTooltipTriggers()
+    {
+        // Setup form tooltip
+        if (_formTooltipTrigger == null && formIcon != null)
+        {
+            _formTooltipTrigger = formIcon.gameObject.GetComponent<RuneTooltipTrigger>();
+            if (_formTooltipTrigger == null)
+                _formTooltipTrigger = formIcon.gameObject.AddComponent<RuneTooltipTrigger>();
+        }
+
+        // Setup effect tooltip
+        if (_effectTooltipTrigger == null && effectIcon != null)
+        {
+            _effectTooltipTrigger = effectIcon.gameObject.GetComponent<RuneTooltipTrigger>();
+            if (_effectTooltipTrigger == null)
+                _effectTooltipTrigger = effectIcon.gameObject.AddComponent<RuneTooltipTrigger>();
+        }
+
+        // Setup modifier tooltips
+        if (_modTooltipTriggers == null || _modTooltipTriggers.Length != modIcons.Length)
+        {
+            _modTooltipTriggers = new RuneTooltipTrigger[modIcons.Length];
+        }
+
+        for (int i = 0; i < modIcons.Length; i++)
+        {
+            if (_modTooltipTriggers[i] == null && modIcons[i] != null)
+            {
+                _modTooltipTriggers[i] = modIcons[i].gameObject.GetComponent<RuneTooltipTrigger>();
+                if (_modTooltipTriggers[i] == null)
+                    _modTooltipTriggers[i] = modIcons[i].gameObject.AddComponent<RuneTooltipTrigger>();
+            }
         }
     }
 }
