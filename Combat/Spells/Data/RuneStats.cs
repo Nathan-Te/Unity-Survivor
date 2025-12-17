@@ -6,7 +6,7 @@ public struct RuneStats
 {
     [Header("Multiplicateurs (0.1 = +10%)")]
     public float DamageMult;
-    public float CooldownMult; // Négatif pour réduire (-0.1)
+    public float CooldownMult; // Nï¿½gatif pour rï¿½duire (-0.1)
     public float SizeMult;
     public float SpeedMult;
     public float DurationMult;
@@ -19,8 +19,12 @@ public struct RuneStats
     public float FlatKnockback;
     public int FlatChainCount;
 
-    [Header("Spécial (Pour StatUpgrade)")]
-    public float StatValue; // Valeur générique pour MoveSpeed, MaxHealth, etc.
+    [Header("Effets de statut")]
+    public float FlatBurnDamage; // DÃ©gÃ¢ts par tick de Burn
+    public float FlatBurnDuration; // DurÃ©e du Burn en secondes
+
+    [Header("Spï¿½cial (Pour StatUpgrade)")]
+    public float StatValue; // Valeur gï¿½nï¿½rique pour MoveSpeed, MaxHealth, etc.
 
     // Constructeur vide
     public static RuneStats Zero => new RuneStats();
@@ -42,12 +46,15 @@ public struct RuneStats
         c.FlatKnockback = a.FlatKnockback + b.FlatKnockback;
         c.FlatChainCount = a.FlatChainCount + b.FlatChainCount;
 
+        c.FlatBurnDamage = a.FlatBurnDamage + b.FlatBurnDamage;
+        c.FlatBurnDuration = a.FlatBurnDuration + b.FlatBurnDuration;
+
         c.StatValue = a.StatValue + b.StatValue;
         return c;
     }
 }
 
-// Ce que tu configures dans l'inspecteur pour chaque rareté
+// Ce que tu configures dans l'inspecteur pour chaque raretï¿½
 [System.Serializable]
 public class RuneDefinition
 {

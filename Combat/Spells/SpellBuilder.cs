@@ -32,11 +32,9 @@ public static class SpellBuilder
         if (SpellPrefabRegistry.Instance != null)
         {
             def.Prefab = SpellPrefabRegistry.Instance.GetPrefab(form, effect);
-            Debug.Log($"[SpellBuilder] Registry returned prefab '{(def.Prefab != null ? def.Prefab.name : "NULL")}' for {form.runeName} + {effect.runeName}");
         }
         else
         {
-            Debug.LogWarning($"[SpellBuilder] SpellPrefabRegistry.Instance is NULL! Using form.prefab for {form.runeName}");
             def.Prefab = form.prefab;
         }
 
@@ -72,6 +70,10 @@ public static class SpellBuilder
         def.ChainDamageReduction = effect.chainDamageReduction;
         def.MinionChance = effect.minionSpawnChance;
         def.MinionPrefab = effect.minionPrefab;
+
+        // Burn stats (base effect + accumulated bonuses from effect rune)
+        def.BurnDamagePerTick = effect.burnDamagePerTick + effectStats.FlatBurnDamage;
+        def.BurnDuration = effect.burnDuration + effectStats.FlatBurnDuration;
 
         // 4. Application des Modificateurs
         // On parcourt les runes de modification
@@ -109,6 +111,10 @@ public static class SpellBuilder
             def.Range += modStats.FlatRange;
             def.Knockback += modStats.FlatKnockback;
             def.ChainCount += modStats.FlatChainCount;
+
+            // Burn stats from modifiers
+            def.BurnDamagePerTick += modStats.FlatBurnDamage;
+            def.BurnDuration += modStats.FlatBurnDuration;
 
             if (modSO.enableHoming) def.IsHoming = true;
         }

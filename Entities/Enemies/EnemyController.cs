@@ -101,15 +101,18 @@ public class EnemyController : MonoBehaviour
     {
         currentHp -= amount;
 
-        // Spawn damage text
-        if (DamageTextPool.Instance != null)
+        // Spawn damage text (only if damage > 0)
+        if (amount > 0 && DamageTextPool.Instance != null)
         {
             Vector3 popPos = transform.position + Random.insideUnitSphere * 0.5f;
             DamageTextPool.Instance.Spawn(amount, popPos);
         }
 
-        // Trigger hit flash effect
-        _visuals.TriggerHitFlash();
+        // Trigger hit flash effect (only if damage > 0)
+        if (amount > 0)
+        {
+            _visuals.TriggerHitFlash();
+        }
 
         if (currentHp <= 0)
         {

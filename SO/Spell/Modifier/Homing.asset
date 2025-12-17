@@ -14,7 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellModifier
   runeName: Homing
   icon: {fileID: 21300000, guid: 30dcbf9a3de9f9643829a9b167a9d513, type: 3}
-  CommonUpgrades: []
+  CommonUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 0
+      FlatPierce: 0
+      FlatSpread: 0
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      StatValue: 0
   RareUpgrades: []
   EpicUpgrades: []
   LegendaryUpgrades: []
@@ -31,5 +47,7 @@ MonoBehaviour:
     FlatRange: 0
     FlatKnockback: 0
     FlatChainCount: 0
+    FlatBurnDamage: 0
+    FlatBurnDuration: 0
     StatValue: 0
   enableHoming: 1

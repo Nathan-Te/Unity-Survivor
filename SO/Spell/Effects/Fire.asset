@@ -14,16 +14,82 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellEffect
   runeName: Fire
   icon: {fileID: 21300000, guid: 2fdc5feeaf73a284fbf0bd1716cf8461, type: 3}
-  CommonUpgrades: []
-  RareUpgrades: []
-  EpicUpgrades: []
-  LegendaryUpgrades: []
+  CommonUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 0
+      FlatPierce: 0
+      FlatSpread: 0
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      FlatBurnDamage: 1
+      FlatBurnDuration: 3
+      StatValue: 0
+  RareUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 0
+      FlatPierce: 0
+      FlatSpread: 0
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      FlatBurnDamage: 2
+      FlatBurnDuration: 3
+      StatValue: 0
+  EpicUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 0
+      FlatPierce: 0
+      FlatSpread: 0
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      FlatBurnDamage: 3
+      FlatBurnDuration: 3
+      StatValue: 0
+  LegendaryUpgrades:
+  - Description: 
+    Stats:
+      DamageMult: 0
+      CooldownMult: 0
+      SizeMult: 0
+      SpeedMult: 0
+      DurationMult: 0
+      FlatCount: 0
+      FlatPierce: 0
+      FlatSpread: 0
+      FlatRange: 0
+      FlatKnockback: 0
+      FlatChainCount: 0
+      FlatBurnDamage: 4
+      FlatBurnDuration: 3
+      StatValue: 0
   element: 1
   tintColor: {r: 1, g: 0, b: 0, a: 1}
-  baseDamage: 5
+  baseDamage: 0
   baseKnockback: 0
   baseDamageMultiplier: 1
   applyBurn: 1
+  burnDamagePerTick: 2
+  burnDuration: 3
   applySlow: 0
   baseChainCount: 0
   chainRange: 0

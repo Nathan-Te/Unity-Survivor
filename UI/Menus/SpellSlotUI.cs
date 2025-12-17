@@ -44,9 +44,9 @@ public class SpellSlotUI : MonoBehaviour
             formIcon.color = Color.white;
             if (formLevelText) formLevelText.text = $"Lvl {slot.formRune.Level}";
 
-            // Set tooltip data
+            // Set tooltip data (pass slot for full context)
             if (_formTooltipTrigger != null)
-                _formTooltipTrigger.SetRune(slot.formRune);
+                _formTooltipTrigger.SetRune(slot.formRune, slot);
         }
 
         // 2. Effet
@@ -65,9 +65,9 @@ public class SpellSlotUI : MonoBehaviour
             effectIcon.enabled = true;
             if (effectLevelText) effectLevelText.text = $"{slot.effectRune.Level}";
 
-            // Set tooltip data
+            // Set tooltip data (pass slot for full context)
             if (_effectTooltipTrigger != null)
-                _effectTooltipTrigger.SetRune(slot.effectRune);
+                _effectTooltipTrigger.SetRune(slot.effectRune, slot);
         }
 
         // 3. Mods
@@ -91,9 +91,9 @@ public class SpellSlotUI : MonoBehaviour
                     modLevelTexts[i].text = $"{modRune.Level}";
                 }
 
-                // Set tooltip data
+                // Set tooltip data (pass slot for full context)
                 if (_modTooltipTriggers != null && i < _modTooltipTriggers.Length && _modTooltipTriggers[i] != null)
-                    _modTooltipTriggers[i].SetRune(modRune);
+                    _modTooltipTriggers[i].SetRune(modRune, slot);
             }
             else
             {

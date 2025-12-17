@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Handles status effects (Burn, Slow) for enemies.
@@ -8,15 +9,29 @@ public class EnemyStatusEffects : MonoBehaviour
 {
     private EnemyController _controller;
 
-    // Burn state
-    private float _burnTimer;
-    private float _burnDamagePerSec;
+    // Burn state - support stacking multiple burns
+    private List<BurnEffect> _activeBurns = new List<BurnEffect>();
     private float _burnTickTimer;
 
     // Slow state
     private float _slowTimer;
     private float _originalSpeed;
     private bool _isSlowed;
+
+    /// <summary>
+    /// Represents a single burn effect instance
+    /// </summary>
+    private class BurnEffect
+    {
+        public float DamagePerSec;
+        public float RemainingDuration;
+
+        public BurnEffect(float dps, float duration)
+        {
+            DamagePerSec = dps;
+            RemainingDuration = duration;
+        }
+    }
 
     private void Awake()
     {
@@ -33,17 +48,12 @@ public class EnemyStatusEffects : MonoBehaviour
     }
 
     /// <summary>
-    /// Applies burn damage over time
+    /// Applies burn damage over time. Burns stack - each application adds a new burn instance.
     /// </summary>
     public void ApplyBurn(float dps, float duration)
     {
-        // If no burn active, or this burn is stronger, apply it
-        if (_burnTimer <= 0 || dps > _burnDamagePerSec)
-        {
-            _burnDamagePerSec = dps;
-        }
-
-        _burnTimer = duration;
+        // Add new burn to the stack
+        _activeBurns.Add(new BurnEffect(dps, duration));
     }
 
     /// <summary>
@@ -66,8 +76,7 @@ public class EnemyStatusEffects : MonoBehaviour
     /// </summary>
     public void ResetStatusEffects()
     {
-        _burnTimer = 0f;
-        _burnDamagePerSec = 0f;
+        _activeBurns.Clear();
         _burnTickTimer = 0f;
         _slowTimer = 0f;
         _isSlowed = false;
@@ -75,16 +84,36 @@ public class EnemyStatusEffects : MonoBehaviour
 
     private void HandleBurn(float deltaTime)
     {
-        if (_burnTimer <= 0) return;
+        if (_activeBurns.Count == 0) return;
 
-        _burnTimer -= deltaTime;
-        _burnTickTimer += deltaTime;
-
-        // Tick every second
-        if (_burnTickTimer >= 1.0f)
+        // Update all burn durations and calculate total damage
+        float totalDamagePerSec = 0f;
+        for (int i = _activeBurns.Count - 1; i >= 0; i--)
         {
-            _controller.TakeDamage(_burnDamagePerSec);
-            _burnTickTimer -= 1.0f; // Preserve precision
+            _activeBurns[i].RemainingDuration -= deltaTime;
+
+            // Remove expired burns
+            if (_activeBurns[i].RemainingDuration <= 0)
+            {
+                _activeBurns.RemoveAt(i);
+            }
+            else
+            {
+                // Accumulate damage from active burns
+                totalDamagePerSec += _activeBurns[i].DamagePerSec;
+            }
+        }
+
+        // Apply accumulated damage every second
+        if (totalDamagePerSec > 0)
+        {
+            _burnTickTimer += deltaTime;
+
+            if (_burnTickTimer >= 1.0f)
+            {
+                _controller.TakeDamage(totalDamagePerSec);
+                _burnTickTimer -= 1.0f; // Preserve precision
+            }
         }
     }
 

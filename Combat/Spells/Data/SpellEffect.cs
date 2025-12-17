@@ -18,6 +18,9 @@ public class SpellEffect : RuneSO
 
     [Header("Sp�cial")]
     public bool applyBurn;
+    public float burnDamagePerTick = 2f;
+    public float burnDuration = 3f;
+
     public bool applySlow;
 
     public int baseChainCount = 0;

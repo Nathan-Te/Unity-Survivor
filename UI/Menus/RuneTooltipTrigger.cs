@@ -7,7 +7,10 @@ using UnityEngine.EventSystems;
 public class RuneTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     private Rune _rune;
+    private SpellSlot _slot;
     private RectTransform _rectTransform;
+    private Vector3 _cachedTooltipPosition;
+    private bool _positionCached;
 
     private void Awake()
     {
@@ -17,18 +20,27 @@ public class RuneTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerE
     /// <summary>
     /// Set the rune data for this tooltip trigger
     /// </summary>
-    public void SetRune(Rune rune)
+    public void SetRune(Rune rune, SpellSlot slot = null)
     {
         _rune = rune;
+        _slot = slot;
+
+        // Invalidate position cache when rune changes
+        _positionCached = false;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (_rune != null && RuneTooltip.Instance != null)
         {
-            // Calculate position for the tooltip (offset to the right of the element)
-            Vector3 tooltipPosition = CalculateTooltipPosition();
-            RuneTooltip.Instance.Show(_rune, tooltipPosition);
+            // Use cached position (GetWorldCorners allocates array every call)
+            if (!_positionCached)
+            {
+                _cachedTooltipPosition = CalculateTooltipPosition();
+                _positionCached = true;
+            }
+
+            RuneTooltip.Instance.Show(_rune, _cachedTooltipPosition, _slot);
         }
     }
 

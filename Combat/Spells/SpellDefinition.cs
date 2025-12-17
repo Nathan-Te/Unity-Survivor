@@ -32,5 +32,9 @@ public class SpellDefinition
     public float MinionChance;
     public GameObject MinionPrefab;
 
+    // Burn stats (calculated from SpellEffect + bonuses)
+    public float BurnDamagePerTick;
+    public float BurnDuration;
+
     public SpellDefinition() { }
 }

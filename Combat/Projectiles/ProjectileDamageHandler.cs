@@ -57,7 +57,8 @@ public class ProjectileDamageHandler : MonoBehaviour
         {
             if (def.Effect.applyBurn)
             {
-                enemy.ApplyBurn(def.Damage * 0.2f, 3f);
+                // Use calculated burn stats from SpellDefinition (includes bonuses)
+                enemy.ApplyBurn(def.BurnDamagePerTick, def.BurnDuration);
             }
 
             if (def.Effect.applySlow)

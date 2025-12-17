@@ -20,18 +20,18 @@ public class Rune
         {
             AccumulatedStats = mod.baseStats;
         }
-        // Form et Effect n'ont pas de "RuneStats" de base dans ce système, 
+        // Form et Effect n'ont pas de "RuneStats" de base dans ce systï¿½me, 
         // leurs valeurs de base sont dans les champs float du SO (baseDamage, etc.)
     }
 
-    // Appelé pour une nouvelle rune (Niveau 1, mais avec les stats bonus de la carte)
+    // Appelï¿½ pour une nouvelle rune (Niveau 1, mais avec les stats bonus de la carte)
     public void InitializeWithStats(RuneDefinition upgradeDef)
     {
-        // On n'incrémente PAS le niveau ici
+        // On n'incrï¿½mente PAS le niveau ici
         AccumulatedStats += upgradeDef.Stats;
     }
 
-    // Appelé pour un Level Up
+    // Appelï¿½ pour un Level Up
     public void ApplyUpgrade(RuneDefinition upgradeDef)
     {
         Level++;
