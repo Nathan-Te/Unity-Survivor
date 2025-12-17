@@ -27,6 +27,7 @@ public class ProjectileController : MonoBehaviour
 
     private static MaterialPropertyBlock _propBlock;
     private Renderer _renderer;
+    private TrailRenderer _trail; // Cached to avoid GetComponent allocations
 
     private bool _shouldDestroyEffect;
 
@@ -40,8 +41,13 @@ public class ProjectileController : MonoBehaviour
 
     private void Awake()
     {
-        // On récupère le renderer une seule fois à la création
+        // Cache components once at creation (not every time we spawn from pool)
         _renderer = GetComponentInChildren<Renderer>();
+        _trail = GetComponent<TrailRenderer>();
+        if (_trail == null)
+        {
+            _trail = GetComponentInChildren<TrailRenderer>();
+        }
 
         // Get or add sub-components
         _damageHandler = GetComponent<ProjectileDamageHandler>();
@@ -63,10 +69,24 @@ public class ProjectileController : MonoBehaviour
         _chainHitTargets.Clear();
         _shouldDestroyEffect = false;
 
+        // Clear trail to prevent visual artifacts when reusing from pool
+        if (_trail != null)
+        {
+            _trail.Clear();
+        }
+
         // 1. Choix de la Stratégie
         if (_def.Form.tags.HasFlag(SpellTag.Smite))
         {
-            _motionStrategy = new SmiteMotion(_def.Form.impactDelay);
+            // Use timing from SpellDefinition (configured per Form+Effect combination)
+            float impactDelay = _def.SmiteImpactDelay;
+            float vfxDelay = _def.SmiteVfxSpawnDelay;
+            float lifetime = _def.SmiteLifetime;
+
+            // Default vfxDelay to impactDelay if not set
+            if (vfxDelay == 0f) vfxDelay = impactDelay;
+
+            _motionStrategy = new SmiteMotion(impactDelay, vfxDelay, lifetime);
             // On n'oriente pas le Smite, il est fixe au sol là où il a spawn
         }
         else if (_def.Form.tags.HasFlag(SpellTag.Orbit))
@@ -156,10 +176,25 @@ public class ProjectileController : MonoBehaviour
 
     // --- LOGIQUE PUBLIQUE POUR LES STRATÉGIES ---
 
+    /// <summary>
+    /// Spawns the impact VFX for Smite at the right moment (called by SmiteMotion)
+    /// </summary>
+    public void TriggerSmiteVfx()
+    {
+        if (_def.ImpactVfxPrefab != null && VFXPool.Instance != null)
+        {
+            VFXPool.Instance.Spawn(_def.ImpactVfxPrefab, transform.position, Quaternion.identity, 2f);
+        }
+    }
+
+    /// <summary>
+    /// Triggers explosion/damage for Smite (called by SmiteMotion)
+    /// </summary>
     public void TriggerSmiteExplosion()
     {
-        _damageHandler.ApplyAreaDamage(transform.position, _def);
-        Despawn();
+        // Don't spawn VFX here - it's handled separately by TriggerSmiteVfx with precise timing
+        _damageHandler.ApplyAreaDamage(transform.position, _def, spawnVfx: false);
+        // NOTE: Don't despawn here anymore - SmiteMotion handles lifetime
     }
 
     public void Despawn()

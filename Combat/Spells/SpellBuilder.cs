@@ -32,10 +32,21 @@ public static class SpellBuilder
         if (SpellPrefabRegistry.Instance != null)
         {
             def.Prefab = SpellPrefabRegistry.Instance.GetPrefab(form, effect);
+            def.ImpactVfxPrefab = SpellPrefabRegistry.Instance.GetImpactVfx(form, effect);
+
+            // Get Smite timing configuration from mapping
+            var timing = SpellPrefabRegistry.Instance.GetSmiteTiming(form, effect);
+            def.SmiteImpactDelay = timing.impactDelay;
+            def.SmiteVfxSpawnDelay = timing.vfxSpawnDelay;
+            def.SmiteLifetime = timing.lifetime;
         }
         else
         {
             def.Prefab = form.prefab;
+            def.ImpactVfxPrefab = null;
+            def.SmiteImpactDelay = 0f;
+            def.SmiteVfxSpawnDelay = 0f;
+            def.SmiteLifetime = 2f;
         }
 
         // CRITICAL: Ensure we always have a valid prefab

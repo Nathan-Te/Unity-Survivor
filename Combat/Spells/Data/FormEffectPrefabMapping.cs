@@ -15,6 +15,15 @@ public class FormEffectPrefabMapping : ScriptableObject
         public SpellForm form;
         public SpellEffect effect;
         public GameObject prefab;
+        public GameObject impactVfxPrefab; // VFX spawned on hit/impact
+
+        [Header("Smite Timing (Only for Smite spells)")]
+        [Tooltip("Delay before explosion/damage occurs")]
+        public float impactDelay = 0f;
+        [Tooltip("Delay before spawning impact VFX (usually same as impactDelay)")]
+        public float vfxSpawnDelay = 0f;
+        [Tooltip("How long the smite prefab remains visible after explosion")]
+        public float smiteLifetime = 2f;
     }
 
     [Header("Mappings")]
@@ -42,6 +51,27 @@ public class FormEffectPrefabMapping : ScriptableObject
 
         // Fallback to form's default prefab
         return form.prefab;
+    }
+
+    /// <summary>
+    /// Returns the impact VFX prefab for a given (form, effect) combination.
+    /// Returns null if no VFX is configured for this combination.
+    /// </summary>
+    public GameObject GetImpactVfx(SpellForm form, SpellEffect effect)
+    {
+        if (form == null || effect == null)
+            return null;
+
+        // Find the mapping entry
+        foreach (var entry in mappings)
+        {
+            if (entry.form == form && entry.effect == effect)
+            {
+                return entry.impactVfxPrefab;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -108,5 +138,25 @@ public class FormEffectPrefabMapping : ScriptableObject
         }
 
         return compatible;
+    }
+
+    /// <summary>
+    /// Returns Smite timing configuration for a (form, effect) combination
+    /// </summary>
+    public (float impactDelay, float vfxSpawnDelay, float lifetime) GetSmiteTiming(SpellForm form, SpellEffect effect)
+    {
+        if (form == null || effect == null)
+            return (0f, 0f, 2f); // Default values
+
+        foreach (var entry in mappings)
+        {
+            if (entry.form == form && entry.effect == effect)
+            {
+                return (entry.impactDelay, entry.vfxSpawnDelay, entry.smiteLifetime);
+            }
+        }
+
+        // Return defaults if not found
+        return (0f, 0f, 2f);
     }
 }

@@ -6,6 +6,12 @@ public class SpellDefinition
     public SpellForm Form;
     public SpellEffect Effect;
     public GameObject Prefab;
+    public GameObject ImpactVfxPrefab; // VFX spawned on hit/impact
+
+    // Smite Timing (Only used for Smite spells)
+    public float SmiteImpactDelay;
+    public float SmiteVfxSpawnDelay;
+    public float SmiteLifetime;
 
     // Stats
     public float Damage;

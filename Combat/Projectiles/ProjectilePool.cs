@@ -49,6 +49,7 @@ public class ProjectilePool : Singleton<ProjectilePool>
             obj.transform.position = position;
             obj.transform.rotation = rotation;
             obj.SetActive(true);
+            // Note: TrailRenderer.Clear() is now handled in ProjectileController.Initialize()
         }
         else
         {

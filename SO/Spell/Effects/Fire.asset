@@ -84,7 +84,7 @@ MonoBehaviour:
       StatValue: 0
   element: 1
   tintColor: {r: 1, g: 0, b: 0, a: 1}
-  baseDamage: 0
+  baseDamage: 1
   baseKnockback: 0
   baseDamageMultiplier: 1
   applyBurn: 1

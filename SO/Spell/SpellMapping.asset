@@ -15,19 +15,57 @@ MonoBehaviour:
   mappings:
   - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
     effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
-    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    prefab: {fileID: 490920572835360463, guid: 65bf38d6d80ef174e9baa420c5188b77, type: 3}
+    impactVfxPrefab: {fileID: 7371996647939391622, guid: 8dc5f4bc996246847907264a235ed40d, type: 3}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2
   - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
     effect: {fileID: 11400000, guid: e13ba59ff0c9ebb4ab7256bf11314057, type: 2}
     prefab: {fileID: 490920572835360463, guid: 9b34eeee241046644a202a9b3d67111c, type: 3}
+    impactVfxPrefab: {fileID: 0}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2
   - form: {fileID: 11400000, guid: 62a868e43ed9eb94e8976a54fb0a2d14, type: 2}
     effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
-    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    prefab: {fileID: 490920572835360463, guid: 9549c97f35b7c7048989a7fa57b5b0e1, type: 3}
+    impactVfxPrefab: {fileID: 0}
+    impactDelay: 0.1
+    vfxSpawnDelay: 0
+    smiteLifetime: 5
   - form: {fileID: 11400000, guid: b7a2c2ebb3f8344499655726c823162f, type: 2}
     effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
-    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    prefab: {fileID: 490920572835360463, guid: 65bf38d6d80ef174e9baa420c5188b77, type: 3}
+    impactVfxPrefab: {fileID: 7371996647939391622, guid: 8dc5f4bc996246847907264a235ed40d, type: 3}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2
   - form: {fileID: 11400000, guid: 9d9185daf321cfd45887941240f436d7, type: 2}
     effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
-    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    prefab: {fileID: 490920572835360463, guid: 65bf38d6d80ef174e9baa420c5188b77, type: 3}
+    impactVfxPrefab: {fileID: 0}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2
   - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
     effect: {fileID: 11400000, guid: 07c3118089bfd7f4093c4f9cb695c716, type: 2}
     prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    impactVfxPrefab: {fileID: 0}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2
+  - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
+    effect: {fileID: 11400000, guid: 8b4c5f7a81627994bbe1c175256e7038, type: 2}
+    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    impactVfxPrefab: {fileID: 0}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2
+  - form: {fileID: 11400000, guid: 5a4a7ead1fc97f04f89e62765ddeb89e, type: 2}
+    effect: {fileID: 11400000, guid: 39d54715d406bd24c8ab291ea54f3577, type: 2}
+    prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
+    impactVfxPrefab: {fileID: 0}
+    impactDelay: 0
+    vfxSpawnDelay: 0
+    smiteLifetime: 2

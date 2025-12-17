@@ -111,7 +111,7 @@ public class EnemyStatusEffects : MonoBehaviour
 
             if (_burnTickTimer >= 1.0f)
             {
-                _controller.TakeDamage(totalDamagePerSec);
+                _controller.TakeDamage(totalDamagePerSec, DamageType.Burn);
                 _burnTickTimer -= 1.0f; // Preserve precision
             }
         }

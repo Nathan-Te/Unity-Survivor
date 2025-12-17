@@ -25,13 +25,17 @@ public class ProjectileDamageHandler : MonoBehaviour
         else
         {
             ApplyDamage(target, def);
+
+            // Spawn impact VFX at target position
+            SpawnImpactVfx(target.transform.position, def);
         }
     }
 
     /// <summary>
     /// Applies area of effect damage around a center point
     /// </summary>
-    public void ApplyAreaDamage(Vector3 center, SpellDefinition def)
+    /// <param name="spawnVfx">Whether to spawn impact VFX (false for Smite which handles VFX separately)</param>
+    public void ApplyAreaDamage(Vector3 center, SpellDefinition def, bool spawnVfx = true)
     {
         float radius = def.Effect.aoeRadius > 0 ? def.Effect.aoeRadius : 3f;
         var enemies = EnemyManager.Instance.GetEnemiesInRange(center, radius);
@@ -41,7 +45,11 @@ public class ProjectileDamageHandler : MonoBehaviour
             ApplyDamage(enemy, def);
         }
 
-        // TODO: Instantiate VFX Explosion
+        // Spawn AOE impact VFX at center (skip for Smite - VFX handled by SmiteMotion timing)
+        if (spawnVfx)
+        {
+            SpawnImpactVfx(center, def);
+        }
     }
 
     /// <summary>
@@ -82,6 +90,17 @@ public class ProjectileDamageHandler : MonoBehaviour
             {
                 Instantiate(def.MinionPrefab, enemy.transform.position, Quaternion.identity);
             }
+        }
+    }
+
+    /// <summary>
+    /// Spawns impact VFX at the specified position using VFXPool
+    /// </summary>
+    private void SpawnImpactVfx(Vector3 position, SpellDefinition def)
+    {
+        if (def.ImpactVfxPrefab != null && VFXPool.Instance != null)
+        {
+            VFXPool.Instance.Spawn(def.ImpactVfxPrefab, position, Quaternion.identity, 2f);
         }
     }
 }

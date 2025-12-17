@@ -76,6 +76,29 @@ public class SpellPrefabRegistry : MonoBehaviour
     }
 
     /// <summary>
+    /// Gets the impact VFX prefab for a (form, effect) combination
+    /// </summary>
+    public GameObject GetImpactVfx(SpellForm form, SpellEffect effect)
+    {
+        if (prefabMapping == null)
+            return null;
+
+        return prefabMapping.GetImpactVfx(form, effect);
+    }
+
+    /// <summary>
+    /// Gets the Smite timing configuration for a (form, effect) combination
+    /// Returns (impactDelay, vfxSpawnDelay, lifetime)
+    /// </summary>
+    public (float impactDelay, float vfxSpawnDelay, float lifetime) GetSmiteTiming(SpellForm form, SpellEffect effect)
+    {
+        if (prefabMapping == null)
+            return (0f, 0f, 2f);
+
+        return prefabMapping.GetSmiteTiming(form, effect);
+    }
+
+    /// <summary>
     /// Checks if a (form, effect) combination is compatible.
     /// Compatibility is determined solely by the prefab mapping.
     /// </summary>

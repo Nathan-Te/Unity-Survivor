@@ -58,14 +58,14 @@ public class DamageTextPool : Singleton<DamageTextPool>
         }
     }
 
-    public void Spawn(float damage, Vector3 position, bool isCritical = false)
+    public void Spawn(float damage, Vector3 position, DamageType damageType = DamageType.Normal)
     {
         // 1. SÉCURITÉ : Si on a déjà trop de textes actifs, on recycle le plus vieux !
         if (_activeTexts.Count >= maxActiveTexts)
         {
             DamageText oldText = _activeTexts[0];
             _activeTexts.RemoveAt(0);
-            oldText.Initialize(damage, position, isCritical);
+            oldText.Initialize(damage, position, damageType);
             _activeTexts.Add(oldText);
             return;
         }
@@ -81,7 +81,7 @@ public class DamageTextPool : Singleton<DamageTextPool>
             t = CreateNew();
         }
 
-        t.Initialize(damage, position, isCritical);
+        t.Initialize(damage, position, damageType);
         _activeTexts.Add(t);
     }
 

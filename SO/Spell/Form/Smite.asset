@@ -23,7 +23,7 @@ MonoBehaviour:
   requiresLineOfSight: 1
   tags: 324
   baseCooldown: 1.5
-  baseCount: 3
+  baseCount: 1
   basePierce: 0
   baseSpread: 0
   baseSpeed: 20
@@ -31,3 +31,5 @@ MonoBehaviour:
   baseRange: 20
   procCoefficient: 1
   impactDelay: 1
+  vfxSpawnDelay: 0
+  smiteLifetime: 2

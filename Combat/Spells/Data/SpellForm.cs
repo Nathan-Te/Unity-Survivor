@@ -8,7 +8,7 @@ public class SpellForm : RuneSO
     [Header("Visuals")]
     public GameObject prefab;
 
-    [Header("Stratégie")]
+    [Header("Stratï¿½gie")]
     public TargetingMode targetingMode = TargetingMode.Nearest;
     public bool requiresLineOfSight = true;
     public SpellTag tags;
@@ -21,9 +21,8 @@ public class SpellForm : RuneSO
     public float baseSpeed = 20f;
     public float baseDuration = 5f;
 
-    // Range par défaut si non modifié par stats
+    // Range par dï¿½faut si non modifiï¿½ par stats
     public float baseRange = 20f;
 
     [Range(0f, 1f)] public float procCoefficient = 1.0f;
-    public float impactDelay = 0f;
 }

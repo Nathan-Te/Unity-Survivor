@@ -111,24 +111,43 @@ public class OrbitMotion : IMotionStrategy
 // 3. Comportement Smite (Météore / Retardement)
 public class SmiteMotion : IMotionStrategy
 {
-    private float _delayTimer;
+    private float _impactDelay;        // When to trigger explosion/damage
+    private float _vfxSpawnDelay;      // When to spawn VFX
+    private float _lifetime;           // Total lifetime after spawn
+    private float _elapsedTime;
     private bool _hasExploded = false;
+    private bool _hasSpawnedVfx = false;
 
-    public SmiteMotion(float delay)
+    public SmiteMotion(float impactDelay, float vfxSpawnDelay, float lifetime)
     {
-        _delayTimer = delay;
+        _impactDelay = impactDelay;
+        _vfxSpawnDelay = vfxSpawnDelay;
+        _lifetime = lifetime;
+        _elapsedTime = 0f;
     }
 
     public void Update(ProjectileController pc, float dt)
     {
-        if (_hasExploded) return;
+        _elapsedTime += dt;
 
-        _delayTimer -= dt;
-        if (_delayTimer <= 0f)
+        // Spawn VFX at the right moment
+        if (!_hasSpawnedVfx && _elapsedTime >= _vfxSpawnDelay)
+        {
+            _hasSpawnedVfx = true;
+            pc.TriggerSmiteVfx();
+        }
+
+        // Trigger explosion/damage at impact delay
+        if (!_hasExploded && _elapsedTime >= _impactDelay)
         {
             _hasExploded = true;
-            // On déclenche l'explosion via le contrôleur
             pc.TriggerSmiteExplosion();
+        }
+
+        // Despawn after total lifetime
+        if (_elapsedTime >= _lifetime)
+        {
+            pc.Despawn();
         }
     }
 }

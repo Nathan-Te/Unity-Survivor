@@ -97,7 +97,7 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    public void TakeDamage(float amount)
+    public void TakeDamage(float amount, DamageType damageType = DamageType.Normal)
     {
         currentHp -= amount;
 
@@ -105,7 +105,7 @@ public class EnemyController : MonoBehaviour
         if (amount > 0 && DamageTextPool.Instance != null)
         {
             Vector3 popPos = transform.position + Random.insideUnitSphere * 0.5f;
-            DamageTextPool.Instance.Spawn(amount, popPos);
+            DamageTextPool.Instance.Spawn(amount, popPos, damageType);
         }
 
         // Trigger hit flash effect (only if damage > 0)
