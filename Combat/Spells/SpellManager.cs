@@ -90,4 +90,12 @@ public class SpellManager : MonoBehaviour
     {
         if (_inventory != null) _inventory.UpgradeSpellAtSlot(slotIndex, upgradeDef);
     }
+
+    /// <summary>
+    /// Recalculates all spell stats (used when global player stats change)
+    /// </summary>
+    public void RecalculateAllSpells()
+    {
+        if (_inventory != null) _inventory.RecalculateAllSlots();
+    }
 }

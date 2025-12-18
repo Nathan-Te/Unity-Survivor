@@ -42,5 +42,9 @@ public class SpellDefinition
     public float BurnDamagePerTick;
     public float BurnDuration;
 
+    // Critical hit stats (calculated from global player stats + rune bonuses)
+    public float CritChance; // 0-1 range (0.25 = 25% crit chance)
+    public float CritDamageMultiplier; // 1.5 = 150% damage on crit
+
     public SpellDefinition() { }
 }

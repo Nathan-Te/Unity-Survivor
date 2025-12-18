@@ -9,6 +9,10 @@ public class PlayerStats : Singleton<PlayerStats>
     public float ProjectileSpeed = 1.0f;
     public int AdditionalAmount = 0;    // +1 Projectile
 
+    [Header("Critical Hit Stats")]
+    public float CritChance = 0.0f;     // Chance de coup critique (0-1, ex: 0.15 = 15%)
+    public float CritDamage = 1.5f;     // Multiplicateur de d�g�ts critiques (1.5 = 150%)
+
     [Header("Utility Stats")]
     public float ExperienceMultiplier = 1.0f;
 
@@ -58,8 +62,25 @@ public class PlayerStats : Singleton<PlayerStats>
             case StatType.GlobalArea: AreaSize += value; break;
             case StatType.GlobalSpeed: ProjectileSpeed += value; break;
             case StatType.GlobalCount: AdditionalAmount += (int)value; break;
+
+            // CRITICAL HIT
+            case StatType.CritChance: CritChance += value; break;
+            case StatType.CritDamage: CritDamage += value; break;
         }
 
         Debug.Log($"Stat Applied: {type} += {value}");
+
+        // Recalculate all spell stats when global stats change
+        RecalculateAllSpells();
+    }
+
+    private void RecalculateAllSpells()
+    {
+        // Find SpellManager and recalculate all active spells
+        var spellManager = FindFirstObjectByType<SpellManager>();
+        if (spellManager != null)
+        {
+            spellManager.RecalculateAllSpells();
+        }
     }
 }

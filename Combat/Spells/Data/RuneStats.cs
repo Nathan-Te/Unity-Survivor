@@ -23,6 +23,10 @@ public struct RuneStats
     public float FlatBurnDamage; // Dégâts par tick de Burn
     public float FlatBurnDuration; // Durée du Burn en secondes
 
+    [Header("Coups critiques")]
+    public float FlatCritChance; // Chance de critique en % (0.05 = +5%)
+    public float FlatCritDamage; // Multiplicateur de dégâts critiques (0.5 = +50%)
+
     [Header("Sp�cial (Pour StatUpgrade)")]
     public float StatValue; // Valeur g�n�rique pour MoveSpeed, MaxHealth, etc.
 
@@ -48,6 +52,9 @@ public struct RuneStats
 
         c.FlatBurnDamage = a.FlatBurnDamage + b.FlatBurnDamage;
         c.FlatBurnDuration = a.FlatBurnDuration + b.FlatBurnDuration;
+
+        c.FlatCritChance = a.FlatCritChance + b.FlatCritChance;
+        c.FlatCritDamage = a.FlatCritDamage + b.FlatCritDamage;
 
         c.StatValue = a.StatValue + b.StatValue;
         return c;

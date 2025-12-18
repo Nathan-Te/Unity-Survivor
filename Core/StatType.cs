@@ -15,5 +15,7 @@ public enum StatType
     GlobalCooldown,
     GlobalArea,
     GlobalSpeed,
-    GlobalCount
+    GlobalCount,
+    CritChance,
+    CritDamage
 }

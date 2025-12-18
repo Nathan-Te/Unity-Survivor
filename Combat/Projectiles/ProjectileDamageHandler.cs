@@ -40,6 +40,7 @@ public class ProjectileDamageHandler : MonoBehaviour
         float radius = def.Effect.aoeRadius > 0 ? def.Effect.aoeRadius : 3f;
         var enemies = EnemyManager.Instance.GetEnemiesInRange(center, radius);
 
+        // Each enemy can crit independently
         foreach (var enemy in enemies)
         {
             ApplyDamage(enemy, def);
@@ -57,8 +58,19 @@ public class ProjectileDamageHandler : MonoBehaviour
     /// </summary>
     public void ApplyDamage(EnemyController enemy, SpellDefinition def)
     {
-        // Apply base damage
-        enemy.TakeDamage(def.Damage);
+        // Calculate if this hit is a critical
+        bool isCritical = Random.value < def.CritChance;
+
+        // Calculate final damage
+        float finalDamage = def.Damage;
+        if (isCritical)
+        {
+            finalDamage *= def.CritDamageMultiplier;
+        }
+
+        // Apply damage with appropriate damage type
+        DamageType damageType = isCritical ? DamageType.Critical : DamageType.Normal;
+        enemy.TakeDamage(finalDamage, damageType);
 
         // Apply status effects
         if (def.Effect != null)

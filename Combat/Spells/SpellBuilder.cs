@@ -86,6 +86,14 @@ public static class SpellBuilder
         def.BurnDamagePerTick = effect.burnDamagePerTick + effectStats.FlatBurnDamage;
         def.BurnDuration = effect.burnDuration + effectStats.FlatBurnDuration;
 
+        // Critical hit stats (start with 0, will be accumulated from all sources)
+        float totalCritChance = 0f;
+        float totalCritDamage = 0f;
+
+        // Add crit stats from form and effect runes
+        totalCritChance += formStats.FlatCritChance + effectStats.FlatCritChance;
+        totalCritDamage += formStats.FlatCritDamage + effectStats.FlatCritDamage;
+
         // 4. Application des Modificateurs
         // On parcourt les runes de modification
         foreach (var modRune in slot.modifierRunes)
@@ -127,6 +135,10 @@ public static class SpellBuilder
             def.BurnDamagePerTick += modStats.FlatBurnDamage;
             def.BurnDuration += modStats.FlatBurnDuration;
 
+            // Critical hit stats from modifiers
+            totalCritChance += modStats.FlatCritChance;
+            totalCritDamage += modStats.FlatCritDamage;
+
             if (modSO.enableHoming) def.IsHoming = true;
         }
 
@@ -150,6 +162,13 @@ public static class SpellBuilder
         def.Size *= globalArea;
         def.Speed *= globalProjSpeed;
         def.Count += globalCount;
+
+        // Apply global crit stats (base player stats + accumulated bonuses from runes)
+        def.CritChance = (stats != null ? stats.CritChance : 0f) + totalCritChance;
+        def.CritDamageMultiplier = (stats != null ? stats.CritDamage : 1.5f) + totalCritDamage;
+
+        // Clamp crit chance to 0-1 range
+        def.CritChance = Mathf.Clamp01(def.CritChance);
 
         return def;
     }

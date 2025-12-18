@@ -44,6 +44,18 @@ public class SpellInventory : MonoBehaviour
         OnInventoryUpdated?.Invoke();
     }
 
+    /// <summary>
+    /// Recalculates stats for all active spell slots (used when global player stats change)
+    /// </summary>
+    public void RecalculateAllSlots()
+    {
+        foreach (var slot in activeSlots)
+        {
+            slot.RecalculateStats();
+        }
+        OnInventoryUpdated?.Invoke();
+    }
+
     public bool CanAddSpell() => activeSlots.Count < maxSpellSlots;
 
     public bool HasForm(SpellForm form)
