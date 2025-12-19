@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
@@ -159,11 +160,83 @@ public class SpellCaster : MonoBehaviour
 
         if (hasTarget)
         {
-            Fire(targetPos, def);
+            // Check if we have multicast
+            if (def.MulticastCount > 0)
+            {
+                StartCoroutine(FireMulticast(targetPos, def));
+            }
+            else
+            {
+                Fire(targetPos, def);
+            }
             return true;
         }
 
         return false;
+    }
+
+    private IEnumerator FireMulticast(Vector3 initialTargetPos, SpellDefinition def)
+    {
+        int totalCasts = 1 + def.MulticastCount; // Base cast + additional multicasts
+        bool isSmite = def.Form.tags.HasFlag(SpellTag.Smite);
+
+        for (int i = 0; i < totalCasts; i++)
+        {
+            // Re-evaluate target position for each cast
+            Vector3 targetPos = initialTargetPos;
+
+            if (!PlayerController.Instance.IsManualAiming)
+            {
+                Vector3 scanOrigin = _playerTransform.position + Vector3.up;
+
+                // For Smite multicasts (after the first), use random targeting or add offset
+                if (isSmite && i > 0)
+                {
+                    Transform target = EnemyManager.Instance.GetTarget(
+                        scanOrigin,
+                        def.Range,
+                        TargetingMode.Random, // Use random targeting for variety
+                        def.Effect.aoeRadius,
+                        def.RequiresLoS
+                    );
+
+                    if (target != null)
+                    {
+                        targetPos = target.position;
+                    }
+                    else
+                    {
+                        // If no enemy found, add random offset around original position
+                        Vector2 rnd = Random.insideUnitCircle * 3.0f;
+                        targetPos = initialTargetPos + new Vector3(rnd.x, 0, rnd.y);
+                    }
+                }
+                else
+                {
+                    // Normal re-targeting for non-Smite or first cast
+                    Transform target = EnemyManager.Instance.GetTarget(
+                        scanOrigin,
+                        def.Range,
+                        def.Mode,
+                        def.Effect.aoeRadius,
+                        def.RequiresLoS
+                    );
+
+                    if (target != null)
+                    {
+                        targetPos = target.position;
+                    }
+                }
+            }
+
+            Fire(targetPos, def);
+
+            // Wait before next cast (except for the last cast)
+            if (i < totalCasts - 1)
+            {
+                yield return new WaitForSeconds(def.MulticastDelay);
+            }
+        }
     }
 
     private void Fire(Vector3 targetPos, SpellDefinition def)

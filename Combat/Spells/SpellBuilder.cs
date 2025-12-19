@@ -63,7 +63,16 @@ public static class SpellBuilder
 
         def.Count = form.baseCount + formStats.FlatCount;
         def.Pierce = form.basePierce + formStats.FlatPierce;
-        def.Spread = form.baseSpread + formStats.FlatSpread;
+
+        // Nova (Area tag) always uses 360° spread for full circle coverage
+        if (form.tags.HasFlag(SpellTag.Area))
+        {
+            def.Spread = 360f;
+        }
+        else
+        {
+            def.Spread = form.baseSpread + formStats.FlatSpread;
+        }
 
         def.Speed = form.baseSpeed * (1f + formStats.SpeedMult);
         def.Duration = form.baseDuration * (1f + formStats.DurationMult);
@@ -81,6 +90,10 @@ public static class SpellBuilder
         def.ChainDamageReduction = effect.chainDamageReduction;
         def.MinionChance = effect.minionSpawnChance;
         def.MinionPrefab = effect.minionPrefab;
+
+        // Multicast stats (start with 0, will be accumulated from modifiers)
+        def.MulticastCount = 0;
+        def.MulticastDelay = 0.2f; // Default delay between casts
 
         // Burn stats (base effect + accumulated bonuses from effect rune)
         def.BurnDamagePerTick = effect.burnDamagePerTick + effectStats.FlatBurnDamage;
@@ -124,12 +137,33 @@ public static class SpellBuilder
             // def.Size est calcul� � la fin.
 
             // Application Additive pour les Flats
-            def.Count += modStats.FlatCount;
-            def.Pierce += modStats.FlatPierce;
-            def.Spread += modStats.FlatSpread;
+            // Only apply Multishot if the form supports it
+            if (form.tags.HasFlag(SpellTag.SupportsMultishot))
+            {
+                def.Count += modStats.FlatCount;
+            }
+
+            // Only apply Pierce if the form supports it
+            if (form.tags.HasFlag(SpellTag.SupportsPierce))
+            {
+                def.Pierce += modStats.FlatPierce;
+            }
+
+            // Don't apply FlatSpread to Nova (Area tag) - it auto-calculates spread
+            if (!form.tags.HasFlag(SpellTag.Area))
+            {
+                def.Spread += modStats.FlatSpread;
+            }
+
             def.Range += modStats.FlatRange;
             def.Knockback += modStats.FlatKnockback;
             def.ChainCount += modStats.FlatChainCount;
+
+            // Only apply Multicast if the form supports it
+            if (form.tags.HasFlag(SpellTag.SupportsMulticast))
+            {
+                def.MulticastCount += modStats.FlatMulticast;
+            }
 
             // Burn stats from modifiers
             def.BurnDamagePerTick += modStats.FlatBurnDamage;
@@ -139,7 +173,11 @@ public static class SpellBuilder
             totalCritChance += modStats.FlatCritChance;
             totalCritDamage += modStats.FlatCritDamage;
 
-            if (modSO.enableHoming) def.IsHoming = true;
+            // Only enable Homing if the form supports it
+            if (modSO.enableHoming && form.tags.HasFlag(SpellTag.SupportsHoming))
+            {
+                def.IsHoming = true;
+            }
         }
 
         // 5. Finalisation
@@ -162,6 +200,8 @@ public static class SpellBuilder
         def.Size *= globalArea;
         def.Speed *= globalProjSpeed;
         def.Count += globalCount;
+
+        // Nova always uses 360° spread (no recalculation needed - it's constant)
 
         // Apply global crit stats (base player stats + accumulated bonuses from runes)
         def.CritChance = (stats != null ? stats.CritChance : 0f) + totalCritChance;

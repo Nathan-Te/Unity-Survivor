@@ -46,6 +46,16 @@ public class ProjectileDamageHandler : MonoBehaviour
             ApplyDamage(enemy, def);
         }
 
+        // Also damage any Destructible POIs in range (Chests, etc.)
+        Collider[] hits = Physics.OverlapSphere(center, radius, LayerMask.GetMask("Destructible"));
+        foreach (var hit in hits)
+        {
+            if (hit.TryGetComponent<IDamageable>(out var damageable))
+            {
+                damageable.TakeDamage(def.Damage);
+            }
+        }
+
         // Spawn AOE impact VFX at center (skip for Smite - VFX handled by SmiteMotion timing)
         if (spawnVfx)
         {

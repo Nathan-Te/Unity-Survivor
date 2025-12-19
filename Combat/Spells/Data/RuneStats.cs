@@ -18,6 +18,7 @@ public struct RuneStats
     public float FlatRange;
     public float FlatKnockback;
     public int FlatChainCount;
+    public int FlatMulticast; // Number of additional casts (1 = cast twice total)
 
     [Header("Effets de statut")]
     public float FlatBurnDamage; // Dégâts par tick de Burn
@@ -49,6 +50,7 @@ public struct RuneStats
         c.FlatRange = a.FlatRange + b.FlatRange;
         c.FlatKnockback = a.FlatKnockback + b.FlatKnockback;
         c.FlatChainCount = a.FlatChainCount + b.FlatChainCount;
+        c.FlatMulticast = a.FlatMulticast + b.FlatMulticast;
 
         c.FlatBurnDamage = a.FlatBurnDamage + b.FlatBurnDamage;
         c.FlatBurnDuration = a.FlatBurnDuration + b.FlatBurnDuration;

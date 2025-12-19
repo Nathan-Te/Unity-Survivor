@@ -21,7 +21,7 @@ MonoBehaviour:
   prefab: {fileID: 490920572835360463, guid: 708a13ef402e0c64bacee998a494d3dd, type: 3}
   targetingMode: 0
   requiresLineOfSight: 1
-  tags: 369
+  tags: 497
   baseCooldown: 0.8
   baseCount: 1
   basePierce: 0

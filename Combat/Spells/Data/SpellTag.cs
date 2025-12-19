@@ -5,16 +5,17 @@ public enum SpellTag
 {
     None = 0,
 
-    // Types de Mouvement (Mutuellement exclusifs en général)
+    // Types de Mouvement (Mutuellement exclusifs en gï¿½nï¿½ral)
     Projectile = 1 << 0, // Bolt
     Area = 1 << 1,       // Nova
-    Smite = 1 << 2,      // Météore (Spawn sur cible)
+    Smite = 1 << 2,      // Mï¿½tï¿½ore (Spawn sur cible)
     Orbit = 1 << 3,     // Orbit
 
-    // Capacités supportées (Compatibilité)
+    // Capacitï¿½s supportï¿½es (Compatibilitï¿½)
     SupportsPierce = 1 << 4,    // Accepte le mod "Pierce" ?
     SupportsHoming = 1 << 5,    // Accepte le mod "Homing" ?
-    SupportsMulticast = 1 << 6, // Accepte le mod "Multicast" ?
-    SupportsDuration = 1 << 7,   // Accepte le mod "Durée" ?
-    SupportsSizeChange = 1 << 8
+    SupportsMultishot = 1 << 6, // Accepte le mod "Multishot" (ajoute des projectiles par cast) ?
+    SupportsMulticast = 1 << 7, // Accepte le mod "Multicast" (rÃ©pÃ¨te le cast entier) ?
+    SupportsDuration = 1 << 8,   // Accepte le mod "Durï¿½e" ?
+    SupportsSizeChange = 1 << 9
 }

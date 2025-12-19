@@ -32,10 +32,13 @@ public class PlayerStats : Singleton<PlayerStats>
 
     public void ApplyUpgrade(StatType type, float value)
     {
+        Debug.Log($"[PlayerStats] ApplyUpgrade called - Type: {type}, Value: {value}, Controller exists: {_controller != null}");
+
         switch (type)
         {
             // SURVIE
             case StatType.MoveSpeed:
+                Debug.Log($"[PlayerStats] Applying MoveSpeed: {value}");
                 if (_controller) _controller.ModifySpeed(value);
                 break;
             case StatType.MaxHealth:

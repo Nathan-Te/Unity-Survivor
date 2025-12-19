@@ -15,6 +15,7 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
 
     // Variables internes stats
     private float _baseMoveSpeed;
+    private float _moveSpeedBonus = 0f; // Cumulative % bonus
     private float _regenPerSec = 0f;
     private float _armor = 0f;
 
@@ -92,7 +93,10 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
     // --- M�thodes Stats ---
     public void ModifySpeed(float percentAdd)
     {
-        moveSpeed = _baseMoveSpeed * (1.0f + percentAdd);
+        Debug.Log($"[PlayerController] ModifySpeed - percentAdd: {percentAdd}, baseMoveSpeed: {_baseMoveSpeed}, OLD bonus: {_moveSpeedBonus}, OLD moveSpeed: {moveSpeed}");
+        _moveSpeedBonus += percentAdd;
+        moveSpeed = _baseMoveSpeed * (1.0f + _moveSpeedBonus);
+        Debug.Log($"[PlayerController] NEW bonus: {_moveSpeedBonus}, NEW moveSpeed: {moveSpeed}");
     }
     public void ModifyMaxHealth(float flatAdd)
     {

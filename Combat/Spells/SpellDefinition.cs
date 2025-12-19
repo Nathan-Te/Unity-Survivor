@@ -25,6 +25,8 @@ public class SpellDefinition
 
     public int Count;
     public int Pierce;
+    public int MulticastCount; // Number of times to repeat the cast (1 = cast twice total)
+    public float MulticastDelay; // Delay in seconds between each cast (default: 0.1s)
 
     public TargetingMode Mode;
     public bool RequiresLoS;

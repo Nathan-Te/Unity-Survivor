@@ -226,10 +226,10 @@ public class ProjectileController : MonoBehaviour
         // OPTIMISATION : Utiliser les layers au lieu de GetComponent
         int layer = other.gameObject.layer;
 
-        // Orbit ignore seulement les Obstacles et Destructibles (peut toucher les ennemis)
+        // Orbit ignore seulement les Obstacles (peut toucher les ennemis et les destructibles)
         if (IsOrbit)
         {
-            if (layer == LayerMask.NameToLayer("Obstacle") || layer == LayerMask.NameToLayer("Destructible"))
+            if (layer == LayerMask.NameToLayer("Obstacle"))
                 return;
         }
 

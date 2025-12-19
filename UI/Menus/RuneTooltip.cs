@@ -248,6 +248,7 @@ public class RuneTooltip : MonoBehaviour
         if (stats.FlatRange != 0) _sb.Append("<color=green>+").Append(stats.FlatRange.ToString("F0")).Append("m</color> Range\n");
         if (stats.FlatKnockback != 0) _sb.Append("<color=green>+").Append(stats.FlatKnockback.ToString("F1")).Append("</color> Knockback\n");
         if (stats.FlatChainCount != 0) _sb.Append("<color=green>+").Append(stats.FlatChainCount).Append("</color> Chain\n");
+        if (stats.FlatMulticast != 0) _sb.Append("<color=green>+").Append(stats.FlatMulticast).Append("</color> Multicast\n");
 
         if (stats.FlatBurnDamage != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDamage.ToString("F1")).Append("</color> Burn Damage\n");
         if (stats.FlatBurnDuration != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDuration.ToString("F1")).Append("s</color> Burn Duration\n");
