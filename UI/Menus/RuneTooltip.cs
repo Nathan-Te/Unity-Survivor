@@ -21,6 +21,8 @@ public class RuneTooltip : MonoBehaviour
     private SpellSlot _lastSlot;
     private int _lastRuneLevel;
     private float _lastSlotDamage;
+    private float _lastCritChance;
+    private float _lastCritDamage;
 
     // Reusable StringBuilder to avoid string allocations
     private StringBuilder _sb = new StringBuilder(512);
@@ -54,10 +56,15 @@ public class RuneTooltip : MonoBehaviour
 
         // Check if we need to rebuild the content (cache check)
         float currentSlotDamage = slot?.Definition?.Damage ?? 0f;
+        float currentCritChance = slot?.Definition?.CritChance ?? 0f;
+        float currentCritDamage = slot?.Definition?.CritDamageMultiplier ?? 0f;
+
         bool needsRebuild = _lastRune != rune ||
                            _lastSlot != slot ||
                            _lastRuneLevel != rune.Level ||
-                           _lastSlotDamage != currentSlotDamage;
+                           _lastSlotDamage != currentSlotDamage ||
+                           _lastCritChance != currentCritChance ||
+                           _lastCritDamage != currentCritDamage;
 
         if (needsRebuild)
         {
@@ -66,6 +73,8 @@ public class RuneTooltip : MonoBehaviour
             _lastSlot = slot;
             _lastRuneLevel = rune.Level;
             _lastSlotDamage = currentSlotDamage;
+            _lastCritChance = currentCritChance;
+            _lastCritDamage = currentCritDamage;
 
             // Rebuild content using StringBuilder (zero allocations on subsequent hovers)
             titleText.text = rune.Data.runeName;
@@ -160,6 +169,16 @@ public class RuneTooltip : MonoBehaviour
                 if (def.Pierce > 0) _sb.Append("Pierce: ").Append(def.Pierce).Append("\n");
                 if (def.Spread > 0) _sb.Append("Spread: ").Append(def.Spread.ToString("F0")).Append("°\n");
                 if (def.Range > 0) _sb.Append("Range: ").Append(def.Range.ToString("F0")).Append("m\n");
+
+                // Display crit stats if any
+                if (def.CritChance > 0)
+                {
+                    _sb.Append("<color=#FFD700>Crit Chance: ").Append((def.CritChance * 100f).ToString("F1")).Append("%</color>\n");
+                }
+                if (def.CritDamageMultiplier > 1f)
+                {
+                    _sb.Append("<color=#FFD700>Crit Damage: ").Append((def.CritDamageMultiplier * 100f).ToString("F0")).Append("%</color>\n");
+                }
             }
             else
             {
@@ -175,7 +194,18 @@ public class RuneTooltip : MonoBehaviour
 
             if (slot != null && slot.Definition != null)
             {
-                _sb.Append("<color=yellow>Total Damage: ").Append(slot.Definition.Damage.ToString("F0")).Append("</color>\n");
+                SpellDefinition def = slot.Definition;
+                _sb.Append("<color=yellow>Total Damage: ").Append(def.Damage.ToString("F0")).Append("</color>\n");
+
+                // Display crit stats if any
+                if (def.CritChance > 0)
+                {
+                    _sb.Append("<color=#FFD700>Crit Chance: ").Append((def.CritChance * 100f).ToString("F1")).Append("%</color>\n");
+                }
+                if (def.CritDamageMultiplier > 1f)
+                {
+                    _sb.Append("<color=#FFD700>Crit Damage: ").Append((def.CritDamageMultiplier * 100f).ToString("F0")).Append("%</color>\n");
+                }
             }
             else
             {
@@ -221,6 +251,17 @@ public class RuneTooltip : MonoBehaviour
 
         if (stats.FlatBurnDamage != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDamage.ToString("F1")).Append("</color> Burn Damage\n");
         if (stats.FlatBurnDuration != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDuration.ToString("F1")).Append("s</color> Burn Duration\n");
+
+        if (stats.FlatCritChance != 0)
+        {
+            float critPercent = stats.FlatCritChance * 100f;
+            _sb.Append("<color=#FFD700>+").Append(critPercent.ToString("F1")).Append("%</color> Crit Chance\n");
+        }
+        if (stats.FlatCritDamage != 0)
+        {
+            float critDmgPercent = stats.FlatCritDamage * 100f;
+            _sb.Append("<color=#FFD700>+").Append(critDmgPercent.ToString("F1")).Append("%</color> Crit Damage\n");
+        }
     }
 
     private void FormatMultiplier(float mult)

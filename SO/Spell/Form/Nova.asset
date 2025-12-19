@@ -31,7 +31,7 @@ MonoBehaviour:
       FlatBurnDamage: 0
       FlatBurnDuration: 0
       FlatCritChance: 1
-      FlatCritDamage: 0
+      FlatCritDamage: 0.5
       StatValue: 0
   RareUpgrades: []
   EpicUpgrades: []

@@ -167,8 +167,8 @@ public static class SpellBuilder
         def.CritChance = (stats != null ? stats.CritChance : 0f) + totalCritChance;
         def.CritDamageMultiplier = (stats != null ? stats.CritDamage : 1.5f) + totalCritDamage;
 
-        // Clamp crit chance to 0-1 range
-        def.CritChance = Mathf.Clamp01(def.CritChance);
+        // Don't clamp crit chance - allow overcrit (>100% for multiple crits)
+        def.CritChance = Mathf.Max(0f, def.CritChance);
 
         return def;
     }

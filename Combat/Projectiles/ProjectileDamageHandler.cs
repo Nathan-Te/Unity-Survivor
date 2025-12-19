@@ -58,14 +58,31 @@ public class ProjectileDamageHandler : MonoBehaviour
     /// </summary>
     public void ApplyDamage(EnemyController enemy, SpellDefinition def)
     {
-        // Calculate if this hit is a critical
-        bool isCritical = Random.value < def.CritChance;
+        // Calculate overcrit: CritChance can exceed 100%
+        // Example: 150% CritChance = 1 guaranteed crit + 50% chance for a second crit
+        float critChance = def.CritChance;
+        int guaranteedCrits = Mathf.FloorToInt(critChance);
+        float remainingCritChance = critChance - guaranteedCrits;
+
+        // Roll for additional crit if there's a remainder
+        int totalCrits = guaranteedCrits;
+        if (remainingCritChance > 0 && Random.value < remainingCritChance)
+        {
+            totalCrits++;
+        }
 
         // Calculate final damage
         float finalDamage = def.Damage;
+        bool isCritical = totalCrits > 0;
+
         if (isCritical)
         {
-            finalDamage *= def.CritDamageMultiplier;
+            // Each crit multiplies damage successively
+            // Example: 10 dmg, 2x crit, 2 crits = 10 * 2 * 2 = 40 dmg
+            for (int i = 0; i < totalCrits; i++)
+            {
+                finalDamage *= def.CritDamageMultiplier;
+            }
         }
 
         // Apply damage with appropriate damage type

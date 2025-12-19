@@ -30,4 +30,3 @@ MonoBehaviour:
   baseDuration: 5
   baseRange: 20
   procCoefficient: 1
-  impactDelay: 0
