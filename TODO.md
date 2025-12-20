@@ -17,17 +17,26 @@ Actuellement, l'effet `Nécrotique` instancie un Prefab inerte.
 ## 🛠️ Améliorations & Refactoring (Tech)
 
 ### UI / UX
-- [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Mod vs Stat).
+- [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Effect vs Mod vs Stat).
 - [ ] **Pause Menu :** Pouvoir reprendre, recommencer ou quitter.
 
 ### Combat
-- [ ] **Sons :** Ajouter un `AudioManager` pour les tirs, impacts et level ups.
+- [ ] **Visuel :** Ajouter un effet visuel à la mort des ennemis
+- [ ] **Sons :** Ajouter un `AudioManager` pour les tirs, impacts et level ups et de la musique
 
 ---
 
 ## 📦 Production de Contenu (Data)
 
 Il faut remplir les ScriptableObjects pour créer la variété du jeu.
+
+Tester le Nova avec des Kunai en Physical
+Trouver un prefab pour l'orbit Physical
+
+Bolt Lighting doit être un éclair
+smite Lightning doit être de la foudre tombant du ciel
+
+## 📦 Création de nouveau Contenu (Data)
 
 ### 1. Formes (Forms)
 - [ ] **Boomerang :** Projectile qui part et revient (Nécessite une nouvelle `MotionStrategy`).
