@@ -6,12 +6,13 @@ public struct RuneStats
 {
     [Header("Multiplicateurs (0.1 = +10%)")]
     public float DamageMult;
-    public float CooldownMult; // N�gatif pour r�duire (-0.1)
+    public float CooldownMult; // Positif = attaques plus rapides (-10% cooldown), N�gatif = plus lent
     public float SizeMult;
     public float SpeedMult;
     public float DurationMult;
 
     [Header("Additions (Valeurs fixes)")]
+    public float FlatCooldown; // Override/modify base cooldown (useful for Form runes)
     public int FlatCount;
     public int FlatPierce;
     public float FlatSpread;
@@ -44,6 +45,7 @@ public struct RuneStats
         c.SpeedMult = a.SpeedMult + b.SpeedMult;
         c.DurationMult = a.DurationMult + b.DurationMult;
 
+        c.FlatCooldown = a.FlatCooldown + b.FlatCooldown;
         c.FlatCount = a.FlatCount + b.FlatCount;
         c.FlatPierce = a.FlatPierce + b.FlatPierce;
         c.FlatSpread = a.FlatSpread + b.FlatSpread;

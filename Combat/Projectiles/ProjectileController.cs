@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 
 /// <summary>
@@ -101,8 +102,12 @@ public class ProjectileController : MonoBehaviour
             _motionStrategy = new LinearMotion(transform.position, _def.Range, _def.Speed, _def.IsHoming, false);
         }
 
-        // 2. Visuels
-        transform.localScale = Vector3.one * def.Size;
+        // 2. Visuels - Simply multiply prefab's localScale by size multiplier
+        // Get base scale from prefab
+        float prefabBaseScale = sourcePrefab != null ? sourcePrefab.transform.localScale.x : 1f;
+
+        // Apply size: multiply prefab's base scale by the size multiplier
+        transform.localScale = Vector3.one * prefabBaseScale * def.Size;
 
         // --- CORRECTION COULEUR (Optimisée) ---
         // Au lieu de toucher à .material (qui crée une copie et une fuite mémoire),

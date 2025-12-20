@@ -56,10 +56,14 @@ public static class SpellBuilder
         }
 
         // 2. Calcul Stats Forme (Base SO + Bonus Forme)
-        // Cooldown : Base * (1 + Somme des % reduction)
-        // Note : CooldownMult est typiquement n�gatif (ex: -0.1). On clamp � 0.1s min.
-        float cdMult = Mathf.Max(0.1f, 1f + formStats.CooldownMult);
-        def.Cooldown = form.baseCooldown * cdMult;
+        // Cooldown : (Base + FlatCooldown) * (1 + CooldownMult) - INVERTED for intuitive behavior
+        // FlatCooldown allows per-rune cooldown overrides (useful for Form upgrades)
+        // Positive CooldownMult = faster (we apply it as reduction below)
+        // Negative CooldownMult = slower
+        // Clamped to minimum 0.1s
+        float baseCooldown = form.baseCooldown + formStats.FlatCooldown;
+        float formCooldownMult = -formStats.CooldownMult; // Invert: positive input = cooldown reduction
+        def.Cooldown = baseCooldown * Mathf.Max(0.1f, 1f + formCooldownMult);
 
         def.Count = form.baseCount + formStats.FlatCount;
         def.Pierce = form.basePierce + formStats.FlatPierce;
@@ -81,6 +85,13 @@ public static class SpellBuilder
         // 3. Calcul Stats Effet (Base SO + Bonus Effet)
         float baseDmg = effect.baseDamage;
         float dmgMult = effect.baseDamageMultiplier + effectStats.DamageMult;
+
+        // Apply Effect stats to values already calculated from Form
+        def.Cooldown += effectStats.FlatCooldown; // Add flat cooldown bonus/penalty
+        float effectCooldownMult = -effectStats.CooldownMult; // Invert: positive input = cooldown reduction
+        def.Cooldown *= Mathf.Max(0.1f, 1f + effectCooldownMult);
+        def.Speed *= (1f + effectStats.SpeedMult);
+        def.Duration *= (1f + effectStats.DurationMult);
 
         def.Knockback = effect.baseKnockback + effectStats.FlatKnockback;
 
@@ -120,21 +131,17 @@ public static class SpellBuilder
             // Les stats du mod (Base + Upgrades) sont dans AccumulatedStats
             RuneStats modStats = modRune.AccumulatedStats;
 
-            // Application Multiplicative pour les %
+            // Application des modificateurs
+            // Flat stats first
+            def.Cooldown += modStats.FlatCooldown;
+
+            // Then multiplicative stats
             dmgMult *= (1f + modStats.DamageMult);
-            def.Cooldown *= Mathf.Max(0.1f, 1f + modStats.CooldownMult);
+            float modCooldownMult = -modStats.CooldownMult; // Invert: positive input = cooldown reduction
+            def.Cooldown *= Mathf.Max(0.1f, 1f + modCooldownMult);
             def.Speed *= (1f + modStats.SpeedMult);
             def.Duration *= (1f + modStats.DurationMult);
-
-            // Taille : Multiplicatif sur la base
-            // Note : On n'a pas trait� la taille dans Form/Effect avant, on le fait ici
-            // On part du principe que la taille de base est 1 (ou scale du prefab)
-            // On accumule les bonus de taille de partout
-            float totalSizeMult = (1f + formStats.SizeMult + effectStats.SizeMult + modStats.SizeMult);
-            // Pour simplifier, on multiplie la taille courante (si plusieurs mods, �a se multiplie)
-            // Mais l'addition des % est souvent plus stable : 
-            // Ici, faisons simple : chaque mod multiplie la taille finale.
-            // def.Size est calcul� � la fin.
+            // Note: SizeMult is accumulated and applied at the end (line 195)
 
             // Application Additive pour les Flats
             // Only apply Multishot if the form supports it
@@ -184,11 +191,11 @@ public static class SpellBuilder
         def.Damage = baseDmg * dmgMult * form.procCoefficient;
 
         // Calcul final de la taille (somme des bonus de taille de toutes les sources)
+        // Size is now a simple multiplier (1.0 = normal size, 1.5 = 50% bigger, etc.)
         float finalSizeBonus = formStats.SizeMult + effectStats.SizeMult;
         foreach (var m in slot.modifierRunes) if (m?.Data != null) finalSizeBonus += m.AccumulatedStats.SizeMult;
 
-        float prefabScale = (def.Prefab ? def.Prefab.transform.localScale.x : 1f);
-        def.Size = prefabScale * (1f + finalSizeBonus);
+        def.Size = 1f + finalSizeBonus;
 
         if (def.Range <= 0) def.Range = 20f;
 

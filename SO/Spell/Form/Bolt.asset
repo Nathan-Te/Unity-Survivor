@@ -22,7 +22,7 @@ MonoBehaviour:
   targetingMode: 0
   requiresLineOfSight: 1
   tags: 497
-  baseCooldown: 0.8
+  baseCooldown: 2
   baseCount: 1
   basePierce: 0
   baseSpread: 0

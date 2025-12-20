@@ -242,6 +242,11 @@ public class RuneTooltip : MonoBehaviour
         if (stats.SpeedMult != 0) { FormatMultiplier(stats.SpeedMult); _sb.Append(" Speed\n"); }
         if (stats.DurationMult != 0) { FormatMultiplier(stats.DurationMult); _sb.Append(" Duration\n"); }
 
+        if (stats.FlatCooldown != 0)
+        {
+            string color = stats.FlatCooldown < 0 ? "green" : "red";
+            _sb.Append("<color=").Append(color).Append(">").Append(stats.FlatCooldown > 0 ? "+" : "").Append(stats.FlatCooldown.ToString("F2")).Append("s</color> Cooldown\n");
+        }
         if (stats.FlatCount != 0) _sb.Append("<color=green>+").Append(stats.FlatCount).Append("</color> Projectiles\n");
         if (stats.FlatPierce != 0) _sb.Append("<color=green>+").Append(stats.FlatPierce).Append("</color> Pierce\n");
         if (stats.FlatSpread != 0) _sb.Append("<color=green>+").Append(stats.FlatSpread.ToString("F0")).Append("°</color> Spread\n");

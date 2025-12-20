@@ -89,8 +89,12 @@ public class EnemyController : MonoBehaviour
         }
         else
         {
-            currentHp = data.baseHp;
-            currentDamage = data.baseDamage;
+            // Apply scaling multipliers from EnemyScalingManager
+            float hpMultiplier = EnemyScalingManager.Instance != null ? EnemyScalingManager.Instance.HpMultiplier : 1f;
+            float damageMultiplier = EnemyScalingManager.Instance != null ? EnemyScalingManager.Instance.DamageMultiplier : 1f;
+
+            currentHp = data.baseHp * hpMultiplier;
+            currentDamage = data.baseDamage * damageMultiplier;
             currentSpeed = data.baseSpeed;
             if (_rb) _rb.mass = data.mass;
             _xpValue = data.xpDropAmount;

@@ -88,6 +88,28 @@ public class ProjectilePool : Singleton<ProjectilePool>
         _pools[key].Enqueue(obj);
     }
 
+    /// <summary>
+    /// Despawns all active projectiles that match a specific SpellForm
+    /// Useful when replacing a spell to clean up old projectiles (especially Orbits)
+    /// </summary>
+    public void DespawnProjectilesWithForm(SpellForm form)
+    {
+        if (form == null) return;
+
+        // Iterate backwards to safely remove items while iterating
+        for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
+        {
+            var projectile = _activeProjectiles[i];
+            if (projectile == null) continue;
+
+            // Check if this projectile's definition matches the form we're looking for
+            if (projectile.Definition?.Form == form)
+            {
+                projectile.Despawn();
+            }
+        }
+    }
+
     public void ClearAll()
     {
         foreach (var kvp in _pools)

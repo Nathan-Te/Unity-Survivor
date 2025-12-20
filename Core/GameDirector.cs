@@ -1,25 +1,25 @@
 using System.Collections.Generic;
-using System.Linq; // Nécessaire pour le tri (Sort)
+using System.Linq; // Nï¿½cessaire pour le tri (Sort)
 using UnityEngine;
 
 public class GameDirector : MonoBehaviour
 {
     [Header("Config")]
-    [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote; // Touche ²
+    [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote; // Touche ï¿½
     [SerializeField] private bool startVisible = false;
 
     [Header("Performance Monitoring")]
-    [SerializeField] private float refreshRate = 0.5f; // Rafraîchir le texte 2x par seconde
+    [SerializeField] private float refreshRate = 0.5f; // Rafraï¿½chir le texte 2x par seconde
 
     private bool _isVisible;
-    private Rect _windowRect = new Rect(20, 20, 250, 450); // Fenêtre un peu plus haute
+    private Rect _windowRect = new Rect(20, 20, 250, 450); // Fenï¿½tre un peu plus haute
 
     // Stats variables
     private List<float> _frameTimes = new List<float>();
-    private const int MAX_SAMPLES = 200; // Echantillon sur ~3 secondes à 60fps
+    private const int MAX_SAMPLES = 200; // Echantillon sur ~3 secondes ï¿½ 60fps
     private float _timer;
 
-    // Display strings (mis en cache pour éviter le GC)
+    // Display strings (mis en cache pour ï¿½viter le GC)
     private string _fpsText = "-";
     private string _avgText = "-";
     private string _lowText = "-";
@@ -53,7 +53,7 @@ public class GameDirector : MonoBehaviour
 
     private void Update()
     {
-        // 1. Toggle Fenêtre
+        // 1. Toggle Fenï¿½tre
         if (Input.GetKeyDown(toggleKey))
         {
             _isVisible = !_isVisible;
@@ -61,8 +61,8 @@ public class GameDirector : MonoBehaviour
 
         if (Time.timeScale == 0f) return;
 
-        // 2. Collecte des données (Même si fenêtre fermée, pour avoir des stats prêtes)
-        // On utilise unscaledDeltaTime pour avoir les vrais FPS même si le jeu est ralenti/accéléré
+        // 2. Collecte des donnï¿½es (Mï¿½me si fenï¿½tre fermï¿½e, pour avoir des stats prï¿½tes)
+        // On utilise unscaledDeltaTime pour avoir les vrais FPS mï¿½me si le jeu est ralenti/accï¿½lï¿½rï¿½
         float dt = Time.unscaledDeltaTime;
         if (dt > 0 && dt < 1.0f)
         {
@@ -70,7 +70,7 @@ public class GameDirector : MonoBehaviour
             if (_frameTimes.Count > MAX_SAMPLES) _frameTimes.RemoveAt(0);
         }
 
-        // 3. Calcul périodique (pour ne pas faire ramer l'UI)
+        // 3. Calcul pï¿½riodique (pour ne pas faire ramer l'UI)
         _timer += dt;
         if (_timer >= refreshRate)
         {
@@ -100,11 +100,11 @@ public class GameDirector : MonoBehaviour
 
         // 1% Low (Le pire 1% des frames)
         // On trie les temps de frame (du plus petit au plus grand)
-        // Les "pires" frames (les plus longues) sont à la fin de la liste.
+        // Les "pires" frames (les plus longues) sont ï¿½ la fin de la liste.
         List<float> sortedTimes = new List<float>(_frameTimes);
         sortedTimes.Sort();
 
-        // On prend l'index à 99% de la liste (le début des 1% pires)
+        // On prend l'index ï¿½ 99% de la liste (le dï¿½but des 1% pires)
         int index = Mathf.Clamp(Mathf.FloorToInt(sortedTimes.Count * 0.99f), 0, sortedTimes.Count - 1);
         float worstTime = sortedTimes[index];
         float low1Fps = 1.0f / worstTime;
@@ -130,7 +130,7 @@ public class GameDirector : MonoBehaviour
     {
         GUILayout.BeginVertical();
 
-        // --- SECTION PERFORMANCE (En haut ou en bas, ici en haut pour visibilité) ---
+        // --- SECTION PERFORMANCE (En haut ou en bas, ici en haut pour visibilitï¿½) ---
         GUILayout.Label("--- PERFORMANCE ---", _boldLabelStyle);
 
         GUI.contentColor = _perfColor;
@@ -192,7 +192,21 @@ public class GameDirector : MonoBehaviour
 
         GUILayout.Space(10);
 
-        // --- MÉMOIRE ---
+        // --- ENEMY SCALING ---
+        GUILayout.Label("Enemy Scaling");
+        if (EnemyScalingManager.Instance != null)
+        {
+            GUILayout.Label($"HP Mult: {EnemyScalingManager.Instance.HpMultiplier:F2}x");
+            GUILayout.Label($"DMG Mult: {EnemyScalingManager.Instance.DamageMultiplier:F2}x");
+        }
+        else
+        {
+            GUILayout.Label("(No Scaling Manager)", _miniLabelStyle);
+        }
+
+        GUILayout.Space(10);
+
+        // --- Mï¿½MOIRE ---
         GUILayout.Label("Memory");
         if (GUILayout.Button("Force Cleanup (GC + Pools)"))
         {
@@ -206,13 +220,13 @@ public class GameDirector : MonoBehaviour
             // Hack rapide : utilise le pool directement
             if (EnemyPool.Instance != null && PlayerController.Instance != null)
             {
-                // Pour tester, assure-toi d'avoir un EnemyData/Prefab chargé quelque part ou utilise WaveManager
-                Debug.Log("Pour faire spawn, utilise plutôt l'accélération x5 du WaveManager !");
+                // Pour tester, assure-toi d'avoir un EnemyData/Prefab chargï¿½ quelque part ou utilise WaveManager
+                Debug.Log("Pour faire spawn, utilise plutï¿½t l'accï¿½lï¿½ration x5 du WaveManager !");
             }
         }
 
         GUILayout.Space(10);
-        GUILayout.Label("Info: Appuie sur '²' pour fermer", _miniLabelStyle);
+        GUILayout.Label("Info: Appuie sur 'ï¿½' pour fermer", _miniLabelStyle);
 
         GUILayout.EndVertical();
 

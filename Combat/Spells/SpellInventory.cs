@@ -121,6 +121,12 @@ public class SpellInventory : MonoBehaviour
 
         SpellSlot slot = activeSlots[slotIndex];
 
+        // Clean up active projectiles from the old spell (especially important for Orbits)
+        if (slot.formRune != null && slot.formRune.AsForm != null && ProjectilePool.Instance != null)
+        {
+            ProjectilePool.Instance.DespawnProjectilesWithForm(slot.formRune.AsForm);
+        }
+
         slot.formRune = new Rune(newForm);
         slot.formRune.InitializeWithStats(upgradeDef);
 

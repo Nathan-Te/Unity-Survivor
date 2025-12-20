@@ -46,6 +46,13 @@ Gestion du rythme et de l'environnement.
 * **Wave Manager :** Gestionnaire de vagues configurable.
     * Spawns aléatoires pondérés (Horde).
     * Spawns fixes chronométrés (Élites/Boss).
+* **Enemy Scaling System :** Système de difficulté progressive basé sur le temps.
+    * `EnemyScalingManager` : Singleton qui gère les multiplicateurs de HP et Dégâts.
+    * Courbes d'AnimationCurve configurables (axe X = secondes de jeu, axe Y = multiplicateur).
+    * **Mode Infini** : Extrapolation linéaire après la dernière keyframe pour le gameplay sans fin.
+    * Appliqué automatiquement lors de `InitializeStats()` dans `EnemyController`.
+    * Override manuel possible pour tests (via Inspector).
+    * Monitoring en temps réel dans le GameDirector (touche `).
 * **IA Ennemis (Steering) :**
     * Évitement d'obstacles (Raycasts).
     * Comportements variés : Mêlée (Fonceur), Tireur (Fuit si trop près, s'arrête à distance), Chargeur.
