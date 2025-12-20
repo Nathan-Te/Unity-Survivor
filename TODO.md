@@ -36,6 +36,9 @@ Trouver un prefab pour l'orbit Physical
 Bolt Lighting doit être un éclair
 smite Lightning doit être de la foudre tombant du ciel
 
+bolt fire doit être une boule de feu
+smite fire doit être une météorite
+
 ## 📦 Création de nouveau Contenu (Data)
 
 ### 1. Formes (Forms)
