@@ -21,8 +21,6 @@ Actuellement, l'effet `Nécrotique` instancie un Prefab inerte.
 - [ ] **Pause Menu :** Pouvoir reprendre, recommencer ou quitter.
 
 ### Combat
-- [ ] **VFX Manager :** Remplacer les changements de couleur (`tintColor`) par de vrais effets de particules (Explosions, Traînées).
-- [ ] **Hit Flash :** Faire clignoter les ennemis en blanc quand ils sont touchés.
 - [ ] **Sons :** Ajouter un `AudioManager` pour les tirs, impacts et level ups.
 
 ---
@@ -36,7 +34,6 @@ Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 - [ ] **Aura :** Zone de dégâts constante autour du joueur (Similaire à Orbit mais sans projectile).
 
 ### 2. Effets (Effects)
-- [ ] **Poison :** Dégâts sur la durée (DoT) cumulables.
 - [ ] **Vampirisme :** Chance de soin au touché.
 - [ ] **Void :** Attire les ennemis vers le centre de l'impact (Implosion).
 
