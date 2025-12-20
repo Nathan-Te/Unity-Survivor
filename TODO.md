@@ -24,6 +24,10 @@ Actuellement, l'effet `Nécrotique` instancie un Prefab inerte.
 - [ ] **Visuel :** Ajouter un effet visuel à la mort des ennemis
 - [ ] **Sons :** Ajouter un `AudioManager` pour les tirs, impacts et level ups et de la musique
 
+### LevelUp
+
+avec toutes les runes vérifier que xe n'est pas trop compliqué d'avoir ce qu'il faut, peut-être ne plus pouvoir remplacer une rune en place ? afin de limiter les runes proposées par que ce qu'on a si tous les slots sont pris
+
 ---
 
 ## 📦 Production de Contenu (Data)
