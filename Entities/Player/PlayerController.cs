@@ -37,6 +37,10 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
     private Vector2 _moveInput;
     private Collider[] _hitBuffer = new Collider[20];
 
+    // Throttle UI updates for regeneration to avoid spam
+    private float _lastRegenUIUpdate = 0f;
+    private const float REGEN_UI_UPDATE_INTERVAL = 0.1f; // Update UI every 0.1s during regen
+
     public event System.Action<float, float> OnHealthChanged;
 
     protected override void Awake()
@@ -74,10 +78,20 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
         HandleMovement(currentSpeed);
         HandleRotation();
 
+        // Health regeneration
         if (_regenPerSec > 0 && _currentHp < maxHp)
         {
+            float previousHp = _currentHp;
             _currentHp += _regenPerSec * Time.deltaTime;
             _currentHp = Mathf.Min(_currentHp, maxHp);
+
+            // Throttle UI updates to avoid spamming events every frame
+            bool reachedMax = _currentHp >= maxHp && previousHp < maxHp;
+            if (Time.time - _lastRegenUIUpdate >= REGEN_UI_UPDATE_INTERVAL || reachedMax)
+            {
+                OnHealthChanged?.Invoke(_currentHp, maxHp);
+                _lastRegenUIUpdate = Time.time;
+            }
         }
     }
 
@@ -104,7 +118,11 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
         _currentHp += flatAdd;
         OnHealthChanged?.Invoke(_currentHp, maxHp);
     }
-    public void ModifyRegen(float flatAdd) => _regenPerSec += flatAdd;
+    public void ModifyRegen(float flatAdd)
+    {
+        _regenPerSec += flatAdd;
+        Debug.Log($"[PlayerController] ModifyRegen - flatAdd: {flatAdd}, NEW _regenPerSec: {_regenPerSec}");
+    }
     public void ModifyArmor(float flatAdd) => _armor += flatAdd;
 
     // ----------------------

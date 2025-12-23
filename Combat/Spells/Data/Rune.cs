@@ -42,4 +42,5 @@ public class Rune
     public SpellForm AsForm => Data as SpellForm;
     public SpellEffect AsEffect => Data as SpellEffect;
     public SpellModifier AsModifier => Data as SpellModifier;
+    public StatUpgradeSO AsStatUpgrade => Data as StatUpgradeSO;
 }

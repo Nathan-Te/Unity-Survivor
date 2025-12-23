@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using System;
 
 public class PlayerStats : Singleton<PlayerStats>
 {
@@ -16,6 +18,15 @@ public class PlayerStats : Singleton<PlayerStats>
     [Header("Utility Stats")]
     public float ExperienceMultiplier = 1.0f;
 
+    // Track which stat types the player has acquired
+    private HashSet<StatType> _acquiredStatTypes = new HashSet<StatType>();
+
+    // Store stat upgrade runes with their levels and accumulated stats
+    private Dictionary<StatType, Rune> _statRunes = new Dictionary<StatType, Rune>();
+
+    // Event fired when a new stat type is acquired
+    public event Action OnStatsChanged;
+
     private PlayerController _controller;
     private PlayerCollector _collector;
 
@@ -30,9 +41,45 @@ public class PlayerStats : Singleton<PlayerStats>
         }
     }
 
-    public void ApplyUpgrade(StatType type, float value)
+    public void ApplyUpgrade(StatType type, float value, StatUpgradeSO statUpgradeSO = null, RuneDefinition upgradeDef = null)
     {
         Debug.Log($"[PlayerStats] ApplyUpgrade called - Type: {type}, Value: {value}, Controller exists: {_controller != null}");
+
+        // Track that this stat type has been acquired
+        bool wasNew = !_acquiredStatTypes.Contains(type);
+        _acquiredStatTypes.Add(type);
+
+        // Create or upgrade the stat rune if we have the StatUpgradeSO
+        bool runeChanged = false;
+        if (statUpgradeSO != null)
+        {
+            if (!_statRunes.ContainsKey(type))
+            {
+                // Create new rune
+                Rune newRune = new Rune(statUpgradeSO);
+                if (upgradeDef != null)
+                {
+                    newRune.InitializeWithStats(upgradeDef);
+                }
+                _statRunes[type] = newRune;
+                runeChanged = true;
+            }
+            else
+            {
+                // Upgrade existing rune
+                if (upgradeDef != null)
+                {
+                    _statRunes[type].ApplyUpgrade(upgradeDef);
+                    runeChanged = true;
+                }
+            }
+        }
+
+        // Fire event if this was a new stat type or if the rune was upgraded
+        if (wasNew || runeChanged)
+        {
+            OnStatsChanged?.Invoke();
+        }
 
         switch (type)
         {
@@ -85,5 +132,37 @@ public class PlayerStats : Singleton<PlayerStats>
         {
             spellManager.RecalculateAllSpells();
         }
+    }
+
+    /// <summary>
+    /// Returns the number of different stat types the player has acquired
+    /// </summary>
+    public int GetAcquiredStatTypeCount()
+    {
+        return _acquiredStatTypes.Count;
+    }
+
+    /// <summary>
+    /// Checks if the player has already acquired this stat type
+    /// </summary>
+    public bool HasStatType(StatType type)
+    {
+        return _acquiredStatTypes.Contains(type);
+    }
+
+    /// <summary>
+    /// Gets a copy of all acquired stat types
+    /// </summary>
+    public HashSet<StatType> GetAcquiredStatTypes()
+    {
+        return new HashSet<StatType>(_acquiredStatTypes);
+    }
+
+    /// <summary>
+    /// Gets the stat rune for a specific stat type (if it exists)
+    /// </summary>
+    public Rune GetStatRune(StatType type)
+    {
+        return _statRunes.ContainsKey(type) ? _statRunes[type] : null;
     }
 }

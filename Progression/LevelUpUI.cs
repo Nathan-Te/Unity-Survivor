@@ -100,6 +100,12 @@ public class LevelUpUI : MonoBehaviour
             availableStats
         );
 
+        // Initialize StatUpgradeRegistry for HUD stat icon display
+        if (StatUpgradeRegistry.Instance != null)
+        {
+            StatUpgradeRegistry.Instance.Initialize(availableStats);
+        }
+
         // Register level up listener
         if (LevelManager.Instance != null)
             LevelManager.Instance.OnLevelUp.AddListener(StartLevelUpSequence);
@@ -166,7 +172,7 @@ public class LevelUpUI : MonoBehaviour
         if (upgrade.Type == UpgradeType.StatBoost)
         {
             float val = upgrade.UpgradeDefinition.Stats.StatValue;
-            PlayerStats.Instance.ApplyUpgrade(upgrade.TargetStat.targetStat, val);
+            PlayerStats.Instance.ApplyUpgrade(upgrade.TargetStat.targetStat, val, upgrade.TargetStat, upgrade.UpgradeDefinition);
             EndLevelUp();
             return;
         }

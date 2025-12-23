@@ -8,6 +8,10 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private Transform slotsContainer;
     [SerializeField] private GameObject slotUIPrefab;
 
+    [Header("Stat Icons")]
+    [SerializeField] private Transform statsContainer;
+    [SerializeField] private GameObject statIconPrefab;
+
     [Header("Health Bar")]
     [SerializeField] private Slider healthSlider;
     [SerializeField] private TextMeshProUGUI healthText;
@@ -29,6 +33,7 @@ public class PlayerHUD : MonoBehaviour
 
     private SpellManager _spellManager;
     private PlayerController _playerController;
+    private PlayerStats _playerStats;
     private LevelManager _levelManager;
     private EnemyManager _enemyManager;
     private GameTimer _gameTimer;
@@ -40,8 +45,8 @@ public class PlayerHUD : MonoBehaviour
         _spellManager = FindFirstObjectByType<SpellManager>();
         if (_spellManager != null)
         {
-            _spellManager.OnInventoryUpdated += RefreshUI;
-            RefreshUI();
+            _spellManager.OnInventoryUpdated += RefreshSpellsUI;
+            RefreshSpellsUI();
         }
 
         // Setup Health
@@ -50,6 +55,14 @@ public class PlayerHUD : MonoBehaviour
         {
             _playerController.OnHealthChanged += UpdateHealth;
             UpdateHealth(_playerController.CurrentHp, _playerController.MaxHp);
+        }
+
+        // Setup Stats Display
+        _playerStats = PlayerStats.Instance;
+        if (_playerStats != null)
+        {
+            _playerStats.OnStatsChanged += RefreshStatsUI;
+            RefreshStatsUI();
         }
 
         _levelManager = LevelManager.Instance;
@@ -92,7 +105,7 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
-    private void RefreshUI()
+    private void RefreshSpellsUI()
     {
         // ⭐ CORRECTION : Détruire immédiatement pour éviter les accumulations
         List<GameObject> childrenToDestroy = new List<GameObject>();
@@ -114,6 +127,46 @@ public class PlayerHUD : MonoBehaviour
             if (obj.TryGetComponent<SpellSlotUI>(out var ui))
             {
                 ui.Initialize(slots[i], i, null);
+            }
+        }
+    }
+
+    private void RefreshStatsUI()
+    {
+        // Clear existing stat icons
+        if (statsContainer != null)
+        {
+            List<GameObject> childrenToDestroy = new List<GameObject>();
+            foreach (Transform child in statsContainer)
+            {
+                childrenToDestroy.Add(child.gameObject);
+            }
+            foreach (var child in childrenToDestroy)
+            {
+                DestroyImmediate(child);
+            }
+        }
+
+        if (_playerStats == null || statsContainer == null || statIconPrefab == null)
+            return;
+
+        // Get acquired stat types
+        var acquiredStats = _playerStats.GetAcquiredStatTypes();
+
+        // Display each acquired stat
+        foreach (var statType in acquiredStats)
+        {
+            GameObject obj = Instantiate(statIconPrefab, statsContainer);
+            if (obj.TryGetComponent<StatIconUI>(out var ui))
+            {
+                // Get the StatUpgradeSO for this stat type
+                StatUpgradeSO statSO = null;
+                if (StatUpgradeRegistry.Instance != null)
+                {
+                    statSO = StatUpgradeRegistry.Instance.GetStatUpgrade(statType);
+                }
+
+                ui.Initialize(statType, statSO);
             }
         }
     }
@@ -244,10 +297,13 @@ public class PlayerHUD : MonoBehaviour
     private void OnDestroy()
     {
         if (_spellManager != null)
-            _spellManager.OnInventoryUpdated -= RefreshUI;
+            _spellManager.OnInventoryUpdated -= RefreshSpellsUI;
 
         if (_playerController != null)
             _playerController.OnHealthChanged -= UpdateHealth;
+
+        if (_playerStats != null)
+            _playerStats.OnStatsChanged -= RefreshStatsUI;
 
         if (_levelManager != null)
         {

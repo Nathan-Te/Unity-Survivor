@@ -11,8 +11,8 @@ public abstract class RuneSO : ScriptableObject
 
     public abstract RuneType Type { get; }
 
-    // Listes manuelles : Tu remplis ça dans l'éditeur
-    [Header("Upgrades par Rareté")]
+    // Listes manuelles : Tu remplis ï¿½a dans l'ï¿½diteur
+    [Header("Upgrades par Raretï¿½")]
     public List<RuneDefinition> CommonUpgrades;
     public List<RuneDefinition> RareUpgrades;
     public List<RuneDefinition> EpicUpgrades;
@@ -36,5 +36,27 @@ public abstract class RuneSO : ScriptableObject
 
         // Fallback
         return new RuneDefinition { Description = "Upgrade Vide", Stats = RuneStats.Zero };
+    }
+
+    /// <summary>
+    /// Checks if a rune at the given level has reached its maximum level (uses global config)
+    /// </summary>
+    public bool IsMaxLevel(int currentLevel)
+    {
+        if (RuneMaxLevelConfig.Instance == null)
+            return false;
+
+        return RuneMaxLevelConfig.Instance.IsMaxLevel(Type, currentLevel);
+    }
+
+    /// <summary>
+    /// Gets the max level for this rune type from global config
+    /// </summary>
+    public int GetMaxLevel()
+    {
+        if (RuneMaxLevelConfig.Instance == null)
+            return 0;
+
+        return RuneMaxLevelConfig.Instance.GetMaxLevel(Type);
     }
 }

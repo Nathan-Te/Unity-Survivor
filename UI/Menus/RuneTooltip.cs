@@ -78,7 +78,28 @@ public class RuneTooltip : MonoBehaviour
 
             // Rebuild content using StringBuilder (zero allocations on subsequent hovers)
             titleText.text = rune.Data.runeName;
-            levelText.text = $"LvL {rune.Level}";
+
+            // Display level with max level if defined
+            int maxLevel = rune.Data.GetMaxLevel();
+            if (maxLevel > 0)
+            {
+                levelText.text = $"LvL {rune.Level}/{maxLevel}";
+
+                // Color code if at max level
+                if (rune.Data.IsMaxLevel(rune.Level))
+                {
+                    levelText.color = new Color(1f, 0.84f, 0f); // Gold color
+                }
+                else
+                {
+                    levelText.color = Color.white;
+                }
+            }
+            else
+            {
+                levelText.text = $"LvL {rune.Level}";
+                levelText.color = Color.white;
+            }
 
             _sb.Clear();
             BuildDescription(rune, slot);
@@ -91,6 +112,65 @@ public class RuneTooltip : MonoBehaviour
         transform.position = position;
 
         // Show (NO SetActive call - just alpha change)
+        canvasGroup.alpha = 1f;
+        canvasGroup.blocksRaycasts = true;
+    }
+
+    /// <summary>
+    /// Shows the tooltip for a StatUpgradeSO (now with rune instance for level and accumulated stats)
+    /// </summary>
+    public void ShowForStatUpgrade(Rune rune, Vector3 position)
+    {
+        if (rune == null || rune.Data == null || rune.AsStatUpgrade == null)
+        {
+            Hide();
+            return;
+        }
+
+        StatUpgradeSO statSO = rune.AsStatUpgrade;
+
+        // Build display for StatUpgrade rune
+        titleText.text = statSO.runeName;
+
+        // Display level with max level if defined
+        int maxLevel = statSO.GetMaxLevel();
+        if (maxLevel > 0)
+        {
+            levelText.text = $"LvL {rune.Level}/{maxLevel}";
+
+            // Color code if at max level
+            if (statSO.IsMaxLevel(rune.Level))
+            {
+                levelText.color = new Color(1f, 0.84f, 0f); // Gold color
+            }
+            else
+            {
+                levelText.color = Color.white;
+            }
+        }
+        else
+        {
+            levelText.text = $"LvL {rune.Level}";
+            levelText.color = Color.white;
+        }
+
+        _sb.Clear();
+        _sb.Append("<b>Type:</b> Player Stat Upgrade\n");
+        _sb.Append("<b>Target:</b> <color=yellow>").Append(statSO.targetStat.ToString()).Append("</color>\n\n");
+
+        // Display accumulated stat value
+        if (rune.AccumulatedStats.StatValue != 0)
+        {
+            _sb.Append("<b>Total Bonus:</b>\n");
+            _sb.Append("<color=green>+").Append(FormatStatValue(statSO.targetStat, rune.AccumulatedStats.StatValue)).Append("</color>");
+        }
+
+        contentText.text = _sb.ToString();
+
+        // Position the tooltip
+        transform.position = position;
+
+        // Show
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
     }
@@ -280,6 +360,89 @@ public class RuneTooltip : MonoBehaviour
         else
         {
             _sb.Append("<color=red>").Append(percent.ToString("F0")).Append("%</color>");
+        }
+    }
+
+    /// <summary>
+    /// Formats a stat value based on the stat type (percentage vs flat value)
+    /// </summary>
+    private string FormatStatValue(StatType statType, float value)
+    {
+        switch (statType)
+        {
+            // Percentage-based stats (display as percentage with 1 decimal)
+            case StatType.MoveSpeed:
+            case StatType.GlobalDamage:
+            case StatType.GlobalCooldown:
+            case StatType.GlobalArea:
+            case StatType.GlobalSpeed:
+            case StatType.ExperienceGain:
+            case StatType.Armor:
+            case StatType.CritChance:
+            case StatType.CritDamage:
+                return $"{(value * 100f).ToString("F1")}%";
+
+            // Flat value stats
+            case StatType.MaxHealth:
+            case StatType.HealthRegen:
+            case StatType.MagnetArea:
+                return value.ToString("F1");
+
+            // Integer stats
+            case StatType.GlobalCount:
+                return ((int)value).ToString();
+
+            default:
+                return value.ToString("F1");
+        }
+    }
+
+    /// <summary>
+    /// Adds upgrade list information from a RuneSO (works for all rune types including StatUpgradeSO)
+    /// </summary>
+    private void AddUpgradeListInfo(RuneSO runeSO)
+    {
+        if (runeSO.CommonUpgrades != null && runeSO.CommonUpgrades.Count > 0)
+        {
+            _sb.Append("<color=white>Common:</color> ");
+            AppendUpgradeExamples(runeSO.CommonUpgrades);
+            _sb.Append("\n");
+        }
+
+        if (runeSO.RareUpgrades != null && runeSO.RareUpgrades.Count > 0)
+        {
+            _sb.Append("<color=#4169E1>Rare:</color> ");
+            AppendUpgradeExamples(runeSO.RareUpgrades);
+            _sb.Append("\n");
+        }
+
+        if (runeSO.EpicUpgrades != null && runeSO.EpicUpgrades.Count > 0)
+        {
+            _sb.Append("<color=#9370DB>Epic:</color> ");
+            AppendUpgradeExamples(runeSO.EpicUpgrades);
+            _sb.Append("\n");
+        }
+
+        if (runeSO.LegendaryUpgrades != null && runeSO.LegendaryUpgrades.Count > 0)
+        {
+            _sb.Append("<color=#FFD700>Legendary:</color> ");
+            AppendUpgradeExamples(runeSO.LegendaryUpgrades);
+            _sb.Append("\n");
+        }
+    }
+
+    /// <summary>
+    /// Appends a summary of upgrades from a list (shows first example or count)
+    /// </summary>
+    private void AppendUpgradeExamples(System.Collections.Generic.List<RuneDefinition> upgrades)
+    {
+        if (upgrades.Count == 1)
+        {
+            _sb.Append(upgrades[0].Description);
+        }
+        else
+        {
+            _sb.Append(upgrades[0].Description).Append(" (").Append(upgrades.Count).Append(" options)");
         }
     }
 }
