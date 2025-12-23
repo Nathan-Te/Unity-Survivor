@@ -17,13 +17,16 @@ Actuellement, l'effet `Nécrotique` instancie un Prefab inerte.
 ## 🛠️ Améliorations & Refactoring (Tech)
 
 ### UI / UX
-- [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Mod vs Stat).
+- [ ] **Feedback Visuel :** Ajouter des couleurs ou des icônes pour distinguer clairement les types de cartes (Forme vs Effect vs Mod vs Stat).
 - [ ] **Pause Menu :** Pouvoir reprendre, recommencer ou quitter.
 
 ### Combat
-- [ ] **VFX Manager :** Remplacer les changements de couleur (`tintColor`) par de vrais effets de particules (Explosions, Traînées).
-- [ ] **Hit Flash :** Faire clignoter les ennemis en blanc quand ils sont touchés.
-- [ ] **Sons :** Ajouter un `AudioManager` pour les tirs, impacts et level ups.
+- [ ] **Visuel :** Ajouter un effet visuel à la mort des ennemis
+- [ ] **Sons :** Ajouter un `AudioManager` pour les tirs, impacts et level ups et de la musique
+
+### LevelUp
+
+avec toutes les runes vérifier que xe n'est pas trop compliqué d'avoir ce qu'il faut, peut-être ne plus pouvoir remplacer une rune en place ? afin de limiter les runes proposées par que ce qu'on a si tous les slots sont pris
 
 ---
 
@@ -31,12 +34,22 @@ Actuellement, l'effet `Nécrotique` instancie un Prefab inerte.
 
 Il faut remplir les ScriptableObjects pour créer la variété du jeu.
 
+Tester le Nova avec des Kunai en Physical
+Trouver un prefab pour l'orbit Physical
+
+Bolt Lighting doit être un éclair
+smite Lightning doit être de la foudre tombant du ciel
+
+bolt fire doit être une boule de feu
+smite fire doit être une météorite
+
+## 📦 Création de nouveau Contenu (Data)
+
 ### 1. Formes (Forms)
 - [ ] **Boomerang :** Projectile qui part et revient (Nécessite une nouvelle `MotionStrategy`).
 - [ ] **Aura :** Zone de dégâts constante autour du joueur (Similaire à Orbit mais sans projectile).
 
 ### 2. Effets (Effects)
-- [ ] **Poison :** Dégâts sur la durée (DoT) cumulables.
 - [ ] **Vampirisme :** Chance de soin au touché.
 - [ ] **Void :** Attire les ennemis vers le centre de l'impact (Implosion).
 
