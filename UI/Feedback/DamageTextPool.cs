@@ -16,15 +16,16 @@ public class DamageTextPool : Singleton<DamageTextPool>
     {
         base.Awake();
 
-        if (Instance == this)
+        // Always initialize pool (even after scene reload)
+        // Create and add to pool directly
+        _pool = new Queue<DamageText>();
+        _activeTexts = new List<DamageText>();
+
+        for (int i = 0; i < initialSize; i++)
         {
-            // ⭐ CORRECTION : Créer ET ajouter au pool directement
-            for (int i = 0; i < initialSize; i++)
-            {
-                DamageText t = Instantiate(textPrefab, transform);
-                t.gameObject.SetActive(false);
-                _pool.Enqueue(t);
-            }
+            DamageText t = Instantiate(textPrefab, transform);
+            t.gameObject.SetActive(false);
+            _pool.Enqueue(t);
         }
     }
 

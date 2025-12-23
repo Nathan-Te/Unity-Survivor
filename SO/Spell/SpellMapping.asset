@@ -36,7 +36,7 @@ MonoBehaviour:
     smiteLifetime: 5
   - form: {fileID: 11400000, guid: b7a2c2ebb3f8344499655726c823162f, type: 2}
     effect: {fileID: 11400000, guid: 163740c7c0f1110489b2d32910fe8b8f, type: 2}
-    prefab: {fileID: 490920572835360463, guid: 65bf38d6d80ef174e9baa420c5188b77, type: 3}
+    prefab: {fileID: 490920572835360463, guid: e985bdc00d6dcdd4989717528ca82daf, type: 3}
     impactVfxPrefab: {fileID: 7371996647939391622, guid: 8dc5f4bc996246847907264a235ed40d, type: 3}
     impactDelay: 0
     vfxSpawnDelay: 0

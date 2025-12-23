@@ -31,4 +31,15 @@ public class EnemyData : ScriptableObject
     [Header("Physique")]
     public float mass = 1f;
     public float pushPower = 2f;
+
+    [Header("VFX de Mort")]
+    [Tooltip("VFX instantané à la mort de l'ennemi (optionnel)")]
+    public GameObject deathVfxPrefab;
+    [Tooltip("Durée du VFX en secondes")]
+    public float deathVfxDuration = 1.5f;
+    [Tooltip("Multiplicateur de scale basé sur la taille de l'ennemi (0 = pas de scale, 1 = scale exact)")]
+    [Range(0f, 2f)]
+    public float vfxScaleMultiplier = 1f;
+    [Tooltip("Scale de base du VFX (appliqué avant le multiplicateur)")]
+    public float vfxBaseScale = 1f;
 }

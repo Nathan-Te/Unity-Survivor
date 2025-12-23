@@ -20,8 +20,16 @@ public class Rune
         {
             AccumulatedStats = mod.baseStats;
         }
-        // Form et Effect n'ont pas de "RuneStats" de base dans ce syst�me, 
+        // Form et Effect n'ont pas de "RuneStats" de base dans ce système,
         // leurs valeurs de base sont dans les champs float du SO (baseDamage, etc.)
+    }
+
+    // Constructor overload that preserves AccumulatedStats (for Inspector-configured runes)
+    public Rune(RuneSO data, RuneStats initialStats)
+    {
+        Data = data;
+        Level = 1;
+        AccumulatedStats = initialStats;
     }
 
     // Appel� pour une nouvelle rune (Niveau 1, mais avec les stats bonus de la carte)

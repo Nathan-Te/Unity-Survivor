@@ -27,26 +27,24 @@ public class MapManager : Singleton<MapManager>
     {
         base.Awake();
 
-        if (Instance == this)
+        // Always initialize (even after scene reload)
+        if (randomizeSeed) worldSeed = Random.Range(-1000000, 1000000);
+
+        if (groundMaterial != null)
         {
-            if (randomizeSeed) worldSeed = Random.Range(-1000000, 1000000);
+            // On g�n�re un d�calage �norme bas� sur la seed
+            // (Les shaders aiment les Vector2 pour les offsets)
+            float offsetX = Random.Range(-10000f, 10000f);
+            float offsetY = Random.Range(-10000f, 10000f);
 
-            if (groundMaterial != null)
-            {
-                // On g�n�re un d�calage �norme bas� sur la seed
-                // (Les shaders aiment les Vector2 pour les offsets)
-                float offsetX = Random.Range(-10000f, 10000f);
-                float offsetY = Random.Range(-10000f, 10000f);
-
-                // On envoie �a au Shader
-                // Assurez-vous que le nom "Noise_Offset" correspond exactement � celui du Shader Graph
-                groundMaterial.SetVector("_Noise_Offset", new Vector2(offsetX, offsetY));
-                Debug.Log("Vector : " + groundMaterial.GetVector("_Noise_Offset"));
-            }
-
-            // S�curit�
-            if (currentProfile == null) Debug.LogError("MapManager : Aucun Profil de g�n�ration assign� !");
+            // On envoie �a au Shader
+            // Assurez-vous que le nom "Noise_Offset" correspond exactement � celui du Shader Graph
+            groundMaterial.SetVector("_Noise_Offset", new Vector2(offsetX, offsetY));
+            Debug.Log("Vector : " + groundMaterial.GetVector("_Noise_Offset"));
         }
+
+        // S�curit�
+        if (currentProfile == null) Debug.LogError("MapManager : Aucun Profil de g�n�ration assign� !");
     }
 
     // ... (Start, Update et UpdateChunks restent inchang�s) ...

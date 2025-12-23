@@ -14,10 +14,13 @@ public class BossHealthBarUI : Singleton<BossHealthBarUI>
     {
         base.Awake();
 
-        if (Instance == this)
+        // Always initialize to default state (hidden)
+        // This ensures proper initialization even after scene reload
+        if (panel != null)
         {
             panel.SetActive(false);
         }
+        _currentBoss = null;
     }
 
     public void Show(EnemyController boss)

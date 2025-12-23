@@ -61,17 +61,15 @@ public class ArcadeScoreSystem : Singleton<ArcadeScoreSystem>
 
     private void Start()
     {
-        if (Instance == this)
-        {
-            // Initialiser les valeurs dynamiques au palier de base
-            _currentDecayRate = baseDecayRate;
-            _currentTimeAddedPerKill = baseTimeAddedPerKill;
+        // Always initialize (even after scene reload)
+        // Initialiser les valeurs dynamiques au palier de base
+        _currentDecayRate = baseDecayRate;
+        _currentTimeAddedPerKill = baseTimeAddedPerKill;
 
-            // S'abonner aux morts d'ennemis
-            if (EnemyManager.Instance != null)
-            {
-                EnemyManager.Instance.OnEnemyKilledWithScore += OnEnemyKilled;
-            }
+        // S'abonner aux morts d'ennemis
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.OnEnemyKilledWithScore += OnEnemyKilled;
         }
     }
 

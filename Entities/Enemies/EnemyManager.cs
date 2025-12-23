@@ -61,34 +61,32 @@ public class EnemyManager : Singleton<EnemyManager>
     {
         base.Awake();
 
-        if (Instance == this)
-        {
-            // Get or add sub-components
-            _movementSystem = GetComponent<EnemyMovementSystem>();
-            if (_movementSystem == null)
-                _movementSystem = gameObject.AddComponent<EnemyMovementSystem>();
+        // Always initialize components and state (even after scene reload)
+        // Get or add sub-components
+        _movementSystem = GetComponent<EnemyMovementSystem>();
+        if (_movementSystem == null)
+            _movementSystem = gameObject.AddComponent<EnemyMovementSystem>();
 
-            _registry = GetComponent<EnemyRegistry>();
-            if (_registry == null)
-                _registry = gameObject.AddComponent<EnemyRegistry>();
+        _registry = GetComponent<EnemyRegistry>();
+        if (_registry == null)
+            _registry = gameObject.AddComponent<EnemyRegistry>();
 
-            _eventBroadcaster = GetComponent<EnemyEventBroadcaster>();
-            if (_eventBroadcaster == null)
-                _eventBroadcaster = gameObject.AddComponent<EnemyEventBroadcaster>();
+        _eventBroadcaster = GetComponent<EnemyEventBroadcaster>();
+        if (_eventBroadcaster == null)
+            _eventBroadcaster = gameObject.AddComponent<EnemyEventBroadcaster>();
 
-            // Initialize sub-components with parameters
-            _movementSystem.Initialize(
-                playerTransform,
-                obstacleLayer,
-                maxEnemiesCapacity,
-                separationWeight,
-                rayDistance,
-                rayAngle,
-                rotationSpeed,
-                avoidanceBlendSpeed
-            );
-            _registry.Initialize(_movementSystem, maxEnemiesCapacity, playerTransform);
-        }
+        // Initialize sub-components with parameters
+        _movementSystem.Initialize(
+            playerTransform,
+            obstacleLayer,
+            maxEnemiesCapacity,
+            separationWeight,
+            rayDistance,
+            rayAngle,
+            rotationSpeed,
+            avoidanceBlendSpeed
+        );
+        _registry.Initialize(_movementSystem, maxEnemiesCapacity, playerTransform);
     }
 
     private void Update()

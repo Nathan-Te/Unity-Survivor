@@ -122,7 +122,9 @@ public class LevelUpUI : MonoBehaviour
     /// </summary>
     public void StartLevelUpSequence()
     {
-        Time.timeScale = 0f;
+        // Use GameStateController instead of Time.timeScale
+        if (GameStateController.Instance != null)
+            GameStateController.Instance.SetState(GameStateController.GameState.LevelingUp);
 
         // Reset to default filters
         _currentMinRarity = Rarity.Common;
@@ -136,7 +138,9 @@ public class LevelUpUI : MonoBehaviour
     /// </summary>
     public void ShowRewardDraft(Rarity minRarity, RewardFilter filter)
     {
-        Time.timeScale = 0f;
+        // Use GameStateController instead of Time.timeScale
+        if (GameStateController.Instance != null)
+            GameStateController.Instance.SetState(GameStateController.GameState.LevelingUp);
 
         // Apply filters from POI
         _currentMinRarity = minRarity;
@@ -240,7 +244,9 @@ public class LevelUpUI : MonoBehaviour
         _draftController.Hide();
         _inventoryController.Hide();
 
-        Time.timeScale = 1f;
+        // Use GameStateController to resume
+        if (GameStateController.Instance != null)
+            GameStateController.Instance.Resume();
 
         if (LevelManager.Instance != null)
             LevelManager.Instance.TriggerNextLevelUp();

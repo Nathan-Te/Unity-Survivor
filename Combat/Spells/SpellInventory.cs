@@ -38,10 +38,117 @@ public class SpellInventory : MonoBehaviour
     {
         foreach (var slot in activeSlots)
         {
+            // CRITICAL: Ensure runes preserve their AccumulatedStats from Inspector configuration
+            // This fixes the issue where FlatCount, FlatMulticast, and other stats set in the
+            // Inspector were being reset to Zero on game start
+            EnsureRuneStatsPreserved(slot);
+
             slot.ForceInit();
             slot.currentCooldown = 0.5f;
         }
         OnInventoryUpdated?.Invoke();
+    }
+
+    /// <summary>
+    /// Ensures that runes configured in the Inspector preserve their AccumulatedStats.
+    /// Without this, all AccumulatedStats would be reset to Zero on game start.
+    /// </summary>
+    private void EnsureRuneStatsPreserved(SpellSlot slot)
+    {
+        // Form rune
+        if (slot.formRune != null && slot.formRune.Data != null)
+        {
+            // If AccumulatedStats is non-zero, preserve it (Inspector-configured)
+            // Otherwise, initialize to Zero (will be set by upgrade cards during gameplay)
+            if (!IsRuneStatsZero(slot.formRune.AccumulatedStats))
+            {
+                // Already has stats from Inspector - keep them
+            }
+            else
+            {
+                // No stats configured - initialize to Zero (or Modifier baseStats)
+                if (slot.formRune.Data is SpellModifier mod)
+                {
+                    slot.formRune.AccumulatedStats = mod.baseStats;
+                }
+                else
+                {
+                    slot.formRune.AccumulatedStats = RuneStats.Zero;
+                }
+            }
+        }
+
+        // Effect rune
+        if (slot.effectRune != null && slot.effectRune.Data != null)
+        {
+            if (!IsRuneStatsZero(slot.effectRune.AccumulatedStats))
+            {
+                // Already has stats from Inspector - keep them
+            }
+            else
+            {
+                if (slot.effectRune.Data is SpellModifier mod)
+                {
+                    slot.effectRune.AccumulatedStats = mod.baseStats;
+                }
+                else
+                {
+                    slot.effectRune.AccumulatedStats = RuneStats.Zero;
+                }
+            }
+        }
+
+        // Modifier runes
+        if (slot.modifierRunes != null)
+        {
+            for (int i = 0; i < slot.modifierRunes.Length; i++)
+            {
+                if (slot.modifierRunes[i] != null && slot.modifierRunes[i].Data != null)
+                {
+                    if (!IsRuneStatsZero(slot.modifierRunes[i].AccumulatedStats))
+                    {
+                        // Already has stats from Inspector - keep them
+                    }
+                    else
+                    {
+                        if (slot.modifierRunes[i].Data is SpellModifier mod)
+                        {
+                            slot.modifierRunes[i].AccumulatedStats = mod.baseStats;
+                        }
+                        else
+                        {
+                            slot.modifierRunes[i].AccumulatedStats = RuneStats.Zero;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks if a RuneStats struct is effectively zero (all fields are default/zero).
+    /// Used to detect if AccumulatedStats was configured in the Inspector.
+    /// </summary>
+    private bool IsRuneStatsZero(RuneStats stats)
+    {
+        return stats.DamageMult == 0f &&
+               stats.CooldownMult == 0f &&
+               stats.SizeMult == 0f &&
+               stats.SpeedMult == 0f &&
+               stats.DurationMult == 0f &&
+               stats.FlatCooldown == 0f &&
+               stats.FlatCount == 0 &&
+               stats.FlatPierce == 0 &&
+               stats.FlatSpread == 0f &&
+               stats.FlatRange == 0f &&
+               stats.FlatKnockback == 0f &&
+               stats.FlatChainCount == 0 &&
+               stats.FlatMulticast == 0 &&
+               stats.FlatBurnDamage == 0f &&
+               stats.FlatBurnDuration == 0f &&
+               stats.FlatCritChance == 0f &&
+               stats.FlatCritDamage == 0f &&
+               stats.StatValue == 0f;
     }
 
     /// <summary>

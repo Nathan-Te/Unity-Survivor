@@ -62,6 +62,10 @@ public class EnemyController : MonoBehaviour
 
     private void Update()
     {
+        // Don't process if game is not in Playing state
+        if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
+            return;
+
         // Time-sliced logic (heavy operations run every 10 frames)
         if ((Time.frameCount + _frameIntervalOffset) % LOGIC_FRAME_INTERVAL == 0)
         {
@@ -126,6 +130,23 @@ public class EnemyController : MonoBehaviour
 
     private void Die()
     {
+        // Spawn death VFX if configured
+        if (data != null && data.deathVfxPrefab != null && VFXPool.Instance != null)
+        {
+            // Calculate final scale based on enemy size and VFX parameters
+            float enemyScale = transform.localScale.x; // Assume uniform scale
+            float finalScale = data.vfxBaseScale + (enemyScale * data.vfxScaleMultiplier);
+
+            // Spawn VFX at enemy position with calculated scale
+            VFXPool.Instance.Spawn(
+                data.deathVfxPrefab,
+                transform.position,
+                Quaternion.identity,
+                data.deathVfxDuration,
+                finalScale
+            );
+        }
+
         // Notify manager with score value
         int scoreValue = data != null ? data.scoreValue : 10;
         if (EnemyManager.Instance != null)

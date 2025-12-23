@@ -28,6 +28,10 @@ public class SpellCaster : MonoBehaviour
 
     private void Update()
     {
+        // Don't process spells if game is not in Playing state
+        if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
+            return;
+
         if (_playerTransform == null) return;
 
         var slots = _inventory.GetSlots();
@@ -133,6 +137,9 @@ public class SpellCaster : MonoBehaviour
         Vector3 targetPos = Vector3.zero;
         bool hasTarget = false;
 
+        // Safety check: don't attempt attack if PlayerController is null (during scene loading)
+        if (PlayerController.Instance == null) return false;
+
         if (PlayerController.Instance.IsManualAiming)
         {
             targetPos = PlayerController.Instance.MouseWorldPosition;
@@ -140,6 +147,9 @@ public class SpellCaster : MonoBehaviour
         }
         else
         {
+            // Safety check: don't attempt auto-aim if EnemyManager is null (during scene loading)
+            if (EnemyManager.Instance == null) return false;
+
             // Auto-aim: scan from chest height to avoid ground
             Vector3 scanOrigin = _playerTransform.position + Vector3.up;
 

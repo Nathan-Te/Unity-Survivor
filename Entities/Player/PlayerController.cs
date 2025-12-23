@@ -47,13 +47,17 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
     {
         base.Awake();
 
-        if (Instance == this)
-        {
-            _controller = GetComponent<CharacterController>();
-            _mainCamera = Camera.main;
-            _currentHp = maxHp;
-            _baseMoveSpeed = moveSpeed;
-        }
+        // Always initialize critical components and state
+        // This ensures proper initialization even after scene reload
+        _controller = GetComponent<CharacterController>();
+        _mainCamera = Camera.main;
+        _currentHp = maxHp;
+        _baseMoveSpeed = moveSpeed;
+
+        // Reset bonus stats to default
+        _moveSpeedBonus = 0f;
+        _regenPerSec = 0f;
+        _armor = 0f;
     }
 
     private void Start()
@@ -63,6 +67,19 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
 
     private void Update()
     {
+        // Don't process if game is not in Playing state (handles pause, restart, level-up)
+        if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
+        {
+            return;
+        }
+
+        // Safety check: if controller is null, don't process
+        if (_controller == null)
+        {
+            Debug.LogError("[PlayerController] _controller is null in Update!");
+            return;
+        }
+
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
         _moveInput = new Vector2(h, v);
@@ -129,6 +146,9 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
 
     private void CheckEnemyContact(ref float currentMoveSpeed)
     {
+        // Safety check: don't process if EnemyManager is null (during restart)
+        if (EnemyManager.Instance == null) return;
+
         System.Array.Clear(_hitBuffer, 0, _hitBuffer.Length);
         int numColliders = Physics.OverlapSphereNonAlloc(transform.position, hitRadius, _hitBuffer, enemyLayer);
 

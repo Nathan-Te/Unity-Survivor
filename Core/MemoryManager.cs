@@ -15,6 +15,13 @@ public class MemoryManager : Singleton<MemoryManager>
 
         if (Instance == this)
         {
+            // Ensure this GameObject is at root level for DontDestroyOnLoad
+            if (transform.parent != null)
+            {
+                Debug.LogWarning("[MemoryManager] MemoryManager must be on a root GameObject. Moving to root.");
+                transform.SetParent(null);
+            }
+
             DontDestroyOnLoad(gameObject);
 
             SceneManager.sceneLoaded += OnSceneLoaded;

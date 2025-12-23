@@ -50,7 +50,12 @@ public class VFXPool : Singleton<VFXPool>
     /// <summary>
     /// Spawns a VFX effect at the specified position with auto-cleanup after duration
     /// </summary>
-    public GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation, float duration = 2f)
+    /// <param name="prefab">VFX prefab to spawn</param>
+    /// <param name="position">World position</param>
+    /// <param name="rotation">World rotation</param>
+    /// <param name="duration">Lifetime in seconds before auto-cleanup</param>
+    /// <param name="scale">Uniform scale multiplier (default 1.0)</param>
+    public GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation, float duration = 2f, float scale = 1f)
     {
         if (prefab == null)
         {
@@ -68,11 +73,13 @@ public class VFXPool : Singleton<VFXPool>
             obj = _pools[key].Dequeue();
             obj.transform.position = position;
             obj.transform.rotation = rotation;
+            obj.transform.localScale = Vector3.one * scale;
             obj.SetActive(true);
         }
         else
         {
             obj = Instantiate(prefab, position, rotation, transform);
+            obj.transform.localScale = Vector3.one * scale;
         }
 
         // Reset particle systems if present

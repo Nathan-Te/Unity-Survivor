@@ -27,3 +27,7 @@ MonoBehaviour:
   attackCooldown: 2
   mass: 1
   pushPower: 1.5
+  deathVfxPrefab: {fileID: 1495923133820800511, guid: 26f08ddf09ad91a4995be17ae08f69f8, type: 3}
+  deathVfxDuration: 1.5
+  vfxScaleMultiplier: 0.2
+  vfxBaseScale: 0.5
