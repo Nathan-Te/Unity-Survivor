@@ -11,13 +11,17 @@ public abstract class ZonePOI : PointOfInterest
 
     [Header("Conditions")]
     [SerializeField] private bool chargeByTime = true; // Si true, charge quand le joueur est dedans
-    [SerializeField] private float chargeSpeed = 10f;  // Points par seconde
+    [SerializeField] private float baseChargeSpeed = 10f;  // Points par seconde (base value, will be scaled)
 
-    [SerializeField] private bool chargeByKills = false; // Si true, charge par ennemis tués
-    [SerializeField] private float chargePerKill = 20f;
+    [SerializeField] private bool chargeByKills = false; // Si true, charge par ennemis tues
+    [SerializeField] private float baseChargePerKill = 20f; // Charge per kill (base value, will be scaled)
 
     private float _currentCharge = 0f;
     private bool _playerInside = false;
+
+    // Cached scaled values (recalculated each frame based on game time)
+    private float _scaledChargeSpeed;
+    private float _scaledChargePerKill;
 
     private void Start()
     {
@@ -42,11 +46,29 @@ public abstract class ZonePOI : PointOfInterest
     {
         if (isCompleted) return;
 
+        // Update scaled values each frame based on current game time
+        UpdateScaledValues();
+
         CheckPlayerDistance();
 
         if (_playerInside && chargeByTime)
         {
-            AddCharge(chargeSpeed * Time.deltaTime);
+            AddCharge(_scaledChargeSpeed * Time.deltaTime);
+        }
+    }
+
+    private void UpdateScaledValues()
+    {
+        if (ZonePOIScalingManager.Instance != null)
+        {
+            _scaledChargeSpeed = ZonePOIScalingManager.Instance.GetScaledChargeSpeed(baseChargeSpeed);
+            _scaledChargePerKill = ZonePOIScalingManager.Instance.GetScaledChargePerKill(baseChargePerKill);
+        }
+        else
+        {
+            // Fallback to base values if manager doesn't exist
+            _scaledChargeSpeed = baseChargeSpeed;
+            _scaledChargePerKill = baseChargePerKill;
         }
     }
 
@@ -59,12 +81,12 @@ public abstract class ZonePOI : PointOfInterest
 
     private void OnEnemyDeath(Vector3 pos)
     {
-        if (isCompleted || !_playerInside) return; // Le joueur doit être dans la zone pour capter les âmes ?
+        if (isCompleted || !_playerInside) return; // Le joueur doit etre dans la zone pour capter les ames ?
 
-        // Vérifier si l'ennemi est mort DANS la zone
+        // Verifier si l'ennemi est mort DANS la zone
         if (Vector3.Distance(transform.position, pos) <= radius)
         {
-            AddCharge(chargePerKill);
+            AddCharge(_scaledChargePerKill);
         }
     }
 

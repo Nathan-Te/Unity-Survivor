@@ -138,6 +138,7 @@ public class GameStateManager : Singleton<GameStateManager>
         MapManager.ClearInstance();
         BossHealthBarUI.ClearInstance();
         EnemyScalingManager.ClearInstance();
+        ZonePOIScalingManager.ClearInstance();
         ArcadeScoreSystem.ClearInstance();
 
         // Note: GameStateController, GameStateManager, LevelManager, GameTimer, PlayerStats, and MemoryManager
