@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SurvivorGame.Localization;
 
 /// <summary>
 /// Handles the draft phase of level up - showing upgrade cards, rerolls, and ban mode.
@@ -90,9 +91,9 @@ public class LevelUpDraftController : MonoBehaviour
         instructionText.gameObject.SetActive(true);
 
         if (filter != RewardFilter.Any || minRarity > Rarity.Common)
-            instructionText.text = "RÉCOMPENSE SPÉCIALE !";
+            instructionText.text = SimpleLocalizationHelper.GetLevelUpSpecial();
         else
-            instructionText.text = "LEVEL UP ! Choisissez une récompense";
+            instructionText.text = SimpleLocalizationHelper.GetLevelUpTitle();
     }
 
     /// <summary>
@@ -110,12 +111,12 @@ public class LevelUpDraftController : MonoBehaviour
     private void UpdateDraftButtons()
     {
         if (rerollCostText)
-            rerollCostText.text = $"Reroll ({LevelManager.Instance.availableRerolls})";
+            rerollCostText.text = SimpleLocalizationHelper.FormatRerollCost(LevelManager.Instance.availableRerolls);
 
         rerollButton.interactable = LevelManager.Instance.availableRerolls > 0;
 
         if (banStockText)
-            banStockText.text = $"Ban ({LevelManager.Instance.availableBans})";
+            banStockText.text = SimpleLocalizationHelper.FormatBanStock(LevelManager.Instance.availableBans);
 
         banButton.interactable = LevelManager.Instance.availableBans > 0;
 
@@ -136,7 +137,7 @@ public class LevelUpDraftController : MonoBehaviour
         UpdateDraftButtons();
 
         instructionText.text = _isBanMode
-            ? "BANNISSEMENT : Cliquez sur une carte"
-            : "CHOISISSEZ UNE RÉCOMPENSE";
+            ? SimpleLocalizationHelper.GetBanTitle()
+            : SimpleLocalizationHelper.GetLevelUpChoose();
     }
 }

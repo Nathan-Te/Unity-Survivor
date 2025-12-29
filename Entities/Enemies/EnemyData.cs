@@ -1,4 +1,5 @@
 using UnityEngine;
+using SurvivorGame.Localization;
 
 public enum EnemyType { Melee, Ranged, Charger }
 
@@ -6,7 +7,8 @@ public enum EnemyType { Melee, Ranged, Charger }
 public class EnemyData : ScriptableObject
 {
     [Header("Identit�")]
-    public string enemyName = "Squelette";
+    [Tooltip("Localized name for this enemy. Create via Assets > Create > Localization > Localized String")]
+    public LocalizedString enemyName;
     public GameObject prefab;
     public EnemyType type = EnemyType.Melee;
 

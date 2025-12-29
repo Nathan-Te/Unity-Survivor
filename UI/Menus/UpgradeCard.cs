@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SurvivorGame.Localization;
 
 public class UpgradeCard : MonoBehaviour
 {
@@ -17,15 +18,37 @@ public class UpgradeCard : MonoBehaviour
         _data = data;
         _manager = manager;
 
-        string rarityName = data.Rarity.ToString();
+        string rarityName = SimpleLocalizationHelper.GetRarityName(data.Rarity);
         Color rarityColor = RarityUtils.GetColor(data.Rarity);
+        string runeType = SimpleLocalizationHelper.GetRuneTypeName(data.Type);
 
-        titleText.text = $"{data.Name} <size=70%>{rarityName}</size>";
+        // Title with rarity and type
+        titleText.text = $"{data.Name} <size=70%>{rarityName}</size>\n<size=60%><i>{runeType}</i></size>";
         titleText.color = rarityColor;
 
-        // C'est ici que �a change : On affiche la description manuelle de la RuneDefinition tir�e
-        descriptionText.text = data.Description;
-        // Plus besoin de GetLevelUpDescription() !
+        // Generate description based on upgrade type
+        if (data.Type == UpgradeType.StatBoost && data.TargetStat != null && data.UpgradeDefinition != null)
+        {
+            // Generate random localized description for stat upgrades
+            descriptionText.text = StatUpgradeDescriptionGenerator.GenerateRandomDescription(
+                data.TargetStat.targetStat,
+                data.UpgradeDefinition.Stats.StatValue
+            );
+        }
+        else if (data.UpgradeDefinition != null)
+        {
+            // Auto-generate description from stats for other rune types (using rich text for colors)
+            descriptionText.text = RuneDescriptionGenerator.GenerateRichDescription(data.UpgradeDefinition);
+        }
+        else if (!string.IsNullOrEmpty(data.Description))
+        {
+            // Fallback to manual description if no upgrade definition
+            descriptionText.text = data.Description;
+        }
+        else
+        {
+            descriptionText.text = "";
+        }
 
         if (data.Icon != null)
         {

@@ -12,24 +12,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 242c7af20748ae34c8b14fcc3e8d52fd, type: 3}
   m_Name: Homing
   m_EditorClassIdentifier: Assembly-CSharp::SpellModifier
-  runeName: Homing
+  runeName: {fileID: 11400000, guid: f1778c7f8e07a7b4d819bef56179a456, type: 2}
   icon: {fileID: 21300000, guid: 30dcbf9a3de9f9643829a9b167a9d513, type: 3}
   CommonUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
       FlatBurnDamage: 0
       FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0
   RareUpgrades: []
   EpicUpgrades: []
@@ -41,13 +45,17 @@ MonoBehaviour:
     SizeMult: 0
     SpeedMult: 0
     DurationMult: 0
+    FlatCooldown: 0
     FlatCount: 0
     FlatPierce: 0
     FlatSpread: 0
     FlatRange: 0
     FlatKnockback: 0
     FlatChainCount: 0
+    FlatMulticast: 0
     FlatBurnDamage: 0
     FlatBurnDuration: 0
+    FlatCritChance: 0
+    FlatCritDamage: 0
     StatValue: 0
   enableHoming: 1

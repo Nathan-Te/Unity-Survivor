@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
+using SurvivorGame.Localization;
 
 public enum RuneType { Form, Effect, Modifier }
 
 public abstract class RuneSO : ScriptableObject
 {
     [Header("Info")]
-    public string runeName;
+    [Tooltip("Localized name for this rune. Create via Assets > Create > Localization > Localized String")]
+    public LocalizedString runeName;
     public Sprite icon;
 
     public abstract RuneType Type { get; }
@@ -35,7 +37,7 @@ public abstract class RuneSO : ScriptableObject
         }
 
         // Fallback
-        return new RuneDefinition { Description = "Upgrade Vide", Stats = RuneStats.Zero };
+        return new RuneDefinition { Description = null, Stats = RuneStats.Zero };
     }
 
     /// <summary>

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SurvivorGame.Localization;
 
 /// <summary>
 /// Handles the inventory/targeting phase - selecting which spell slot to apply upgrade to.
@@ -83,7 +84,7 @@ public class LevelUpInventoryController : MonoBehaviour
             backButton.gameObject.SetActive(true);
 
         if (!instructionText.text.Contains("!"))
-            instructionText.text = $"Appliquer {_pendingUpgrade.Name} sur ?";
+            instructionText.text = SimpleLocalizationHelper.FormatApplyOn(_pendingUpgrade.Name);
 
         // Clear old slots
         foreach (Transform child in inventoryContainer)
@@ -205,7 +206,7 @@ public class LevelUpInventoryController : MonoBehaviour
             if (_pendingUpgrade.TargetModifier.requiredTag != SpellTag.None &&
                 !slot.formRune.AsForm.tags.HasFlag(_pendingUpgrade.TargetModifier.requiredTag))
             {
-                instructionText.text = "Incompatible avec cette forme !";
+                instructionText.text = SimpleLocalizationHelper.GetIncompatibleForm();
                 return;
             }
 
@@ -230,7 +231,7 @@ public class LevelUpInventoryController : MonoBehaviour
                 else
                 {
                     // There's a free slot but TryApplyModifierToSlot failed
-                    instructionText.text = "Erreur lors de l'ajout du modificateur";
+                    instructionText.text = SimpleLocalizationHelper.GetErrorAddModifier();
                     Debug.LogError($"TryApplyModifierToSlot failed but slot has free space. Slot modifiers: {slot.modifierRunes.Length}");
                 }
             }
@@ -243,7 +244,7 @@ public class LevelUpInventoryController : MonoBehaviour
         if (modifierReplacePanel)
             modifierReplacePanel.SetActive(true);
 
-        instructionText.text = "Remplacer quel Modificateur ?";
+        instructionText.text = SimpleLocalizationHelper.GetReplaceModifier();
 
         // Clear old buttons
         foreach (Transform child in replaceContainer)

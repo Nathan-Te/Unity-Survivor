@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Text;
+using SurvivorGame.Localization;
 
 /// <summary>
 /// Displays detailed information about a rune when hovering over it
@@ -83,7 +84,7 @@ public class RuneTooltip : MonoBehaviour
             int maxLevel = rune.Data.GetMaxLevel();
             if (maxLevel > 0)
             {
-                levelText.text = $"LvL {rune.Level}/{maxLevel}";
+                levelText.text = SimpleLocalizationHelper.FormatLevelWithMax(rune.Level, maxLevel);
 
                 // Color code if at max level
                 if (rune.Data.IsMaxLevel(rune.Level))
@@ -97,7 +98,7 @@ public class RuneTooltip : MonoBehaviour
             }
             else
             {
-                levelText.text = $"LvL {rune.Level}";
+                levelText.text = $"{SimpleLocalizationHelper.GetTooltipLevel()} {rune.Level}";
                 levelText.color = Color.white;
             }
 
@@ -136,7 +137,7 @@ public class RuneTooltip : MonoBehaviour
         int maxLevel = statSO.GetMaxLevel();
         if (maxLevel > 0)
         {
-            levelText.text = $"LvL {rune.Level}/{maxLevel}";
+            levelText.text = SimpleLocalizationHelper.FormatLevelWithMax(rune.Level, maxLevel);
 
             // Color code if at max level
             if (statSO.IsMaxLevel(rune.Level))
@@ -150,13 +151,13 @@ public class RuneTooltip : MonoBehaviour
         }
         else
         {
-            levelText.text = $"LvL {rune.Level}";
+            levelText.text = $"{SimpleLocalizationHelper.GetTooltipLevel()} {rune.Level}";
             levelText.color = Color.white;
         }
 
         _sb.Clear();
-        _sb.Append("<b>Type:</b> Player Stat Upgrade\n");
-        _sb.Append("<b>Target:</b> <color=yellow>").Append(statSO.targetStat.ToString()).Append("</color>\n\n");
+        _sb.Append("<b>").Append(SimpleLocalizationHelper.GetTooltipType()).Append("</b> ").Append(SimpleLocalizationHelper.GetStatUpgradeType()).Append("\n");
+        _sb.Append("<b>").Append(SimpleLocalizationHelper.GetTooltipTarget()).Append("</b> <color=yellow>").Append(SimpleLocalizationHelper.GetStatName(statSO.targetStat)).Append("</color>\n\n");
 
         // Display accumulated stat value
         if (rune.AccumulatedStats.StatValue != 0)
@@ -195,37 +196,29 @@ public class RuneTooltip : MonoBehaviour
             _sb.Append("<color=#");
             _sb.Append(ColorUtility.ToHtmlStringRGB(effect.tintColor));
             _sb.Append(">");
-            _sb.Append(effect.element);
+            _sb.Append(SimpleLocalizationHelper.GetElementName(effect.element));
             _sb.Append("</color>\n");
 
             if (effect.applyBurn)
             {
                 if (slot != null && slot.Definition != null)
                 {
-                    _sb.Append("• Burn: <color=yellow>");
-                    _sb.Append(slot.Definition.BurnDamagePerTick.ToString("F1"));
-                    _sb.Append(" dmg/tick</color> for <color=yellow>");
-                    _sb.Append(slot.Definition.BurnDuration.ToString("F1"));
-                    _sb.Append("s</color>\n");
+                    _sb.Append("• ").Append(SimpleLocalizationHelper.FormatBurn(slot.Definition.BurnDamagePerTick, slot.Definition.BurnDuration)).Append("\n");
                 }
                 else
                 {
-                    _sb.Append("• Burn: ");
-                    _sb.Append(effect.burnDamagePerTick.ToString("F1"));
-                    _sb.Append(" dmg/tick for ");
-                    _sb.Append(effect.burnDuration.ToString("F1"));
-                    _sb.Append("s\n");
+                    _sb.Append("• ").Append(SimpleLocalizationHelper.FormatBurn(effect.burnDamagePerTick, effect.burnDuration)).Append("\n");
                 }
             }
-            if (effect.applySlow) _sb.Append("• Slow\n");
-            if (effect.baseChainCount > 0) _sb.Append("• Chain x").Append(effect.baseChainCount).Append("\n");
-            if (effect.aoeRadius > 0) _sb.Append("• AoE ").Append(effect.aoeRadius).Append("m\n");
-            if (effect.minionSpawnChance > 0) _sb.Append("• Summon ").Append((effect.minionSpawnChance * 100).ToString("F0")).Append("%\n");
+            if (effect.applySlow) _sb.Append("• ").Append(SimpleLocalizationHelper.GetSlow()).Append("\n");
+            if (effect.baseChainCount > 0) _sb.Append("• ").Append(SimpleLocalizationHelper.FormatChain(effect.baseChainCount)).Append("\n");
+            if (effect.aoeRadius > 0) _sb.Append("• ").Append(SimpleLocalizationHelper.FormatAoE(effect.aoeRadius)).Append("\n");
+            if (effect.minionSpawnChance > 0) _sb.Append("• ").Append(SimpleLocalizationHelper.FormatSummon(effect.minionSpawnChance * 100)).Append("\n");
         }
         else if (rune.AsModifier != null)
         {
             SpellModifier modifier = rune.AsModifier;
-            if (modifier.enableHoming) _sb.Append("• Homing\n");
+            if (modifier.enableHoming) _sb.Append("• ").Append(SimpleLocalizationHelper.GetHoming()).Append("\n");
         }
 
         if (_sb.Length > 0) _sb.Append("\n");
@@ -242,30 +235,30 @@ public class RuneTooltip : MonoBehaviour
             if (slot != null && slot.Definition != null)
             {
                 SpellDefinition def = slot.Definition;
-                _sb.Append("<color=yellow>Total Damage: ").Append(def.Damage.ToString("F0")).Append("</color>\n");
-                _sb.Append("Cooldown: ").Append(def.Cooldown.ToString("F1")).Append("s\n");
+                _sb.Append("<color=yellow>").Append(SimpleLocalizationHelper.GetDamageLabel()).Append(": ").Append(def.Damage.ToString("F0")).Append("</color>\n");
+                _sb.Append(SimpleLocalizationHelper.GetCooldownLabel()).Append(": ").Append(def.Cooldown.ToString("F1")).Append("s\n");
 
-                if (def.Count > 1) _sb.Append("Count: ").Append(def.Count).Append("\n");
-                if (def.Pierce > 0) _sb.Append("Pierce: ").Append(def.Pierce).Append("\n");
-                if (def.Spread > 0) _sb.Append("Spread: ").Append(def.Spread.ToString("F0")).Append("°\n");
-                if (def.Range > 0) _sb.Append("Range: ").Append(def.Range.ToString("F0")).Append("m\n");
+                if (def.Count > 1) _sb.Append(SimpleLocalizationHelper.GetCountLabel()).Append(": ").Append(def.Count).Append("\n");
+                if (def.Pierce > 0) _sb.Append(SimpleLocalizationHelper.GetPierceLabel()).Append(": ").Append(def.Pierce).Append("\n");
+                if (def.Spread > 0) _sb.Append(SimpleLocalizationHelper.GetSpreadLabel()).Append(": ").Append(def.Spread.ToString("F0")).Append("°\n");
+                if (def.Range > 0) _sb.Append(SimpleLocalizationHelper.GetRangeLabel()).Append(": ").Append(def.Range.ToString("F0")).Append("m\n");
 
                 // Display crit stats if any
                 if (def.CritChance > 0)
                 {
-                    _sb.Append("<color=#FFD700>Crit Chance: ").Append((def.CritChance * 100f).ToString("F1")).Append("%</color>\n");
+                    _sb.Append("<color=#FFD700>").Append(SimpleLocalizationHelper.GetCritChanceLabel()).Append(": ").Append((def.CritChance * 100f).ToString("F1")).Append("%</color>\n");
                 }
                 if (def.CritDamageMultiplier > 1f)
                 {
-                    _sb.Append("<color=#FFD700>Crit Damage: ").Append((def.CritDamageMultiplier * 100f).ToString("F0")).Append("%</color>\n");
+                    _sb.Append("<color=#FFD700>").Append(SimpleLocalizationHelper.GetCritDamageLabel()).Append(": ").Append((def.CritDamageMultiplier * 100f).ToString("F0")).Append("%</color>\n");
                 }
             }
             else
             {
-                _sb.Append("Cooldown: ").Append(form.baseCooldown.ToString("F1")).Append("s\n");
-                if (form.baseCount > 1) _sb.Append("Count: ").Append(form.baseCount).Append("\n");
-                if (form.basePierce > 0) _sb.Append("Pierce: ").Append(form.basePierce).Append("\n");
-                if (form.baseSpread > 0) _sb.Append("Spread: ").Append(form.baseSpread.ToString("F0")).Append("°\n");
+                _sb.Append(SimpleLocalizationHelper.GetCooldownLabel()).Append(": ").Append(form.baseCooldown.ToString("F1")).Append("s\n");
+                if (form.baseCount > 1) _sb.Append(SimpleLocalizationHelper.GetCountLabel()).Append(": ").Append(form.baseCount).Append("\n");
+                if (form.basePierce > 0) _sb.Append(SimpleLocalizationHelper.GetPierceLabel()).Append(": ").Append(form.basePierce).Append("\n");
+                if (form.baseSpread > 0) _sb.Append(SimpleLocalizationHelper.GetSpreadLabel()).Append(": ").Append(form.baseSpread.ToString("F0")).Append("°\n");
             }
         }
         else if (rune.AsEffect != null)
@@ -275,27 +268,27 @@ public class RuneTooltip : MonoBehaviour
             if (slot != null && slot.Definition != null)
             {
                 SpellDefinition def = slot.Definition;
-                _sb.Append("<color=yellow>Total Damage: ").Append(def.Damage.ToString("F0")).Append("</color>\n");
+                _sb.Append("<color=yellow>").Append(SimpleLocalizationHelper.GetDamageLabel()).Append(": ").Append(def.Damage.ToString("F0")).Append("</color>\n");
 
                 // Display crit stats if any
                 if (def.CritChance > 0)
                 {
-                    _sb.Append("<color=#FFD700>Crit Chance: ").Append((def.CritChance * 100f).ToString("F1")).Append("%</color>\n");
+                    _sb.Append("<color=#FFD700>").Append(SimpleLocalizationHelper.GetCritChanceLabel()).Append(": ").Append((def.CritChance * 100f).ToString("F1")).Append("%</color>\n");
                 }
                 if (def.CritDamageMultiplier > 1f)
                 {
-                    _sb.Append("<color=#FFD700>Crit Damage: ").Append((def.CritDamageMultiplier * 100f).ToString("F0")).Append("%</color>\n");
+                    _sb.Append("<color=#FFD700>").Append(SimpleLocalizationHelper.GetCritDamageLabel()).Append(": ").Append((def.CritDamageMultiplier * 100f).ToString("F0")).Append("%</color>\n");
                 }
             }
             else
             {
-                _sb.Append("Damage: ").Append(effect.baseDamage.ToString("F0")).Append("\n");
+                _sb.Append(SimpleLocalizationHelper.GetDamageLabel()).Append(": ").Append(effect.baseDamage.ToString("F0")).Append("\n");
             }
 
             if (effect.baseDamageMultiplier != 1.0f)
-                _sb.Append("Damage Mult: ").Append((effect.baseDamageMultiplier * 100).ToString("F0")).Append("%\n");
+                _sb.Append(SimpleLocalizationHelper.GetDamageLabel()).Append(" Mult: ").Append((effect.baseDamageMultiplier * 100).ToString("F0")).Append("%\n");
             if (effect.baseKnockback > 0)
-                _sb.Append("Knockback: ").Append(effect.baseKnockback.ToString("F1")).Append("\n");
+                _sb.Append(SimpleLocalizationHelper.GetKnockbackLabel()).Append(": ").Append(effect.baseKnockback.ToString("F1")).Append("\n");
         }
         else if (rune.AsModifier != null)
         {
@@ -316,37 +309,37 @@ public class RuneTooltip : MonoBehaviour
 
     private void FormatRuneStats(RuneStats stats)
     {
-        if (stats.DamageMult != 0) { FormatMultiplier(stats.DamageMult); _sb.Append(" Damage\n"); }
-        if (stats.CooldownMult != 0) { FormatMultiplier(stats.CooldownMult); _sb.Append(" Cooldown\n"); }
-        if (stats.SizeMult != 0) { FormatMultiplier(stats.SizeMult); _sb.Append(" Size\n"); }
-        if (stats.SpeedMult != 0) { FormatMultiplier(stats.SpeedMult); _sb.Append(" Speed\n"); }
-        if (stats.DurationMult != 0) { FormatMultiplier(stats.DurationMult); _sb.Append(" Duration\n"); }
+        if (stats.DamageMult != 0) { FormatMultiplier(stats.DamageMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetDamageLabel()).Append("\n"); }
+        if (stats.CooldownMult != 0) { FormatMultiplier(stats.CooldownMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetCooldownLabel()).Append("\n"); }
+        if (stats.SizeMult != 0) { FormatMultiplier(stats.SizeMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetSizeLabel()).Append("\n"); }
+        if (stats.SpeedMult != 0) { FormatMultiplier(stats.SpeedMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetSpeedLabel()).Append("\n"); }
+        if (stats.DurationMult != 0) { FormatMultiplier(stats.DurationMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetDurationLabel()).Append("\n"); }
 
         if (stats.FlatCooldown != 0)
         {
             string color = stats.FlatCooldown < 0 ? "green" : "red";
-            _sb.Append("<color=").Append(color).Append(">").Append(stats.FlatCooldown > 0 ? "+" : "").Append(stats.FlatCooldown.ToString("F2")).Append("s</color> Cooldown\n");
+            _sb.Append("<color=").Append(color).Append(">").Append(stats.FlatCooldown > 0 ? "+" : "").Append(stats.FlatCooldown.ToString("F2")).Append("s</color> ").Append(SimpleLocalizationHelper.GetCooldownLabel()).Append("\n");
         }
-        if (stats.FlatCount != 0) _sb.Append("<color=green>+").Append(stats.FlatCount).Append("</color> Projectiles\n");
-        if (stats.FlatPierce != 0) _sb.Append("<color=green>+").Append(stats.FlatPierce).Append("</color> Pierce\n");
-        if (stats.FlatSpread != 0) _sb.Append("<color=green>+").Append(stats.FlatSpread.ToString("F0")).Append("°</color> Spread\n");
-        if (stats.FlatRange != 0) _sb.Append("<color=green>+").Append(stats.FlatRange.ToString("F0")).Append("m</color> Range\n");
-        if (stats.FlatKnockback != 0) _sb.Append("<color=green>+").Append(stats.FlatKnockback.ToString("F1")).Append("</color> Knockback\n");
+        if (stats.FlatCount != 0) _sb.Append("<color=green>+").Append(stats.FlatCount).Append("</color> ").Append(SimpleLocalizationHelper.GetCountLabel()).Append("\n");
+        if (stats.FlatPierce != 0) _sb.Append("<color=green>+").Append(stats.FlatPierce).Append("</color> ").Append(SimpleLocalizationHelper.GetPierceLabel()).Append("\n");
+        if (stats.FlatSpread != 0) _sb.Append("<color=green>+").Append(stats.FlatSpread.ToString("F0")).Append("°</color> ").Append(SimpleLocalizationHelper.GetSpreadLabel()).Append("\n");
+        if (stats.FlatRange != 0) _sb.Append("<color=green>+").Append(stats.FlatRange.ToString("F0")).Append("m</color> ").Append(SimpleLocalizationHelper.GetRangeLabel()).Append("\n");
+        if (stats.FlatKnockback != 0) _sb.Append("<color=green>+").Append(stats.FlatKnockback.ToString("F1")).Append("</color> ").Append(SimpleLocalizationHelper.GetKnockbackLabel()).Append("\n");
         if (stats.FlatChainCount != 0) _sb.Append("<color=green>+").Append(stats.FlatChainCount).Append("</color> Chain\n");
-        if (stats.FlatMulticast != 0) _sb.Append("<color=green>+").Append(stats.FlatMulticast).Append("</color> Multicast\n");
+        if (stats.FlatMulticast != 0) _sb.Append("<color=green>+").Append(stats.FlatMulticast).Append("</color> ").Append(SimpleLocalizationHelper.GetMulticastLabel()).Append("\n");
 
-        if (stats.FlatBurnDamage != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDamage.ToString("F1")).Append("</color> Burn Damage\n");
-        if (stats.FlatBurnDuration != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDuration.ToString("F1")).Append("s</color> Burn Duration\n");
+        if (stats.FlatBurnDamage != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDamage.ToString("F1")).Append("</color> Burn ").Append(SimpleLocalizationHelper.GetDamageLabel()).Append("\n");
+        if (stats.FlatBurnDuration != 0) _sb.Append("<color=orange>+").Append(stats.FlatBurnDuration.ToString("F1")).Append("s</color> Burn ").Append(SimpleLocalizationHelper.GetDurationLabel()).Append("\n");
 
         if (stats.FlatCritChance != 0)
         {
             float critPercent = stats.FlatCritChance * 100f;
-            _sb.Append("<color=#FFD700>+").Append(critPercent.ToString("F1")).Append("%</color> Crit Chance\n");
+            _sb.Append("<color=#FFD700>+").Append(critPercent.ToString("F1")).Append("%</color> ").Append(SimpleLocalizationHelper.GetCritChanceLabel()).Append("\n");
         }
         if (stats.FlatCritDamage != 0)
         {
             float critDmgPercent = stats.FlatCritDamage * 100f;
-            _sb.Append("<color=#FFD700>+").Append(critDmgPercent.ToString("F1")).Append("%</color> Crit Damage\n");
+            _sb.Append("<color=#FFD700>+").Append(critDmgPercent.ToString("F1")).Append("%</color> ").Append(SimpleLocalizationHelper.GetCritDamageLabel()).Append("\n");
         }
     }
 
@@ -438,11 +431,13 @@ public class RuneTooltip : MonoBehaviour
     {
         if (upgrades.Count == 1)
         {
-            _sb.Append(upgrades[0].Description);
+            string desc = upgrades[0].Description != null ? upgrades[0].Description.GetText() : "";
+            _sb.Append(desc);
         }
         else
         {
-            _sb.Append(upgrades[0].Description).Append(" (").Append(upgrades.Count).Append(" options)");
+            string desc = upgrades[0].Description != null ? upgrades[0].Description.GetText() : "";
+            _sb.Append(desc).Append(" (").Append(upgrades.Count).Append(" options)");
         }
     }
 }

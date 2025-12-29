@@ -1,4 +1,5 @@
 using UnityEngine;
+using SurvivorGame.Localization;
 
 // Conteneur de toutes les modifications possibles
 [System.Serializable]
@@ -69,6 +70,7 @@ public struct RuneStats
 [System.Serializable]
 public class RuneDefinition
 {
-    [TextArea] public string Description; // Ex: "+2 Projectiles"
+    [Tooltip("Localized description for this upgrade. Create via Assets > Create > Localization > Localized String")]
+    public LocalizedString Description; // Ex: "+2 Projectiles"
     public RuneStats Stats;
 }

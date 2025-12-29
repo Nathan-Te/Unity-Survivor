@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SurvivorGame.Localization;
 
 /// <summary>
 /// Main coordinator for the level-up system.
@@ -201,9 +202,9 @@ public class LevelUpUI : MonoBehaviour
             _inventoryController.ShowTargetingPhase(upgrade);
 
             if (hasDuplicate)
-                _inventoryController.UpdateInstructionText("DOUBLON : Améliorer ou Dupliquer ?");
+                _inventoryController.UpdateInstructionText(SimpleLocalizationHelper.GetDuplicateSpell());
             else
-                _inventoryController.UpdateInstructionText("INVENTAIRE PLEIN : Remplacer quel sort ?");
+                _inventoryController.UpdateInstructionText(SimpleLocalizationHelper.GetInventoryFull());
 
             return;
         }
@@ -213,9 +214,9 @@ public class LevelUpUI : MonoBehaviour
         _inventoryController.ShowTargetingPhase(upgrade);
 
         if (upgrade.Type == UpgradeType.Effect)
-            _inventoryController.UpdateInstructionText("Appliquer l'EFFET sur quel sort ?");
+            _inventoryController.UpdateInstructionText(SimpleLocalizationHelper.GetApplyEffect());
         else if (upgrade.Type == UpgradeType.Modifier)
-            _inventoryController.UpdateInstructionText("Appliquer le MODIFICATEUR sur quel sort ?");
+            _inventoryController.UpdateInstructionText(SimpleLocalizationHelper.GetApplyModifier());
     }
 
     /// <summary>

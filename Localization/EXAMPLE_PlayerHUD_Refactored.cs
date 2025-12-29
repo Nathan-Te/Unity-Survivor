@@ -1,10 +1,14 @@
-﻿using System.Collections.Generic;
+// EXAMPLE: Refactored PlayerHUD.cs with localization support
+// This is a reference implementation showing how to migrate PlayerHUD to use the localization system
+// Copy the relevant changes to your actual PlayerHUD.cs file
+
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using SurvivorGame.Localization;
+using SurvivorGame.Localization; // ADD THIS
 
-public class PlayerHUD : MonoBehaviour
+public class PlayerHUD_LocalizedExample : MonoBehaviour
 {
     [SerializeField] private Transform slotsContainer;
     [SerializeField] private GameObject slotUIPrefab;
@@ -39,6 +43,13 @@ public class PlayerHUD : MonoBehaviour
     private EnemyManager _enemyManager;
     private GameTimer _gameTimer;
     private ArcadeScoreSystem _scoreSystem;
+
+    // Cache current values to avoid redundant updates
+    private int _cachedEnemyCount = -1;
+    private int _cachedKillCount = -1;
+    private int _cachedScore = -1;
+    private int _cachedCombo = -1;
+    private int _cachedLevel = -1;
 
     private void Start()
     {
@@ -104,6 +115,32 @@ public class PlayerHUD : MonoBehaviour
             UpdateMultiplier(1f);
             UpdateComboTimer(0f, _scoreSystem.ComboTimerMax);
         }
+
+        // ADDED: Subscribe to language changes to update all text
+        LocalizationManager.OnLanguageChanged += RefreshAllText;
+    }
+
+    // ADDED: Refresh all localized text when language changes
+    private void RefreshAllText()
+    {
+        // Force refresh of all cached text
+        if (_enemyManager != null)
+            UpdateEnemyCount(_cachedEnemyCount);
+
+        if (_cachedKillCount >= 0)
+            UpdateKillCount(_cachedKillCount);
+
+        if (_cachedScore >= 0)
+            UpdateScore(_cachedScore);
+
+        if (_cachedCombo >= 0)
+            UpdateCombo(_cachedCombo);
+
+        if (_cachedLevel >= 0 && _levelManager != null)
+            UpdateLevelText();
+
+        if (_playerController != null)
+            UpdateHealth(_playerController.CurrentHp, _playerController.MaxHp);
     }
 
     private void RefreshSpellsUI()
@@ -172,11 +209,16 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
+    // REFACTORED: Use LocalizationHelper for enemy count
     private void UpdateEnemyCount(int count)
     {
+        _cachedEnemyCount = count; // Cache for language switching
+
         if (enemyCountText != null)
         {
-            enemyCountText.text = SimpleLocalizationHelper.FormatEnemyCount(count);
+            // OLD: enemyCountText.text = $"Ennemis : {count}";
+            // NEW:
+            enemyCountText.text = LocalizationHelper.FormatEnemyCount(count);
 
             // Optionnel : Changer la couleur si ça devient critique (+ de 300)
             if (count > 300) enemyCountText.color = Color.red;
@@ -184,14 +226,20 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
+    // REFACTORED: Use LocalizationHelper for kill count
     private void UpdateKillCount(int count)
     {
+        _cachedKillCount = count; // Cache for language switching
+
         if (killCountText != null)
         {
-            killCountText.text = SimpleLocalizationHelper.FormatKillCount(count);
+            // OLD: killCountText.text = $"Kills : {count}";
+            // NEW:
+            killCountText.text = LocalizationHelper.FormatKillCount(count);
         }
     }
 
+    // Timer doesn't need localization (it's just numbers and colons)
     private void UpdateTimer(float elapsedTime)
     {
         if (timerText != null)
@@ -202,21 +250,31 @@ public class PlayerHUD : MonoBehaviour
 
     // --- ARCADE SCORE SYSTEM ---
 
+    // REFACTORED: Use LocalizationHelper for score
     private void UpdateScore(int score)
     {
+        _cachedScore = score; // Cache for language switching
+
         if (scoreText != null)
         {
-            scoreText.text = SimpleLocalizationHelper.FormatScore(score);
+            // OLD: scoreText.text = $"Score : {score:N0}";
+            // NEW:
+            scoreText.text = LocalizationHelper.FormatScore(score);
         }
     }
 
+    // REFACTORED: Use LocalizationHelper for combo
     private void UpdateCombo(int combo)
     {
+        _cachedCombo = combo; // Cache for language switching
+
         if (comboText != null)
         {
             if (combo > 0)
             {
-                comboText.text = SimpleLocalizationHelper.FormatCombo(combo);
+                // OLD: comboText.text = $"Combo x{combo}";
+                // NEW:
+                comboText.text = LocalizationHelper.FormatCombo(combo);
                 comboText.gameObject.SetActive(true);
             }
             else
@@ -226,11 +284,14 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
+    // REFACTORED: Use LocalizationHelper for multiplier
     private void UpdateMultiplier(float multiplier)
     {
         if (multiplierText != null)
         {
-            multiplierText.text = SimpleLocalizationHelper.FormatMultiplier(multiplier);
+            // OLD: multiplierText.text = $"x{multiplier:F1}";
+            // NEW:
+            multiplierText.text = LocalizationHelper.FormatMultiplier(multiplier);
 
             // Changer la couleur selon le multiplicateur
             if (multiplier >= 5f)
@@ -273,14 +334,20 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
+    // REFACTORED: Use LocalizationHelper for level text
     private void UpdateLevelText()
     {
         if (levelText != null && _levelManager != null)
         {
-            levelText.text = SimpleLocalizationHelper.FormatLevel(_levelManager.currentLevel);
+            _cachedLevel = _levelManager.currentLevel; // Cache for language switching
+
+            // OLD: levelText.text = $"LVL {_levelManager.currentLevel}";
+            // NEW:
+            levelText.text = LocalizationHelper.FormatLevel(_levelManager.currentLevel);
         }
     }
 
+    // REFACTORED: Use LocalizationHelper for health display
     private void UpdateHealth(float current, float max)
     {
         if (healthSlider)
@@ -290,7 +357,12 @@ public class PlayerHUD : MonoBehaviour
         }
         if (healthText)
         {
-            healthText.text = SimpleLocalizationHelper.FormatHealth(Mathf.CeilToInt(current), Mathf.CeilToInt(max));
+            // OLD: healthText.text = $"{Mathf.CeilToInt(current)} / {Mathf.CeilToInt(max)}";
+            // NEW:
+            healthText.text = LocalizationHelper.FormatHealth(
+                Mathf.CeilToInt(current),
+                Mathf.CeilToInt(max)
+            );
         }
     }
 
@@ -330,5 +402,40 @@ public class PlayerHUD : MonoBehaviour
             _scoreSystem.OnMultiplierChanged -= UpdateMultiplier;
             _scoreSystem.OnComboTimerChanged -= UpdateComboTimer;
         }
+
+        // ADDED: Unsubscribe from language changes
+        LocalizationManager.OnLanguageChanged -= RefreshAllText;
     }
 }
+
+/*
+ * MIGRATION SUMMARY FOR PlayerHUD.cs:
+ *
+ * 1. Add using: using SurvivorGame.Localization;
+ *
+ * 2. Add caching fields for values that need to refresh on language change:
+ *    - private int _cachedEnemyCount = -1;
+ *    - private int _cachedKillCount = -1;
+ *    - private int _cachedScore = -1;
+ *    - private int _cachedCombo = -1;
+ *    - private int _cachedLevel = -1;
+ *
+ * 3. In Start(), subscribe to language changes:
+ *    LocalizationManager.OnLanguageChanged += RefreshAllText;
+ *
+ * 4. Add RefreshAllText() method to handle language switching
+ *
+ * 5. Replace all hardcoded strings with LocalizationHelper calls:
+ *    - "Ennemis : {count}" → LocalizationHelper.FormatEnemyCount(count)
+ *    - "Kills : {count}" → LocalizationHelper.FormatKillCount(count)
+ *    - "Score : {score:N0}" → LocalizationHelper.FormatScore(score)
+ *    - "Combo x{combo}" → LocalizationHelper.FormatCombo(combo)
+ *    - "x{multiplier:F1}" → LocalizationHelper.FormatMultiplier(multiplier)
+ *    - "LVL {level}" → LocalizationHelper.FormatLevel(level)
+ *    - "{current} / {max}" → LocalizationHelper.FormatHealth(current, max)
+ *
+ * 6. In OnDestroy(), unsubscribe:
+ *    LocalizationManager.OnLanguageChanged -= RefreshAllText;
+ *
+ * That's it! The UI will now automatically update when language changes.
+ */
