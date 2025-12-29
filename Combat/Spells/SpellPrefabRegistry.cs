@@ -117,4 +117,28 @@ public class SpellPrefabRegistry : MonoBehaviour
         Debug.LogWarning("[SpellPrefabRegistry] No prefab mapping configured! Cannot validate compatibility.");
         return false;
     }
+
+    /// <summary>
+    /// Gets the cast sound and volume for a (form, effect) combination.
+    /// Returns (AudioClip, volume) tuple.
+    /// </summary>
+    public (AudioClip clip, float volume) GetCastSound(SpellForm form, SpellEffect effect)
+    {
+        if (prefabMapping == null)
+            return (null, 1f);
+
+        return prefabMapping.GetCastSound(form, effect);
+    }
+
+    /// <summary>
+    /// Gets the impact sound and volume for a (form, effect) combination.
+    /// Returns (AudioClip, volume) tuple.
+    /// </summary>
+    public (AudioClip clip, float volume) GetImpactSound(SpellForm form, SpellEffect effect)
+    {
+        if (prefabMapping == null)
+            return (null, 1f);
+
+        return prefabMapping.GetImpactSound(form, effect);
+    }
 }

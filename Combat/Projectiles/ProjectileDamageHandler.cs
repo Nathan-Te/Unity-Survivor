@@ -28,6 +28,12 @@ public class ProjectileDamageHandler : MonoBehaviour
 
             // Spawn impact VFX at target position
             SpawnImpactVfx(target.transform.position, def);
+
+            // Play impact sound
+            if (AudioManager.Instance != null && def.Form != null && def.Effect != null)
+            {
+                AudioManager.Instance.PlaySpellImpactSound(def.Form, def.Effect, target.transform.position);
+            }
         }
     }
 
@@ -60,6 +66,12 @@ public class ProjectileDamageHandler : MonoBehaviour
         if (spawnVfx)
         {
             SpawnImpactVfx(center, def);
+
+            // Play area explosion sound
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayAreaExplosionSound(center);
+            }
         }
     }
 
@@ -98,6 +110,12 @@ public class ProjectileDamageHandler : MonoBehaviour
         // Apply damage with appropriate damage type
         DamageType damageType = isCritical ? DamageType.Critical : DamageType.Normal;
         enemy.TakeDamage(finalDamage, damageType);
+
+        // Play hit sound (enemy damage sound is handled by EnemyController)
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayEnemyHitSound(enemy.transform.position, isCritical);
+        }
 
         // Apply status effects
         if (def.Effect != null)

@@ -24,6 +24,17 @@ public class FormEffectPrefabMapping : ScriptableObject
         public float vfxSpawnDelay = 0f;
         [Tooltip("How long the smite prefab remains visible after explosion")]
         public float smiteLifetime = 2f;
+
+        [Header("Audio Settings")]
+        [Tooltip("Sound played when casting this spell")]
+        public AudioClip castSound;
+        [Tooltip("Volume for cast sound (0-1)")]
+        [Range(0f, 1f)] public float castVolume = 1f;
+
+        [Tooltip("Sound played on impact/hit")]
+        public AudioClip impactSound;
+        [Tooltip("Volume for impact sound (0-1)")]
+        [Range(0f, 1f)] public float impactVolume = 1f;
     }
 
     [Header("Mappings")]
@@ -158,5 +169,43 @@ public class FormEffectPrefabMapping : ScriptableObject
 
         // Return defaults if not found
         return (0f, 0f, 2f);
+    }
+
+    /// <summary>
+    /// Returns cast sound and volume for a (form, effect) combination
+    /// </summary>
+    public (AudioClip clip, float volume) GetCastSound(SpellForm form, SpellEffect effect)
+    {
+        if (form == null || effect == null)
+            return (null, 1f);
+
+        foreach (var entry in mappings)
+        {
+            if (entry.form == form && entry.effect == effect)
+            {
+                return (entry.castSound, entry.castVolume);
+            }
+        }
+
+        return (null, 1f);
+    }
+
+    /// <summary>
+    /// Returns impact sound and volume for a (form, effect) combination
+    /// </summary>
+    public (AudioClip clip, float volume) GetImpactSound(SpellForm form, SpellEffect effect)
+    {
+        if (form == null || effect == null)
+            return (null, 1f);
+
+        foreach (var entry in mappings)
+        {
+            if (entry.form == form && entry.effect == effect)
+            {
+                return (entry.impactSound, entry.impactVolume);
+            }
+        }
+
+        return (null, 1f);
     }
 }

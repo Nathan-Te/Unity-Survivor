@@ -71,6 +71,12 @@ public class LevelManager : Singleton<LevelManager>
         {
             _pendingLevelUps--;
             OnLevelUp?.Invoke();
+
+            // Play level up sound
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayLevelUpSound();
+            }
         }
     }
 

@@ -37,6 +37,12 @@ public class EnemyEventBroadcaster : MonoBehaviour
         // Broadcast death events
         OnEnemyDeathPosition?.Invoke(position);
         OnEnemyKilledWithScore?.Invoke(scoreValue, position);
+
+        // Play enemy death sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayEnemyDeathSound(position);
+        }
     }
 
     /// <summary>

@@ -251,6 +251,12 @@ public class SpellCaster : MonoBehaviour
 
     private void Fire(Vector3 targetPos, SpellDefinition def)
     {
+        // Play spell cast sound
+        if (AudioManager.Instance != null && def.Form != null && def.Effect != null)
+        {
+            AudioManager.Instance.PlaySpellCastSound(def.Form, def.Effect, _playerTransform.position);
+        }
+
         Vector3 dirToTarget = (targetPos - _playerTransform.position).normalized;
         dirToTarget.y = 0;
 

@@ -187,9 +187,22 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
 
         OnHealthChanged?.Invoke(_currentHp, maxHp);
 
+        // Play player hit sound (throttled in AudioManager)
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPlayerHitSound();
+        }
+
         if (_currentHp <= 0)
         {
             Debug.Log("GAME OVER");
+
+            // Play game over sound
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayGameOverSound();
+            }
+
             Time.timeScale = 0;
         }
     }
