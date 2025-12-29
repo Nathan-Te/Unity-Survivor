@@ -4,7 +4,7 @@ public class PlayerCollector : MonoBehaviour
 {
     [Header("Settings")]
     public float magnetRadius = 3f;
-    public LayerMask lootLayer; // Crée un Layer "Loot" !
+    public LayerMask lootLayer; // Crï¿½e un Layer "Loot" !
 
     private Collider[] _hitBuffer = new Collider[20];
     private float _timer;
@@ -26,10 +26,15 @@ public class PlayerCollector : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
+            // Check for Experience Gems
             if (_hitBuffer[i].TryGetComponent<ExperienceGem>(out var gem))
             {
-                // On dit à la gemme : "Viens à moi !"
                 gem.AttractTo(transform);
+            }
+            // Check for Gold Coins
+            else if (_hitBuffer[i].TryGetComponent<GoldCoin>(out var coin))
+            {
+                coin.AttractTo(transform);
             }
         }
     }

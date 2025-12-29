@@ -26,6 +26,9 @@ public class PlayerHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI killCountText;
     [SerializeField] private TextMeshProUGUI timerText;
 
+    [Header("Gold")]
+    [SerializeField] private TextMeshProUGUI goldText;
+
     [Header("Arcade Score System")]
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI comboText;
@@ -39,6 +42,7 @@ public class PlayerHUD : MonoBehaviour
     private EnemyManager _enemyManager;
     private GameTimer _gameTimer;
     private ArcadeScoreSystem _scoreSystem;
+    private GoldManager _goldManager;
 
     private void Start()
     {
@@ -103,6 +107,13 @@ public class PlayerHUD : MonoBehaviour
             UpdateCombo(0);
             UpdateMultiplier(1f);
             UpdateComboTimer(0f, _scoreSystem.ComboTimerMax);
+        }
+
+        _goldManager = GoldManager.Instance;
+        if (_goldManager != null)
+        {
+            _goldManager.OnSessionGoldChanged.AddListener(UpdateGold);
+            UpdateGold(_goldManager.CurrentSessionGold);
         }
     }
 
@@ -197,6 +208,14 @@ public class PlayerHUD : MonoBehaviour
         if (timerText != null)
         {
             timerText.text = GameTimer.FormatTime(elapsedTime, hideHoursIfZero: true);
+        }
+    }
+
+    private void UpdateGold(int gold)
+    {
+        if (goldText != null)
+        {
+            goldText.text = SimpleLocalizationHelper.FormatGold(gold);
         }
     }
 
@@ -329,6 +348,11 @@ public class PlayerHUD : MonoBehaviour
             _scoreSystem.OnComboChanged -= UpdateCombo;
             _scoreSystem.OnMultiplierChanged -= UpdateMultiplier;
             _scoreSystem.OnComboTimerChanged -= UpdateComboTimer;
+        }
+
+        if (_goldManager != null)
+        {
+            _goldManager.OnSessionGoldChanged.RemoveListener(UpdateGold);
         }
     }
 }

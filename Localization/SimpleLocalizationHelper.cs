@@ -56,6 +56,11 @@ namespace SurvivorGame.Localization
             return GetFormatted("HUD_HEALTH", current, max);
         }
 
+        public static string FormatGold(int gold)
+        {
+            return GetFormatted("HUD_GOLD", gold);
+        }
+
         // ===== Level Up UI =====
 
         public static string GetLevelUpTitle()
