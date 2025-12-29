@@ -12,66 +12,91 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 851bd7481ca7e1a4c903b221c2bd3e30, type: 3}
   m_Name: MagnetArea
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgradeSO
-  runeName: Magnet Area
+  runeNameKey: RUNE_MAGNET_AREA
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: a2cb02eea43221b49b0448ab68e95f34, type: 3}
   CommonUpgrades:
-  - Description: +0.25 magnet area
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0.25
   RareUpgrades:
-  - Description: +0.5 magnet area
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0.5
   EpicUpgrades:
-  - Description: +0.75 magnet area
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0.75
   LegendaryUpgrades:
-  - Description: +1 magnet area
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 1
   targetStat: 4

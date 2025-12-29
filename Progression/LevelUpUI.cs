@@ -168,7 +168,7 @@ public class LevelUpUI : MonoBehaviour
         // Handle ban mode
         if (_draftController.IsBanMode)
         {
-            LevelManager.Instance.BanRune(upgrade.TargetRuneSO.runeName);
+            LevelManager.Instance.BanRune(upgrade.TargetRuneSO.GetLocalizedName());
             EndLevelUp();
             return;
         }

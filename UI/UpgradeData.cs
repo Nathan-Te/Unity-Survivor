@@ -11,10 +11,10 @@ public class UpgradeData
     public UpgradeType Type;
     public Rarity Rarity;
 
-    // La définition précise (Stats) choisie pour cette carte
+    // La dï¿½finition prï¿½cise (Stats) choisie pour cette carte
     public RuneDefinition UpgradeDefinition;
 
-    public RuneSO TargetRuneSO; // Référence générique
+    public RuneSO TargetRuneSO; // Rï¿½fï¿½rence gï¿½nï¿½rique
 
     // Casting Helpers
     public SpellForm TargetForm => TargetRuneSO as SpellForm;
@@ -22,21 +22,21 @@ public class UpgradeData
     public SpellEffect TargetEffect => TargetRuneSO as SpellEffect;
     public StatUpgradeSO TargetStat => TargetRuneSO as StatUpgradeSO;
 
-    // Constructeur Générique (Fonctionne pour tout type de RuneSO)
+    // Constructeur Gï¿½nï¿½rique (Fonctionne pour tout type de RuneSO)
     public UpgradeData(RuneSO so, Rarity rarity)
     {
         TargetRuneSO = so;
         Rarity = rarity;
 
-        // On pioche l'upgrade aléatoire dans les listes manuelles du SO
+        // On pioche l'upgrade alï¿½atoire dans les listes manuelles du SO
         UpgradeDefinition = so.GetRandomUpgrade(rarity);
 
         // Setup UI
-        Name = so.runeName;
+        Name = so.GetLocalizedName();
         Icon = so.icon;
         Description = UpgradeDefinition.Description;
 
-        // Déduction du type
+        // Dï¿½duction du type
         if (so is SpellForm) Type = UpgradeType.NewSpell;
         else if (so is SpellEffect) Type = UpgradeType.Effect;
         else if (so is SpellModifier) Type = UpgradeType.Modifier;

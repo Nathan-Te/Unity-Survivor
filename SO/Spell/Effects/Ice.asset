@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65aed9e5b07d6ba42ae2f25ce3e47dea, type: 3}
   m_Name: Ice
   m_EditorClassIdentifier: Assembly-CSharp::SpellEffect
-  runeName: Ice
+  runeNameKey: RUNE_ICE
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: 66384eb6c28059443acec8ed9df8d2c3, type: 3}
   CommonUpgrades: []
   RareUpgrades: []
@@ -24,6 +25,8 @@ MonoBehaviour:
   baseKnockback: 0
   baseDamageMultiplier: 1
   applyBurn: 0
+  burnDamagePerTick: 2
+  burnDuration: 3
   applySlow: 1
   baseChainCount: 0
   chainRange: 8

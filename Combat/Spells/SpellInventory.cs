@@ -191,7 +191,7 @@ public class SpellInventory : MonoBehaviour
         SpellEffect effectToUse = GetCompatibleEffect(form);
         if (effectToUse == null)
         {
-            OnIncompatibilityWarning?.Invoke($"Impossible d'ajouter '{form.runeName}' : aucun effet compatible trouvé !");
+            OnIncompatibilityWarning?.Invoke($"Impossible d'ajouter '{form.GetLocalizedName()}' : aucun effet compatible trouvé !");
             return;
         }
 
@@ -241,7 +241,7 @@ public class SpellInventory : MonoBehaviour
         SpellEffect effectToUse = GetCompatibleEffect(newForm);
         if (effectToUse == null)
         {
-            OnIncompatibilityWarning?.Invoke($"Impossible de remplacer par '{newForm.runeName}' : aucun effet compatible trouvé !");
+            OnIncompatibilityWarning?.Invoke($"Impossible de remplacer par '{newForm.GetLocalizedName()}' : aucun effet compatible trouvé !");
             return;
         }
 
@@ -270,7 +270,7 @@ public class SpellInventory : MonoBehaviour
             if (!CompatibilityValidator.IsCompatible(slot.formRune.AsForm, effectSO))
             {
                 // Notify the UI to display a warning to the player
-                OnIncompatibilityWarning?.Invoke($"L'effet '{effectSO.runeName}' n'est pas compatible avec '{slot.formRune.AsForm.runeName}' !");
+                OnIncompatibilityWarning?.Invoke($"L'effet '{effectSO.GetLocalizedName()}' n'est pas compatible avec '{slot.formRune.AsForm.GetLocalizedName()}' !");
                 return false;
             }
         }
@@ -394,7 +394,7 @@ public class SpellInventory : MonoBehaviour
             return compatibleEffects[0];
         }
 
-        Debug.LogError($"[SpellInventory] No compatible effect found for form {form.runeName} in mapping!");
+        Debug.LogError($"[SpellInventory] No compatible effect found for form {form.GetLocalizedName()} in mapping!");
         return null;
     }
 }

@@ -52,7 +52,7 @@ public static class SpellBuilder
         // CRITICAL: Ensure we always have a valid prefab
         if (def.Prefab == null)
         {
-            Debug.LogError($"[SpellBuilder] No prefab found for {form.runeName} + {effect.runeName}. Registry: {(SpellPrefabRegistry.Instance != null ? "EXISTS" : "NULL")}, form.prefab: {(form.prefab != null ? form.prefab.name : "NULL")}");
+            Debug.LogError($"[SpellBuilder] No prefab found for {form.GetLocalizedName()} + {effect.GetLocalizedName()}. Registry: {(SpellPrefabRegistry.Instance != null ? "EXISTS" : "NULL")}, form.prefab: {(form.prefab != null ? form.prefab.name : "NULL")}");
         }
 
         // 2. Calcul Stats Forme (Base SO + Bonus Forme)

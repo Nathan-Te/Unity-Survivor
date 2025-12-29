@@ -189,8 +189,8 @@ namespace SurvivorGame.Localization
             float percent = mult * 100f;
             string sign = mult > 0 ? "+" : "";
             _sb.Append("<color=").Append(color).Append(">")
-              .Append(sign).Append(percent.ToString("F0")).Append("%</color> ")
-              .Append(label).Append("\n");
+              .Append(sign).Append(percent.ToString("F0")).Append("% ")
+              .Append(label).Append("</color>\n");
             return true;
         }
 
@@ -199,8 +199,8 @@ namespace SurvivorGame.Localization
             if (value <= 0)
                 return false;
 
-            _sb.Append("<color=green>+").Append(value.ToString("F0")).Append("</color> ")
-              .Append(label).Append("\n");
+            _sb.Append("<color=green>+").Append(value.ToString("F0")).Append(" ")
+              .Append(label).Append("</color>\n");
             return true;
         }
 
@@ -210,8 +210,8 @@ namespace SurvivorGame.Localization
                 return false;
 
             float percent = value * 100f;
-            _sb.Append("<color=#FFD700>+").Append(percent.ToString("F1")).Append("%</color> ")
-              .Append(label).Append("\n");
+            _sb.Append("<color=#FFD700>+").Append(percent.ToString("F1")).Append("% ")
+              .Append(label).Append("</color>\n");
             return true;
         }
     }

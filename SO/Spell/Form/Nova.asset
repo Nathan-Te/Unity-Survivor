@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f44c9cc5942d37148bcb620e8c4be2bf, type: 3}
   m_Name: Nova
   m_EditorClassIdentifier: Assembly-CSharp::SpellForm
-  runeName: Nova
+  runeNameKey: RUNE_NOVA
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: 1b2ce18204f7f8e4da91e96749174156, type: 3}
   CommonUpgrades: []
   RareUpgrades: []

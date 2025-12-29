@@ -12,67 +12,92 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 242c7af20748ae34c8b14fcc3e8d52fd, type: 3}
   m_Name: Multishot
   m_EditorClassIdentifier: Assembly-CSharp::SpellModifier
-  runeName: Multishot
+  runeNameKey: RUNE_MULTISHOT
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: a078e44c4645d0b4caf7be05afc6c06e, type: 3}
   CommonUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 1
       FlatPierce: 0
       FlatSpread: 10
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0
   RareUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 1
       FlatPierce: 0
       FlatSpread: 10
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0
   EpicUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 2
       FlatPierce: 0
       FlatSpread: 20
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0
   LegendaryUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 2
       FlatPierce: 0
       FlatSpread: 20
       FlatRange: 0
       FlatKnockback: 0
       FlatChainCount: 0
+      FlatMulticast: 0
+      FlatBurnDamage: 0
+      FlatBurnDuration: 0
+      FlatCritChance: 0
+      FlatCritDamage: 0
       StatValue: 0
   requiredTag: 64
   baseStats:
@@ -81,11 +106,17 @@ MonoBehaviour:
     SizeMult: 0
     SpeedMult: 0
     DurationMult: 0
+    FlatCooldown: 0
     FlatCount: 0
     FlatPierce: 0
     FlatSpread: 0
     FlatRange: 0
     FlatKnockback: 0
     FlatChainCount: 0
+    FlatMulticast: 0
+    FlatBurnDamage: 0
+    FlatBurnDuration: 0
+    FlatCritChance: 0
+    FlatCritDamage: 0
     StatValue: 0
   enableHoming: 0

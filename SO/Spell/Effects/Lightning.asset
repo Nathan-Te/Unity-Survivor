@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65aed9e5b07d6ba42ae2f25ce3e47dea, type: 3}
   m_Name: Lightning
   m_EditorClassIdentifier: Assembly-CSharp::SpellEffect
-  runeName: Lightning
+  runeNameKey: RUNE_LIGHTNING
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: 35248eba49097cd4ca3602b0a789d6d6, type: 3}
   CommonUpgrades: []
   RareUpgrades: []
@@ -24,6 +25,8 @@ MonoBehaviour:
   baseKnockback: 0
   baseDamageMultiplier: 1
   applyBurn: 0
+  burnDamagePerTick: 2
+  burnDuration: 3
   applySlow: 0
   baseChainCount: 3
   chainRange: 8

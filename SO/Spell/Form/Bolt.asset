@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f44c9cc5942d37148bcb620e8c4be2bf, type: 3}
   m_Name: Bolt
   m_EditorClassIdentifier: Assembly-CSharp::SpellForm
-  runeName: Bolt
+  runeNameKey: RUNE_BOLT
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: 6920950608c19ca4386243bc1566889a, type: 3}
   CommonUpgrades: []
   RareUpgrades: []

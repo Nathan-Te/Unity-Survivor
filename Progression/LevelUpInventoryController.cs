@@ -283,7 +283,7 @@ public class LevelUpInventoryController : MonoBehaviour
                 var txt = btnObj.GetComponentInChildren<TextMeshProUGUI>();
                 var btn = btnObj.GetComponent<Button>();
 
-                if (txt != null) txt.text = slot.modifierRunes[i].Data.runeName;
+                if (txt != null) txt.text = slot.modifierRunes[i].Data.GetLocalizedName();
 
                 int indexToReplace = i;
                 if (btn != null)

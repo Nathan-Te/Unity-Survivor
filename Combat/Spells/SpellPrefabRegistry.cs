@@ -68,7 +68,7 @@ public class SpellPrefabRegistry : MonoBehaviour
             result = defaultFallbackPrefab;
             if (result == null)
             {
-                Debug.LogError($"[SpellPrefabRegistry] No prefab found for ({form?.runeName}, {effect?.runeName}) and no fallback configured!");
+                Debug.LogError($"[SpellPrefabRegistry] No prefab found for ({form?.GetLocalizedName()}, {effect?.GetLocalizedName()}) and no fallback configured!");
             }
         }
 

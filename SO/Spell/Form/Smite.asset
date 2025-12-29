@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f44c9cc5942d37148bcb620e8c4be2bf, type: 3}
   m_Name: Smite
   m_EditorClassIdentifier: Assembly-CSharp::SpellForm
-  runeName: Smite
+  runeNameKey: RUNE_SMITE
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: dfb09ab23e872584983101610e7cd41b, type: 3}
   CommonUpgrades: []
   RareUpgrades: []

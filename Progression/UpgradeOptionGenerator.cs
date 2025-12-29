@@ -45,7 +45,7 @@ public class UpgradeOptionGenerator : MonoBehaviour
             if (selectedSO != null)
             {
                 // Check if rune is banned
-                if (LevelManager.Instance.IsRuneBanned(selectedSO.runeName))
+                if (LevelManager.Instance.IsRuneBanned(selectedSO.GetLocalizedName()))
                     continue;
 
                 // Check for duplicates in current picks

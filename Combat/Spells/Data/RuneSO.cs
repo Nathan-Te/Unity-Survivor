@@ -7,11 +7,35 @@ public enum RuneType { Form, Effect, Modifier }
 public abstract class RuneSO : ScriptableObject
 {
     [Header("Info")]
-    [Tooltip("Localized name for this rune. Create via Assets > Create > Localization > Localized String")]
+    [Tooltip("JSON key for this rune's localized name (e.g., 'RUNE_BOLT', 'RUNE_FIRE'). Names are defined in en.json/fr.json")]
+    public string runeNameKey;
+
+    [Tooltip("DEPRECATED: Use runeNameKey instead. Kept for backwards compatibility.")]
     public LocalizedString runeName;
+
     public Sprite icon;
 
     public abstract RuneType Type { get; }
+
+    /// <summary>
+    /// Gets the localized name of this rune from JSON using runeNameKey.
+    /// Falls back to runeName LocalizedString if runeNameKey is not set (backwards compatibility).
+    /// </summary>
+    public string GetLocalizedName()
+    {
+        if (!string.IsNullOrEmpty(runeNameKey))
+        {
+            return SimpleLocalizationHelper.Get(runeNameKey, name);
+        }
+
+        // Fallback to old LocalizedString system
+        if (runeName != null)
+        {
+            return runeName.GetText();
+        }
+
+        return name; // Last resort: use asset name
+    }
 
     // Listes manuelles : Tu remplis �a dans l'�diteur
     [Header("Upgrades par Raret�")]

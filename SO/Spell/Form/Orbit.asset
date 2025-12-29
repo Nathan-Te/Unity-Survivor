@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f44c9cc5942d37148bcb620e8c4be2bf, type: 3}
   m_Name: Orbit
   m_EditorClassIdentifier: Assembly-CSharp::SpellForm
-  runeName: Orbit
+  runeNameKey: RUNE_ORBIT
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: 8b8979846111ee644b1aed2f7a729d35, type: 3}
   CommonUpgrades: []
   RareUpgrades: []
@@ -30,4 +31,3 @@ MonoBehaviour:
   baseDuration: 5
   baseRange: 20
   procCoefficient: 1
-  impactDelay: 1

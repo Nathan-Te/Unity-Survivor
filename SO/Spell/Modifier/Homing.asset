@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 242c7af20748ae34c8b14fcc3e8d52fd, type: 3}
   m_Name: Homing
   m_EditorClassIdentifier: Assembly-CSharp::SpellModifier
+  runeNameKey: RUNE_HOMING
   runeName: {fileID: 11400000, guid: f1778c7f8e07a7b4d819bef56179a456, type: 2}
   icon: {fileID: 21300000, guid: 30dcbf9a3de9f9643829a9b167a9d513, type: 3}
   CommonUpgrades:

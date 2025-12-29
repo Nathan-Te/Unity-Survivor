@@ -12,19 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65aed9e5b07d6ba42ae2f25ce3e47dea, type: 3}
   m_Name: Necrotic
   m_EditorClassIdentifier: Assembly-CSharp::SpellEffect
-  runeName: Necrotic
+  runeNameKey: RUNE_NECROTIC
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: ffa5082240fe5db4fab6a8ddc2b04665, type: 3}
   CommonUpgrades: []
   RareUpgrades: []
   EpicUpgrades: []
   LegendaryUpgrades: []
-  compatibleTags: 11
   element: 4
   tintColor: {r: 0.6854019, g: 0, b: 1, a: 1}
   baseDamage: 10
   baseKnockback: 0
   baseDamageMultiplier: 1
   applyBurn: 0
+  burnDamagePerTick: 2
+  burnDuration: 3
   applySlow: 0
   baseChainCount: 0
   chainRange: 0

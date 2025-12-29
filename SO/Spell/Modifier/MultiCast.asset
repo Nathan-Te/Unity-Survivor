@@ -12,16 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 242c7af20748ae34c8b14fcc3e8d52fd, type: 3}
   m_Name: MultiCast
   m_EditorClassIdentifier: Assembly-CSharp::SpellModifier
-  runeName: Multicast
+  runeNameKey: RUNE_MULTICAST
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: cea6bd83013eb9e4980df3b2e1ac9f8e, type: 3}
   CommonUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
@@ -35,13 +37,14 @@ MonoBehaviour:
       FlatCritDamage: 0
       StatValue: 0
   RareUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
@@ -55,13 +58,14 @@ MonoBehaviour:
       FlatCritDamage: 0
       StatValue: 0
   EpicUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
@@ -75,13 +79,14 @@ MonoBehaviour:
       FlatCritDamage: 0
       StatValue: 0
   LegendaryUpgrades:
-  - Description: 
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0
       SizeMult: 0
       SpeedMult: 0
       DurationMult: 0
+      FlatCooldown: 0
       FlatCount: 0
       FlatPierce: 0
       FlatSpread: 0
@@ -101,6 +106,7 @@ MonoBehaviour:
     SizeMult: 0
     SpeedMult: 0
     DurationMult: 0
+    FlatCooldown: 0
     FlatCount: 0
     FlatPierce: 0
     FlatSpread: 0

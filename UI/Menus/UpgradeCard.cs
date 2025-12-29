@@ -8,6 +8,7 @@ public class UpgradeCard : MonoBehaviour
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private Image iconImage;
+    [SerializeField] private Image borderImage;
     [SerializeField] private Button selectButton;
 
     private UpgradeData _data;
@@ -25,6 +26,12 @@ public class UpgradeCard : MonoBehaviour
         // Title with rarity and type
         titleText.text = $"{data.Name} <size=70%>{rarityName}</size>\n<size=60%><i>{runeType}</i></size>";
         titleText.color = rarityColor;
+
+        // Apply rarity color to border
+        if (borderImage != null)
+        {
+            borderImage.color = rarityColor;
+        }
 
         // Generate description based on upgrade type
         if (data.Type == UpgradeType.StatBoost && data.TargetStat != null && data.UpgradeDefinition != null)
@@ -59,37 +66,6 @@ public class UpgradeCard : MonoBehaviour
 
         selectButton.onClick.RemoveAllListeners();
         selectButton.onClick.AddListener(OnSelect);
-
-        // Add tooltip for StatUpgradeSO
-        if (data.Type == UpgradeType.StatBoost && data.TargetStat != null)
-        {
-            // Remove any existing tooltip triggers to avoid duplicates
-            var existingTrigger = iconImage.GetComponent<StatUpgradeTooltipTrigger>();
-            if (existingTrigger == null)
-            {
-                existingTrigger = iconImage.gameObject.AddComponent<StatUpgradeTooltipTrigger>();
-            }
-
-            // Create a preview rune for the tooltip
-            // Check if player already has this stat rune
-            Rune previewRune = null;
-            if (PlayerStats.Instance != null)
-            {
-                previewRune = PlayerStats.Instance.GetStatRune(data.TargetStat.targetStat);
-            }
-
-            // If no existing rune, create a temporary one for preview
-            if (previewRune == null)
-            {
-                previewRune = new Rune(data.TargetStat);
-                if (data.UpgradeDefinition != null)
-                {
-                    previewRune.InitializeWithStats(data.UpgradeDefinition);
-                }
-            }
-
-            existingTrigger.SetStatRune(previewRune);
-        }
     }
 
     private void OnSelect() => _manager.SelectUpgrade(_data);

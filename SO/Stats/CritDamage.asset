@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 851bd7481ca7e1a4c903b221c2bd3e30, type: 3}
   m_Name: CritDamage
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgradeSO
-  runeName: Critical Damage
+  runeNameKey: RUNE_CRIT_DAMAGE
+  runeName: {fileID: 0}
   icon: {fileID: 21300000, guid: 6dc531dceef88774183ed84fdbcbd1fd, type: 3}
   CommonUpgrades:
-  - Description: +5% Critical Damage
+  - Description: {fileID: 0}
     Stats:
       DamageMult: 0
       CooldownMult: 0

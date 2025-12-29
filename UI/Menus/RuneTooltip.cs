@@ -78,7 +78,7 @@ public class RuneTooltip : MonoBehaviour
             _lastCritDamage = currentCritDamage;
 
             // Rebuild content using StringBuilder (zero allocations on subsequent hovers)
-            titleText.text = rune.Data.runeName;
+            titleText.text = rune.Data.GetLocalizedName();
 
             // Display level with max level if defined
             int maxLevel = rune.Data.GetMaxLevel();
@@ -131,7 +131,7 @@ public class RuneTooltip : MonoBehaviour
         StatUpgradeSO statSO = rune.AsStatUpgrade;
 
         // Build display for StatUpgrade rune
-        titleText.text = statSO.runeName;
+        titleText.text = statSO.GetLocalizedName();
 
         // Display level with max level if defined
         int maxLevel = statSO.GetMaxLevel();
@@ -163,7 +163,8 @@ public class RuneTooltip : MonoBehaviour
         if (rune.AccumulatedStats.StatValue != 0)
         {
             _sb.Append("<b>Total Bonus:</b>\n");
-            _sb.Append("<color=green>+").Append(FormatStatValue(statSO.targetStat, rune.AccumulatedStats.StatValue)).Append("</color>");
+            _sb.Append("<color=green>+").Append(FormatStatValue(statSO.targetStat, rune.AccumulatedStats.StatValue)).Append("</color> ");
+            _sb.Append(SimpleLocalizationHelper.GetStatName(statSO.targetStat));
         }
 
         contentText.text = _sb.ToString();
@@ -309,11 +310,17 @@ public class RuneTooltip : MonoBehaviour
 
     private void FormatRuneStats(RuneStats stats)
     {
-        if (stats.DamageMult != 0) { FormatMultiplier(stats.DamageMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetDamageLabel()).Append("\n"); }
-        if (stats.CooldownMult != 0) { FormatMultiplier(stats.CooldownMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetCooldownLabel()).Append("\n"); }
-        if (stats.SizeMult != 0) { FormatMultiplier(stats.SizeMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetSizeLabel()).Append("\n"); }
-        if (stats.SpeedMult != 0) { FormatMultiplier(stats.SpeedMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetSpeedLabel()).Append("\n"); }
-        if (stats.DurationMult != 0) { FormatMultiplier(stats.DurationMult); _sb.Append(" ").Append(SimpleLocalizationHelper.GetDurationLabel()).Append("\n"); }
+        // Format: "+20% Damage" (value and label on same line)
+        if (stats.DamageMult != 0) { _sb.Append("<color=green>+").Append((stats.DamageMult * 100f).ToString("F0")).Append("%</color> ").Append(SimpleLocalizationHelper.GetDamageLabel()).Append("\n"); }
+        if (stats.CooldownMult != 0)
+        {
+            string color = stats.CooldownMult < 0 ? "green" : "red";
+            string sign = stats.CooldownMult > 0 ? "+" : "";
+            _sb.Append("<color=").Append(color).Append(">").Append(sign).Append((stats.CooldownMult * 100f).ToString("F0")).Append("%</color> ").Append(SimpleLocalizationHelper.GetCooldownLabel()).Append("\n");
+        }
+        if (stats.SizeMult != 0) { _sb.Append("<color=green>+").Append((stats.SizeMult * 100f).ToString("F0")).Append("%</color> ").Append(SimpleLocalizationHelper.GetSizeLabel()).Append("\n"); }
+        if (stats.SpeedMult != 0) { _sb.Append("<color=green>+").Append((stats.SpeedMult * 100f).ToString("F0")).Append("%</color> ").Append(SimpleLocalizationHelper.GetSpeedLabel()).Append("\n"); }
+        if (stats.DurationMult != 0) { _sb.Append("<color=green>+").Append((stats.DurationMult * 100f).ToString("F0")).Append("%</color> ").Append(SimpleLocalizationHelper.GetDurationLabel()).Append("\n"); }
 
         if (stats.FlatCooldown != 0)
         {
