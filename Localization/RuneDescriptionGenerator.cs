@@ -43,11 +43,19 @@ namespace SurvivorGame.Localization
             hasContent |= AppendFlat(stats.FlatRange, SimpleLocalizationHelper.GetRangeLabel(), "m");
             hasContent |= AppendFlat(stats.FlatKnockback, SimpleLocalizationHelper.GetKnockbackLabel());
             hasContent |= AppendFlat(stats.FlatChainCount, "Chain");
+            hasContent |= AppendChainDamageBonus(stats.FlatChainDamageBonus);
             hasContent |= AppendFlat(stats.FlatMulticast, SimpleLocalizationHelper.GetMulticastLabel());
 
             // Burn bonuses
             hasContent |= AppendFlat(stats.FlatBurnDamage, "Burn " + SimpleLocalizationHelper.GetDamageLabel());
             hasContent |= AppendFlat(stats.FlatBurnDuration, "Burn " + SimpleLocalizationHelper.GetDurationLabel(), "s");
+
+            // Slow bonuses (displayed as percentages for factor)
+            hasContent |= AppendSlowFactor(stats.FlatSlowFactor);
+            hasContent |= AppendFlat(stats.FlatSlowDuration, SimpleLocalizationHelper.GetSlowDurationLabel(), "s");
+
+            // Vulnerability bonuses (displayed as percentages)
+            hasContent |= AppendVulnerabilityDamage(stats.FlatVulnerabilityDamage);
 
             // Crit bonuses (displayed as percentages)
             hasContent |= AppendCritChance(stats.FlatCritChance);
@@ -124,6 +132,48 @@ namespace SurvivorGame.Localization
 
             float percent = critDamage * 100f;
             _sb.Append("+").Append(percent.ToString("F1")).Append("% ").Append(SimpleLocalizationHelper.GetCritDamageLabel()).Append("\n");
+            return true;
+        }
+
+        /// <summary>
+        /// Appends slow factor bonus (e.g., "+10% Slow")
+        /// Only appends if slowFactor > 0
+        /// </summary>
+        private static bool AppendSlowFactor(float slowFactor)
+        {
+            if (slowFactor <= 0)
+                return false;
+
+            float percent = slowFactor * 100f;
+            _sb.Append("+").Append(percent.ToString("F1")).Append("% ").Append(SimpleLocalizationHelper.GetSlowLabel()).Append("\n");
+            return true;
+        }
+
+        /// <summary>
+        /// Appends vulnerability damage bonus (e.g., "+15% Vulnerability Damage")
+        /// Only appends if vulnerabilityDamage > 0
+        /// </summary>
+        private static bool AppendVulnerabilityDamage(float vulnerabilityDamage)
+        {
+            if (vulnerabilityDamage <= 0)
+                return false;
+
+            float percent = vulnerabilityDamage * 100f;
+            _sb.Append("+").Append(percent.ToString("F1")).Append("% ").Append(SimpleLocalizationHelper.GetVulnerabilityLabel()).Append("\n");
+            return true;
+        }
+
+        /// <summary>
+        /// Appends chain damage bonus (e.g., "+10% Chain Damage")
+        /// Only appends if chainDamageBonus > 0
+        /// </summary>
+        private static bool AppendChainDamageBonus(float chainDamageBonus)
+        {
+            if (chainDamageBonus <= 0)
+                return false;
+
+            float percent = chainDamageBonus * 100f;
+            _sb.Append("+").Append(percent.ToString("F1")).Append("% Chain Damage").Append("\n");
             return true;
         }
 

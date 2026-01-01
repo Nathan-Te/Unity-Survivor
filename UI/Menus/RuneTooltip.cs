@@ -214,7 +214,27 @@ public class RuneTooltip : MonoBehaviour
             if (effect.applySlow) _sb.Append("• ").Append(SimpleLocalizationHelper.GetSlow()).Append("\n");
             if (effect.baseChainCount > 0) _sb.Append("• ").Append(SimpleLocalizationHelper.FormatChain(effect.baseChainCount)).Append("\n");
             if (effect.aoeRadius > 0) _sb.Append("• ").Append(SimpleLocalizationHelper.FormatAoE(effect.aoeRadius)).Append("\n");
-            if (effect.minionSpawnChance > 0) _sb.Append("• ").Append(SimpleLocalizationHelper.FormatSummon(effect.minionSpawnChance * 100)).Append("\n");
+
+            // Minion spawn with detailed stats (chance, damage, explosion radius)
+            if (effect.minionSpawnChance > 0)
+            {
+                if (slot != null && slot.Definition != null)
+                {
+                    // Show calculated minion stats from SpellDefinition (includes upgrades)
+                    float minionChance = slot.Definition.MinionChance * 100f; // Convert to percentage
+                    float minionDamage = slot.Definition.MinionExplosionDamage;
+                    float minionRadius = slot.Definition.MinionExplosionRadius;
+                    _sb.Append("• ").Append(SimpleLocalizationHelper.FormatSummonDetailed(minionChance, minionDamage, minionRadius)).Append("\n");
+                }
+                else
+                {
+                    // Show base stats from SpellEffect (no upgrades applied)
+                    float baseChance = effect.minionSpawnChance * 100f;
+                    float baseDamage = effect.minionBaseExplosionDamage;
+                    float baseRadius = effect.minionBaseExplosionRadius;
+                    _sb.Append("• ").Append(SimpleLocalizationHelper.FormatSummonDetailed(baseChance, baseDamage, baseRadius)).Append("\n");
+                }
+            }
         }
         else if (rune.AsModifier != null)
         {
@@ -347,6 +367,25 @@ public class RuneTooltip : MonoBehaviour
         {
             float critDmgPercent = stats.FlatCritDamage * 100f;
             _sb.Append("<color=#FFD700>+").Append(critDmgPercent.ToString("F1")).Append("%</color> ").Append(SimpleLocalizationHelper.GetCritDamageLabel()).Append("\n");
+        }
+
+        // Minion stats (Necrotic effect)
+        if (stats.FlatMinionChance != 0)
+        {
+            float minionPercent = stats.FlatMinionChance * 100f;
+            _sb.Append("<color=#9370DB>+").Append(minionPercent.ToString("F1")).Append("%</color> Summon Chance\n");
+        }
+        if (stats.FlatMinionSpeed != 0)
+        {
+            _sb.Append("<color=#9370DB>+").Append(stats.FlatMinionSpeed.ToString("F1")).Append("</color> Minion Speed\n");
+        }
+        if (stats.FlatMinionExplosionRadius != 0)
+        {
+            _sb.Append("<color=#9370DB>+").Append(stats.FlatMinionExplosionRadius.ToString("F1")).Append("m</color> Minion Radius\n");
+        }
+        if (stats.MinionDamageMult != 0)
+        {
+            _sb.Append("<color=#9370DB>+").Append((stats.MinionDamageMult * 100f).ToString("F0")).Append("%</color> Minion ").Append(SimpleLocalizationHelper.GetDamageLabel()).Append("\n");
         }
     }
 

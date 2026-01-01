@@ -30,7 +30,7 @@ MonoBehaviour:
   applySlow: 0
   baseChainCount: 3
   chainRange: 8
-  chainDamageReduction: 0.6
+  chainDamageBonus: 0.1
   minionSpawnChance: 0
   minionPrefab: {fileID: 0}
   aoeRadius: 0

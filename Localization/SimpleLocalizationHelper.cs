@@ -264,6 +264,11 @@ namespace SurvivorGame.Localization
             return GetFormatted("EFFECT_SUMMON", chance);
         }
 
+        public static string FormatSummonDetailed(float chance, float damage, float radius)
+        {
+            return GetFormatted("EFFECT_SUMMON_DETAILED", chance, damage.ToString("F0"), radius.ToString("F1"));
+        }
+
         public static string GetHoming()
         {
             return Get("EFFECT_HOMING");
@@ -284,5 +289,8 @@ namespace SurvivorGame.Localization
         public static string GetDurationLabel() => Get("LABEL_DURATION");
         public static string GetKnockbackLabel() => Get("LABEL_KNOCKBACK");
         public static string GetMulticastLabel() => Get("LABEL_MULTICAST");
+        public static string GetSlowLabel() => Get("LABEL_SLOW");
+        public static string GetSlowDurationLabel() => Get("LABEL_SLOW_DURATION");
+        public static string GetVulnerabilityLabel() => Get("LABEL_VULNERABILITY");
     }
 }

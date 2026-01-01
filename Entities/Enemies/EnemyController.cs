@@ -28,6 +28,9 @@ public class EnemyController : MonoBehaviour
     private EnemyVisuals _visuals;
     private EnemyRangedCombat _rangedCombat;
 
+    // Public access to status effects component
+    public EnemyStatusEffects StatusEffects => _statusEffects;
+
     private int _frameIntervalOffset;
     private const int LOGIC_FRAME_INTERVAL = 10; // Execute logic 1 frame out of 10
 

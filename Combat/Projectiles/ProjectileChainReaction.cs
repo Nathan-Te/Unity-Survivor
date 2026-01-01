@@ -69,7 +69,7 @@ public class ProjectileChainReaction : MonoBehaviour
     }
 
     /// <summary>
-    /// Creates a new spell definition for chained projectiles with reduced stats
+    /// Creates a new spell definition for chained projectiles with bonus damage
     /// </summary>
     private SpellDefinition CreateChainDefinition(SpellDefinition original)
     {
@@ -85,13 +85,14 @@ public class ProjectileChainReaction : MonoBehaviour
         chainDef.Size = original.Size * 0.8f; // Slightly smaller
         chainDef.Range = original.ChainRange * 1.2f;
 
-        // Apply damage reduction
-        chainDef.Damage = original.Damage * original.ChainDamageReduction;
+        // Apply damage bonus (each bounce adds % damage relative to base)
+        // Example: base 100 dmg, 0.1 bonus = 110 dmg per bounce (not cumulative)
+        chainDef.Damage = original.Damage * (1f + original.ChainDamageBonus);
 
         // Reduce chain count
         chainDef.ChainCount = original.ChainCount - 1;
         chainDef.ChainRange = original.ChainRange;
-        chainDef.ChainDamageReduction = original.ChainDamageReduction;
+        chainDef.ChainDamageBonus = original.ChainDamageBonus;
 
         return chainDef;
     }

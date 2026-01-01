@@ -107,6 +107,12 @@ public class ProjectileDamageHandler : MonoBehaviour
             }
         }
 
+        // Apply vulnerability bonus if enemy is slowed
+        if (def.VulnerabilityDamage > 0 && enemy.StatusEffects != null && enemy.StatusEffects.IsSlowed)
+        {
+            finalDamage *= (1f + def.VulnerabilityDamage);
+        }
+
         // Apply damage with appropriate damage type
         DamageType damageType = isCritical ? DamageType.Critical : DamageType.Normal;
         enemy.TakeDamage(finalDamage, damageType);
@@ -126,9 +132,19 @@ public class ProjectileDamageHandler : MonoBehaviour
                 enemy.ApplyBurn(def.BurnDamagePerTick, def.BurnDuration);
             }
 
-            if (def.Effect.applySlow)
+            if (def.Effect.applySlow && def.SlowDuration > 0)
             {
-                enemy.ApplySlow(0.5f, 2f);
+                // Use calculated slow values from SpellDefinition (includes bonuses)
+                // SlowFactor is how much to slow (0.5 = 50% slower)
+                // Convert to speed multiplier for ApplySlow (1 - factor)
+                float speedMultiplier = 1f - def.SlowFactor;
+                enemy.ApplySlow(speedMultiplier, def.SlowDuration);
+            }
+
+            // Apply Necrotic mark if this spell has minion chance (Necrotic effect)
+            if (def.MinionChance > 0 && enemy.StatusEffects != null)
+            {
+                enemy.StatusEffects.ApplyNecroticMark();
             }
         }
 
@@ -139,13 +155,70 @@ public class ProjectileDamageHandler : MonoBehaviour
             rb.AddForce(pushDir * def.Knockback, ForceMode.Impulse);
         }
 
-        // Minion spawn logic
-        bool isFatal = (enemy.currentHp - def.Damage) <= 0;
-        if (isFatal && def.MinionChance > 0 && def.MinionPrefab != null)
+        // Ghost minion spawn logic (Necrotic effect - time-based marking system)
+        // Spawn ghost if: enemy dies + was marked by Necrotic within time window + random chance succeeds
+        // Supports over-spawn: MinionChance > 1.0 spawns multiple ghosts (like overcrit)
+        bool isFatal = (enemy.currentHp - finalDamage) <= 0;
+        if (isFatal && def.MinionChance > 0 && def.MinionPrefab != null && MinionManager.Instance != null && enemy.StatusEffects != null)
         {
-            if (Random.value <= def.MinionChance)
+            // Check if enemy was marked by Necrotic damage within time window (3 seconds)
+            if (enemy.StatusEffects.IsMarkedByNecrotic)
             {
-                Instantiate(def.MinionPrefab, enemy.transform.position, Quaternion.identity);
+                // Calculate over-spawn: MinionChance can exceed 100%
+                // Example: 150% chance = 1 guaranteed spawn + 50% chance for a second spawn
+                float minionChance = def.MinionChance;
+                int guaranteedSpawns = Mathf.FloorToInt(minionChance);
+                float remainingChance = minionChance - guaranteedSpawns;
+
+                // Roll for additional spawn if there's a remainder
+                int totalSpawns = guaranteedSpawns;
+                if (remainingChance > 0 && Random.value < remainingChance)
+                {
+                    totalSpawns++;
+                }
+
+                // Spawn all guaranteed + rolled minions
+                if (totalSpawns > 0)
+                {
+                    // Get MinionData from the prefab
+                    var minionData = def.MinionPrefab.GetComponent<MinionController>()?.Data;
+                    if (minionData != null)
+                    {
+                        Vector3 baseSpawnPos = enemy.transform.position + Vector3.up * 0.5f;
+
+                        for (int i = 0; i < totalSpawns; i++)
+                        {
+                            // Offset spawn position slightly for multiple spawns to avoid stacking
+                            Vector3 spawnPos = baseSpawnPos;
+                            if (totalSpawns > 1)
+                            {
+                                // Spread minions in a small circle
+                                float angle = (360f / totalSpawns) * i;
+                                float offsetRadius = 0.5f;
+                                spawnPos += new Vector3(
+                                    Mathf.Cos(angle * Mathf.Deg2Rad) * offsetRadius,
+                                    0f,
+                                    Mathf.Sin(angle * Mathf.Deg2Rad) * offsetRadius
+                                );
+                            }
+
+                            Debug.Log($"[ProjectileDamageHandler] Spawning ghost {i + 1}/{totalSpawns} at {spawnPos} - Spawner enemy: {enemy.gameObject.name}");
+                            MinionManager.Instance.SpawnMinion(
+                                minionData,
+                                spawnPos,
+                                def.MinionSpeed,
+                                def.MinionExplosionRadius,
+                                def.MinionExplosionDamage,
+                                def.MinionCritChance,
+                                def.MinionCritDamageMultiplier,
+                                enemy.gameObject  // Spawner enemy to ignore
+                            );
+                        }
+
+                        // Mark enemy as having spawned a ghost (prevents duplicate spawns from multiple projectiles)
+                        enemy.StatusEffects.MarkGhostSpawned();
+                    }
+                }
             }
         }
     }

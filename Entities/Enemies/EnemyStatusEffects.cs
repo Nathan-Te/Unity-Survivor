@@ -18,6 +18,21 @@ public class EnemyStatusEffects : MonoBehaviour
     private float _originalSpeed;
     private bool _isSlowed;
 
+    // Necrotic marking state (for ghost minion spawning)
+    private float _necroticMarkTime = -999f; // Time when last marked by Necrotic damage
+    private const float NECROTIC_WINDOW = 3f; // Seconds after mark that minion can spawn
+    private bool _hasSpawnedGhost = false; // Track if this enemy already spawned a ghost
+
+    /// <summary>
+    /// Returns true if the enemy is currently slowed
+    /// </summary>
+    public bool IsSlowed => _isSlowed;
+
+    /// <summary>
+    /// Returns true if the enemy was recently marked by Necrotic damage (within time window) AND hasn't spawned a ghost yet
+    /// </summary>
+    public bool IsMarkedByNecrotic => !_hasSpawnedGhost && (Time.time - _necroticMarkTime) <= NECROTIC_WINDOW;
+
     /// <summary>
     /// Represents a single burn effect instance
     /// </summary>
@@ -72,6 +87,22 @@ public class EnemyStatusEffects : MonoBehaviour
     }
 
     /// <summary>
+    /// Marks this enemy as hit by Necrotic damage (for ghost minion spawning)
+    /// </summary>
+    public void ApplyNecroticMark()
+    {
+        _necroticMarkTime = Time.time;
+    }
+
+    /// <summary>
+    /// Marks this enemy as having spawned a ghost (prevents duplicate spawns)
+    /// </summary>
+    public void MarkGhostSpawned()
+    {
+        _hasSpawnedGhost = true;
+    }
+
+    /// <summary>
     /// Resets all status effects (called when enemy is pooled)
     /// </summary>
     public void ResetStatusEffects()
@@ -80,6 +111,8 @@ public class EnemyStatusEffects : MonoBehaviour
         _burnTickTimer = 0f;
         _slowTimer = 0f;
         _isSlowed = false;
+        _necroticMarkTime = -999f;
+        _hasSpawnedGhost = false;
     }
 
     private void HandleBurn(float deltaTime)

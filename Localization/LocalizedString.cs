@@ -31,7 +31,7 @@ namespace SurvivorGame.Localization
         {
             if (LocalizationManager.Instance == null)
             {
-                Debug.LogWarning("LocalizationManager not found. Returning first available translation.");
+                // Debug.LogWarning("LocalizationManager not found. Returning first available translation.");
                 return _translations.Count > 0 ? _translations[0].Text : "";
             }
 

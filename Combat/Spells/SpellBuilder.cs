@@ -98,9 +98,23 @@ public static class SpellBuilder
         // Stats sp�ciales (peuvent �tre boost�es via RuneStats si on veut)
         def.ChainCount = effect.baseChainCount + effectStats.FlatChainCount;
         def.ChainRange = effect.chainRange;
-        def.ChainDamageReduction = effect.chainDamageReduction;
-        def.MinionChance = effect.minionSpawnChance;
+
+        // Chain damage bonus (base effect + accumulated bonuses from form and effect runes)
+        float totalChainDamageBonus = effect.chainDamageBonus + formStats.FlatChainDamageBonus + effectStats.FlatChainDamageBonus;
+
+        // Minion stats (base effect + accumulated bonuses from runes)
+        def.MinionChance = effect.minionSpawnChance + effectStats.FlatMinionChance;
         def.MinionPrefab = effect.minionPrefab;
+
+        // Ghost minion stats (upgradeable - start with base values from SpellEffect)
+        float baseMinionSpeed = effect.minionBaseSpeed;
+        float baseMinionExplosionRadius = effect.minionBaseExplosionRadius;
+        float baseMinionExplosionDamage = effect.minionBaseExplosionDamage;
+
+        // Start accumulating minion bonuses from form and effect runes
+        float totalMinionSpeed = baseMinionSpeed + formStats.FlatMinionSpeed + effectStats.FlatMinionSpeed;
+        float totalMinionExplosionRadius = baseMinionExplosionRadius + formStats.FlatMinionExplosionRadius + effectStats.FlatMinionExplosionRadius;
+        float minionDamageMult = 1f + formStats.MinionDamageMult + effectStats.MinionDamageMult; // Multiplicative damage (starts at 100%)
 
         // Multicast stats (start with 0, will be accumulated from modifiers)
         def.MulticastCount = 0;
@@ -109,6 +123,20 @@ public static class SpellBuilder
         // Burn stats (base effect + accumulated bonuses from effect rune)
         def.BurnDamagePerTick = effect.burnDamagePerTick + effectStats.FlatBurnDamage;
         def.BurnDuration = effect.burnDuration + effectStats.FlatBurnDuration;
+
+        // Slow stats (start with base values from effect if applySlow is enabled, will be accumulated from all sources)
+        float totalSlowFactor = effect.applySlow ? effect.slowFactor : 0f;
+        float totalSlowDuration = effect.applySlow ? effect.slowDuration : 0f;
+
+        // Add slow stats from form and effect runes
+        totalSlowFactor += formStats.FlatSlowFactor + effectStats.FlatSlowFactor;
+        totalSlowDuration += formStats.FlatSlowDuration + effectStats.FlatSlowDuration;
+
+        // Vulnerability stats (start with 0, will be accumulated from all sources)
+        float totalVulnerabilityDamage = 0f;
+
+        // Add vulnerability stats from form and effect runes
+        totalVulnerabilityDamage += formStats.FlatVulnerabilityDamage + effectStats.FlatVulnerabilityDamage;
 
         // Critical hit stats (start with 0, will be accumulated from all sources)
         float totalCritChance = 0f;
@@ -166,6 +194,9 @@ public static class SpellBuilder
             def.Knockback += modStats.FlatKnockback;
             def.ChainCount += modStats.FlatChainCount;
 
+            // Chain damage bonus from modifiers
+            totalChainDamageBonus += modStats.FlatChainDamageBonus;
+
             // Only apply Multicast if the form supports it
             if (form.tags.HasFlag(SpellTag.SupportsMulticast))
             {
@@ -176,9 +207,22 @@ public static class SpellBuilder
             def.BurnDamagePerTick += modStats.FlatBurnDamage;
             def.BurnDuration += modStats.FlatBurnDuration;
 
+            // Slow stats from modifiers
+            totalSlowFactor += modStats.FlatSlowFactor;
+            totalSlowDuration += modStats.FlatSlowDuration;
+
+            // Vulnerability stats from modifiers
+            totalVulnerabilityDamage += modStats.FlatVulnerabilityDamage;
+
             // Critical hit stats from modifiers
             totalCritChance += modStats.FlatCritChance;
             totalCritDamage += modStats.FlatCritDamage;
+
+            // Minion stats from modifiers
+            def.MinionChance += modStats.FlatMinionChance;
+            totalMinionSpeed += modStats.FlatMinionSpeed;
+            totalMinionExplosionRadius += modStats.FlatMinionExplosionRadius;
+            minionDamageMult *= (1f + modStats.MinionDamageMult); // Multiplicative stacking
 
             // Only enable Homing if the form supports it
             if (modSO.enableHoming && form.tags.HasFlag(SpellTag.SupportsHoming))
@@ -216,6 +260,24 @@ public static class SpellBuilder
 
         // Don't clamp crit chance - allow overcrit (>100% for multiple crits)
         def.CritChance = Mathf.Max(0f, def.CritChance);
+
+        // Apply slow stats (clamp factor to 0-0.9 range for reasonable slow values)
+        // 0.9 = 90% slower (only 10% of original speed)
+        def.SlowFactor = Mathf.Clamp(totalSlowFactor, 0f, 0.9f);
+        def.SlowDuration = Mathf.Max(0f, totalSlowDuration);
+
+        // Apply vulnerability stats (no upper cap - can stack as much as player wants)
+        def.VulnerabilityDamage = Mathf.Max(0f, totalVulnerabilityDamage);
+
+        // Apply chain damage bonus stats (no upper cap - can stack)
+        def.ChainDamageBonus = Mathf.Max(0f, totalChainDamageBonus);
+
+        // Apply minion upgrade stats (clamped to reasonable values)
+        def.MinionSpeed = Mathf.Max(0f, totalMinionSpeed);
+        def.MinionExplosionRadius = Mathf.Max(0f, totalMinionExplosionRadius);
+        def.MinionExplosionDamage = baseMinionExplosionDamage * minionDamageMult; // Base damage * multiplier
+        def.MinionCritChance = def.CritChance; // Inherit spell crit chance
+        def.MinionCritDamageMultiplier = def.CritDamageMultiplier; // Inherit spell crit damage
 
         return def;
     }
