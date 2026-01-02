@@ -91,6 +91,10 @@ public class EnemyManager : Singleton<EnemyManager>
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         if (_movementSystem != null && _registry != null)
         {
             _movementSystem.UpdateMovement(_registry.ActiveEnemies);

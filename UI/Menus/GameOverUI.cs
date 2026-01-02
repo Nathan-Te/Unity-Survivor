@@ -86,9 +86,10 @@ namespace SurvivorGame.UI
             }
 
             // Award the gold to ProgressionManager (for meta-progression)
-            if (ProgressionManager.Instance != null && GoldManager.Instance != null)
+            // CRITICAL: Award only the gold collected THIS run, not the difference between totals
+            if (ProgressionManager.Instance != null && goldCollected > 0)
             {
-                ProgressionManager.Instance.AwardGold(GoldManager.Instance.TotalGold - ProgressionManager.Instance.CurrentProgression.gold);
+                ProgressionManager.Instance.AwardGold(goldCollected);
             }
 
             // Record run statistics (including score)

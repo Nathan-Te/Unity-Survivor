@@ -223,6 +223,10 @@ public class ProjectileController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         // Smite ignore toutes les collisions (explose sur timer)
         if (_def.Form != null && _def.Form.tags.HasFlag(SpellTag.Smite))
             return;
@@ -261,6 +265,10 @@ public class ProjectileController : MonoBehaviour
         // Pour les projectiles joueur
         if (layer == LayerMask.NameToLayer("Enemy"))
         {
+            // SAFETY: Check if EnemyManager exists (could be destroyed during scene transition)
+            if (EnemyManager.Instance == null)
+                return;
+
             if (EnemyManager.Instance.TryGetEnemyByCollider(other, out EnemyController enemy))
             {
                 int enemyID = enemy.GetInstanceID();

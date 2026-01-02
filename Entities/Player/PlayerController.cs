@@ -67,6 +67,10 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         // Don't process if game is not in Playing state (handles pause, restart, level-up)
         if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
         {

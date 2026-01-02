@@ -25,20 +25,21 @@ namespace SurvivorGame.Progression
         {
             base.Awake();
 
-            if (Instance == this)
+            // CRITICAL: Always initialize, never check "if (Instance == this)"
+            // This ensures proper initialization even after scene restarts
+            // (See CLAUDE.md rule: NEVER use `if (Instance == this)` in Singleton Awake())
+
+            // Ensure this GameObject is at root level for DontDestroyOnLoad
+            if (transform.parent != null)
             {
-                // Ensure this GameObject is at root level for DontDestroyOnLoad
-                if (transform.parent != null)
-                {
-                    Debug.LogWarning("[ProgressionManager] ProgressionManager must be on a root GameObject. Moving to root.");
-                    transform.SetParent(null);
-                }
-
-                DontDestroyOnLoad(gameObject);
-
-                // Load progression on startup
-                LoadProgression();
+                Debug.LogWarning("[ProgressionManager] ProgressionManager must be on a root GameObject. Moving to root.");
+                transform.SetParent(null);
             }
+
+            DontDestroyOnLoad(gameObject);
+
+            // Load progression on startup (ALWAYS, even after restart)
+            LoadProgression();
         }
 
         /// <summary>

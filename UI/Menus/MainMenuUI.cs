@@ -62,6 +62,14 @@ namespace SurvivorGame.UI
             // CRITICAL: Force reset to main menu panel (hide all sub-panels)
             // This ensures we always start at the main menu, not at a sub-panel
             ResetToMainMenuPanel();
+
+            // CRITICAL: Initialize managers BEFORE any other UI scripts' Start() methods execute
+            // This ensures ProgressionManager exists when LeaderboardUI, LevelSelectionUI, etc. try to access it
+            InitializeGameSettings();
+
+            // Subscribe to progression events if ProgressionManager already existed
+            // (if it was newly created, InitializeGameSettings() already subscribed)
+            SubscribeToProgressionEvents();
         }
 
         /// <summary>
@@ -91,9 +99,6 @@ namespace SurvivorGame.UI
             // Ensure time is running (in case we came from a paused game scene)
             Time.timeScale = 1f;
 
-            // Initialize GameSettingsManager and load settings (this will apply language)
-            InitializeGameSettings();
-
             // Validate critical UI references
             if (goldText == null)
             {
@@ -107,15 +112,11 @@ namespace SurvivorGame.UI
             if (leaderboardButton) leaderboardButton.onClick.AddListener(OpenLeaderboard);
             if (quitButton) quitButton.onClick.AddListener(QuitGame);
 
-            // Subscribe to progression changes
-            if (ProgressionManager.Instance != null)
-            {
-                ProgressionManager.Instance.OnProgressionLoaded += UpdatePlayerInfo;
-                ProgressionManager.Instance.OnProgressionChanged += UpdatePlayerInfo;
-            }
-
             // Subscribe to language changes
             SimpleLocalizationManager.OnLanguageChanged += RefreshText;
+
+            // Note: ProgressionManager initialization moved to Awake() to ensure it exists
+            // before other UI scripts' Start() methods execute
 
             // Note: Panel visibility is already set in Awake() via ResetToMainMenuPanel()
             // No need to call ShowPanel again
@@ -130,55 +131,94 @@ namespace SurvivorGame.UI
                 Debug.Log("[MainMenuUI] Initialized");
         }
 
+        private bool _subscribedToProgression = false;
+
         /// <summary>
-        /// Initializes GameSettingsManager and ProgressionManager if they don't exist yet.
-        /// This ensures settings and save data are loaded at game startup.
+        /// Subscribes to ProgressionManager events (can be called before ProgressionManager exists)
+        /// </summary>
+        private void SubscribeToProgressionEvents()
+        {
+            if (_subscribedToProgression)
+            {
+                if (verboseLogging)
+                    Debug.Log("[MainMenuUI] Already subscribed to ProgressionManager events, skipping");
+                return;
+            }
+
+            if (ProgressionManager.Instance != null)
+            {
+                ProgressionManager.Instance.OnProgressionLoaded += UpdatePlayerInfo;
+                ProgressionManager.Instance.OnProgressionChanged += UpdatePlayerInfo;
+                _subscribedToProgression = true;
+
+                if (verboseLogging)
+                    Debug.Log("[MainMenuUI] Subscribed to existing ProgressionManager events");
+            }
+            else
+            {
+                if (verboseLogging)
+                    Debug.Log("[MainMenuUI] ProgressionManager doesn't exist yet, will subscribe after creation");
+            }
+        }
+
+        /// <summary>
+        /// Initializes core managers if they don't exist.
+        /// This ensures everything is ready when MainMenu loads.
         /// IMPORTANT: SimpleLocalizationManager must exist BEFORE GameSettingsManager initializes.
-        /// IMPORTANT: ProgressionManager must exist to load player progression (unlocked levels, gold, etc.)
         /// </summary>
         private void InitializeGameSettings()
         {
-            // CRITICAL: Ensure SimpleLocalizationManager exists FIRST
-            // (GameSettingsManager needs it to apply language settings)
-            var localizationManager = SimpleLocalizationManager.Instance;
-            if (localizationManager == null)
-            {
-                Debug.LogError("[MainMenuUI] SimpleLocalizationManager is missing! Language settings cannot be applied. " +
-                               "Please ensure there is a GameObject with SimpleLocalizationManager in the MainMenu scene.");
-            }
+            Debug.Log("[MainMenuUI] InitializeGameSettings() called");
 
-            // CRITICAL: Ensure ProgressionManager exists (may be destroyed on return to MainMenu)
-            // ProgressionManager is a DontDestroyOnLoad singleton that gets destroyed when returning to MainMenu
-            // We need to recreate it so save data can be loaded
+            bool createdNewProgressionManager = false;
+
+            // 1. ProgressionManager - create if doesn't exist
+            // CRITICAL: Use FindFirstObjectByType instead of Instance getter to avoid Singleton error
             var existingProgression = FindFirstObjectByType<ProgressionManager>();
             if (existingProgression == null)
             {
                 GameObject progressionManagerObj = new GameObject("ProgressionManager");
                 progressionManagerObj.AddComponent<ProgressionManager>();
-
-                Debug.Log("[MainMenuUI] Created ProgressionManager GameObject - will load save data in Awake()");
+                createdNewProgressionManager = true;
+                Debug.Log("[MainMenuUI] Created ProgressionManager");
             }
             else
             {
                 Debug.Log("[MainMenuUI] ProgressionManager already exists");
             }
 
-            // Check if GameSettingsManager GameObject exists
-            var existingManager = FindFirstObjectByType<GameSettingsManager>();
-
-            if (existingManager == null)
+            // CRITICAL: If we just created ProgressionManager, subscribe to its events NOW
+            // This is necessary because ProgressionManager.Awake() has already run (synchronously)
+            // and triggered OnProgressionLoaded before we could subscribe in Start()
+            if (createdNewProgressionManager && ProgressionManager.Instance != null)
             {
-                // Create a new GameObject for GameSettingsManager
+                ProgressionManager.Instance.OnProgressionLoaded += UpdatePlayerInfo;
+                ProgressionManager.Instance.OnProgressionChanged += UpdatePlayerInfo;
+                _subscribedToProgression = true;
+                Debug.Log("[MainMenuUI] Subscribed to newly created ProgressionManager events");
+
+                // Force immediate update since we missed the OnProgressionLoaded event
+                if (ProgressionManager.Instance.CurrentProgression != null)
+                {
+                    UpdatePlayerInfo(ProgressionManager.Instance.CurrentProgression);
+                    Debug.Log($"[MainMenuUI] Force-updated UI with progression data: Gold={ProgressionManager.Instance.CurrentProgression.gold}");
+                }
+            }
+
+            // 2. GameSettingsManager - create if doesn't exist
+            var existingSettings = FindFirstObjectByType<GameSettingsManager>();
+            if (existingSettings == null)
+            {
                 GameObject settingsManagerObj = new GameObject("GameSettingsManager");
                 settingsManagerObj.AddComponent<GameSettingsManager>();
-
-                if (verboseLogging)
-                    Debug.Log("[MainMenuUI] Created GameSettingsManager GameObject");
+                Debug.Log("[MainMenuUI] Created GameSettingsManager");
             }
-            else if (verboseLogging)
+            else
             {
-                Debug.Log("[MainMenuUI] GameSettingsManager already exists, settings will be loaded by it");
+                Debug.Log("[MainMenuUI] GameSettingsManager already exists");
             }
+
+            Debug.Log("[MainMenuUI] InitializeGameSettings() completed");
         }
 
         /// <summary>
@@ -224,6 +264,7 @@ namespace SurvivorGame.UI
                 progressionManager.OnProgressionLoaded -= UpdatePlayerInfo;
                 progressionManager.OnProgressionChanged -= UpdatePlayerInfo;
             }
+            _subscribedToProgression = false;
 
             // Cleanup localization listener
             SimpleLocalizationManager.OnLanguageChanged -= RefreshText;
@@ -243,48 +284,31 @@ namespace SurvivorGame.UI
 
             if (goldText != null)
             {
-                // DEBUG: Check if SimpleLocalizationManager exists
+                // SAFETY: Wait for SimpleLocalizationManager if it doesn't exist yet
                 if (SimpleLocalizationManager.Instance == null)
                 {
-                    Debug.LogError("[MainMenuUI] SimpleLocalizationManager.Instance is NULL!");
-                    goldText.text = $"Gold: {data.gold}"; // Fallback without localization
+                    // Use simple fallback during initialization
+                    goldText.text = data.gold.ToString();
+                    if (verboseLogging)
+                        Debug.Log($"[MainMenuUI] SimpleLocalizationManager not ready yet, using simple display: {data.gold}");
                     return;
                 }
 
-                // DEBUG: Try to get the key directly
-                string testKey = SimpleLocalizationManager.Instance.GetString("HUD_GOLD", "KEY_NOT_FOUND");
-                Debug.Log($"[MainMenuUI] Testing HUD_GOLD key: '{testKey}'");
-
+                // Use localized gold display
                 string formattedGold = data.gold.ToString();
                 //string formattedGold = SimpleLocalizationHelper.FormatGold(data.gold);
-                Debug.Log($"[MainMenuUI] FormatGold({data.gold}) returned: '{formattedGold}'");
 
-                // If FormatGold returns empty, use fallback
                 if (string.IsNullOrEmpty(formattedGold))
                 {
-                    Debug.LogWarning("[MainMenuUI] FormatGold returned empty string! Using fallback.");
-                    goldText.text = $"Gold: {data.gold}"; // Hard-coded fallback
+                    goldText.text = data.gold.ToString(); // Fallback
                 }
                 else
                 {
                     goldText.text = formattedGold;
                 }
 
-                // FORCE enable the GameObject in case it's disabled
-                if (!goldText.gameObject.activeInHierarchy)
-                {
-                    goldText.gameObject.SetActive(true);
-                    Debug.LogWarning($"[MainMenuUI] goldText GameObject was disabled, re-enabled it");
-                }
-
-                // Log immediately after setting
-                Debug.Log($"[MainMenuUI] Final gold text: '{goldText.text}'");
-
-                // Additional check after 1 frame to see if something clears it
                 if (verboseLogging)
-                {
-                    StartCoroutine(CheckGoldTextAfterFrame());
-                }
+                    Debug.Log($"[MainMenuUI] Updated gold display: {goldText.text}");
             }
             else
             {

@@ -28,6 +28,10 @@ public class SpellCaster : MonoBehaviour
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         // Don't process spells if game is not in Playing state
         if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
             return;

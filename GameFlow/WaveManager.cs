@@ -25,10 +25,10 @@ public class WaveDefinition
     public float duration = 60f;
     public float spawnInterval = 1f;
 
-    [Header("Spawns Aléatoires (En continu)")]
+    [Header("Spawns Alï¿½atoires (En continu)")]
     public List<EnemySpawnConfig> randomSpawns;
 
-    [Header("Spawns Fixes (Événements)")]
+    [Header("Spawns Fixes (ï¿½vï¿½nements)")]
     public List<TimedSpawn> timedSpawns;
 
     [HideInInspector] public float totalWeight;
@@ -41,13 +41,13 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private float spawnRadius = 20f;
     [SerializeField] private bool loopLastWave = true;
 
-    [Header("État (Read Only)")]
+    [Header("ï¿½tat (Read Only)")]
     public int currentWaveIndex = 0;
     public float waveTimer = 0f;
 
-    [Header("Sécurité Spawn")] // --- NOUVEAU ---
+    [Header("Sï¿½curitï¿½ Spawn")] // --- NOUVEAU ---
     [SerializeField] private LayerMask invalidSpawnLayers; // Mettre Obstacle + Destructible (POI)
-    [SerializeField] private float checkRadius = 0.5f;     // Taille de la zone à vérifier
+    [SerializeField] private float checkRadius = 0.5f;     // Taille de la zone ï¿½ vï¿½rifier
     [SerializeField] private float recycleDistance = 45f;
 
     private float _spawnTimer;
@@ -66,18 +66,22 @@ public class WaveManager : MonoBehaviour
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         if (_playerTransform == null) return;
         if (currentWaveIndex >= waves.Count) return;
 
         WaveDefinition currentWave = waves[currentWaveIndex];
 
-        // 1. Avancée du Temps
+        // 1. Avancï¿½e du Temps
         waveTimer += Time.deltaTime;
 
-        // 2. Vérification des Spawns Fixes (Boss/Elites)
+        // 2. Vï¿½rification des Spawns Fixes (Boss/Elites)
         CheckTimedSpawns();
 
-        // 3. Vérification des Spawns Aléatoires (Horde)
+        // 3. Vï¿½rification des Spawns Alï¿½atoires (Horde)
         _spawnTimer += Time.deltaTime;
         if (_spawnTimer >= currentWave.spawnInterval)
         {
@@ -94,7 +98,7 @@ public class WaveManager : MonoBehaviour
                 // On demande au Manager : "T'as pas un truc inutile au fond de la classe ?"
                 if (EnemyManager.Instance.TryFreeSpaceByRecycling(recycleDistance))
                 {
-                    canSpawn = true; // Une place s'est libérée !
+                    canSpawn = true; // Une place s'est libï¿½rï¿½e !
                 }
             }
 
@@ -138,7 +142,7 @@ public class WaveManager : MonoBehaviour
             _currentWaveTimedSpawns = new List<TimedSpawn>();
         }
 
-        Debug.Log($"WaveManager: Début {wave.waveName}");
+        Debug.Log($"WaveManager: Dï¿½but {wave.waveName}");
     }
 
     private void NextWave()
@@ -150,11 +154,11 @@ public class WaveManager : MonoBehaviour
             if (loopLastWave && waves.Count > 0)
             {
                 InitializeWave(waves.Count - 1);
-                Debug.Log("WaveManager: Boucle sur la dernière vague");
+                Debug.Log("WaveManager: Boucle sur la derniï¿½re vague");
             }
             else
             {
-                Debug.Log("WaveManager: Toutes les vagues sont terminées !");
+                Debug.Log("WaveManager: Toutes les vagues sont terminï¿½es !");
                 enabled = false;
             }
         }
@@ -236,8 +240,8 @@ public class WaveManager : MonoBehaviour
             Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRadius;
             Vector3 candidatePos = _playerTransform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
 
-            // Vérification Physics.CheckSphere
-            // On vérifie si ça touche le Layer "Obstacle" ou "Destructible" (POI)
+            // Vï¿½rification Physics.CheckSphere
+            // On vï¿½rifie si ï¿½a touche le Layer "Obstacle" ou "Destructible" (POI)
             if (!Physics.CheckSphere(candidatePos, checkRadius, invalidSpawnLayers))
             {
                 position = candidatePos;
@@ -245,6 +249,6 @@ public class WaveManager : MonoBehaviour
             }
         }
 
-        return false; // Pas trouvé de place (trop dense)
+        return false; // Pas trouvï¿½ de place (trop dense)
     }
 }

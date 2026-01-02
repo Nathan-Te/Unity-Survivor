@@ -32,9 +32,11 @@ namespace SurvivorGame.UI
         {
             if (backButton) backButton.onClick.AddListener(OnBackPressed);
 
-            // Subscribe to progression changes
+            // Subscribe to progression changes AND loads
+            // CRITICAL: Subscribe to OnProgressionLoaded to catch initial load when ProgressionManager is created
             if (ProgressionManager.Instance != null)
             {
+                ProgressionManager.Instance.OnProgressionLoaded += OnProgressionChanged;
                 ProgressionManager.Instance.OnProgressionChanged += OnProgressionChanged;
             }
 
@@ -56,6 +58,7 @@ namespace SurvivorGame.UI
             var progressionManager = FindFirstObjectByType<ProgressionManager>();
             if (progressionManager != null)
             {
+                progressionManager.OnProgressionLoaded -= OnProgressionChanged;
                 progressionManager.OnProgressionChanged -= OnProgressionChanged;
             }
 

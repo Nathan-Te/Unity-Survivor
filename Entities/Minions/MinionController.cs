@@ -188,6 +188,10 @@ public class MinionController : MonoBehaviour
     /// </summary>
     private void OnTriggerEnter(Collider other)
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         // DEBUG: Log all collisions to diagnose the issue
         Debug.Log($"[MinionController] OnTriggerEnter called! Other: {other.gameObject.name}, Layer: {LayerMask.LayerToName(other.gameObject.layer)}, HasExploded: {_hasExploded}");
 

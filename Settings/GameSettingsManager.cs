@@ -32,21 +32,22 @@ namespace SurvivorGame.Settings
         {
             base.Awake();
 
-            if (Instance == this)
+            // CRITICAL: Always initialize, never check "if (Instance == this)"
+            // This ensures proper initialization even after scene restarts
+            // (See CLAUDE.md rule: NEVER use `if (Instance == this)` in Singleton Awake())
+
+            // Ensure this GameObject is at root level for DontDestroyOnLoad
+            if (transform.parent != null)
             {
-                // Ensure this GameObject is at root level for DontDestroyOnLoad
-                if (transform.parent != null)
-                {
-                    Debug.LogWarning("[GameSettingsManager] Must be on a root GameObject. Moving to root.");
-                    transform.SetParent(null);
-                }
-
-                DontDestroyOnLoad(gameObject);
-
-                // Delay loading settings to ensure SimpleLocalizationManager is initialized
-                // (SimpleLocalizationManager.Awake() might not have been called yet if we're created dynamically)
-                StartCoroutine(LoadSettingsDelayed());
+                Debug.LogWarning("[GameSettingsManager] Must be on a root GameObject. Moving to root.");
+                transform.SetParent(null);
             }
+
+            DontDestroyOnLoad(gameObject);
+
+            // Delay loading settings to ensure SimpleLocalizationManager is initialized
+            // (SimpleLocalizationManager.Awake() might not have been called yet if we're created dynamically)
+            StartCoroutine(LoadSettingsDelayed());
         }
 
         private System.Collections.IEnumerator LoadSettingsDelayed()

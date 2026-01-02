@@ -49,10 +49,9 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
                 {
                     _instance = FindFirstObjectByType<T>();
 
-                    if (_instance == null)
-                    {
-                        Debug.LogError($"[Singleton] An instance of '{typeof(T)}' is needed but none exists in the scene.");
-                    }
+                    // REMOVED: Don't log error during initialization phase
+                    // The error was triggering too early when checking "if (Instance == null)"
+                    // Now we silently return null if instance doesn't exist yet
                 }
 
                 return _instance;
