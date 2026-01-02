@@ -54,10 +54,12 @@ public class AudioManager : Singleton<AudioManager>
     private void OnDestroy()
     {
         // Unsubscribe from events
-        if (GameStateController.Instance != null)
+        // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+        var gameStateController = FindFirstObjectByType<GameStateController>();
+        if (gameStateController != null)
         {
-            GameStateController.Instance.OnGamePaused.RemoveListener(OnGamePaused);
-            GameStateController.Instance.OnGameResumed.RemoveListener(OnGameResumed);
+            gameStateController.OnGamePaused.RemoveListener(OnGamePaused);
+            gameStateController.OnGameResumed.RemoveListener(OnGameResumed);
         }
     }
 

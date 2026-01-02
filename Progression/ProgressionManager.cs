@@ -187,7 +187,7 @@ namespace SurvivorGame.Progression
         /// <summary>
         /// Records statistics from a completed run
         /// </summary>
-        public void RecordRunStats(int enemiesKilled, float runTime, int playerLevel)
+        public void RecordRunStats(int enemiesKilled, float runTime, int playerLevel, int score)
         {
             if (_currentProgression == null) return;
 
@@ -199,6 +199,9 @@ namespace SurvivorGame.Progression
 
             if (playerLevel > _currentProgression.highestLevel)
                 _currentProgression.highestLevel = playerLevel;
+
+            if (score > _currentProgression.highestScore)
+                _currentProgression.highestScore = score;
 
             if (verboseLogging)
                 Debug.Log($"[ProgressionManager] Recorded run stats: Enemies={enemiesKilled}, Time={runTime:F1}s, Level={playerLevel}");

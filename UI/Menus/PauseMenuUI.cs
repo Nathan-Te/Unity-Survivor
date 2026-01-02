@@ -151,15 +151,18 @@ public class PauseMenuUI : MonoBehaviour
         if (quitButton) quitButton.onClick.RemoveListener(Quit);
 
         // Cleanup level-up listener
-        if (LevelManager.Instance != null)
+        // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+        var levelManager = FindFirstObjectByType<LevelManager>();
+        if (levelManager != null)
         {
-            LevelManager.Instance.OnLevelUp.RemoveListener(OnLevelUpStarted);
+            levelManager.OnLevelUp.RemoveListener(OnLevelUpStarted);
         }
 
         // Cleanup game state listener
-        if (GameStateController.Instance != null)
+        var gameStateController = FindFirstObjectByType<GameStateController>();
+        if (gameStateController != null)
         {
-            GameStateController.Instance.OnStateChanged.RemoveListener(OnGameStateChanged);
+            gameStateController.OnStateChanged.RemoveListener(OnGameStateChanged);
         }
     }
 }

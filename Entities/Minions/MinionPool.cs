@@ -122,24 +122,25 @@ public class MinionPool : Singleton<MinionPool>
     }
 
     /// <summary>
-    /// Clear all pooled minions
+    /// Deactivates all active minions (children of this pool).
+    /// Called during scene transitions to clean up before reload.
+    /// Does NOT destroy objects - they'll be destroyed with scene reload.
     /// </summary>
     public void ClearAll()
     {
-        foreach (var kvp in _pools)
+        // Deactivate all active minions (children of this GameObject)
+        int deactivatedCount = 0;
+        for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            while (kvp.Value.Count > 0)
+            Transform child = transform.GetChild(i);
+            if (child.gameObject.activeSelf)
             {
-                GameObject obj = kvp.Value.Dequeue();
-                if (obj != null)
-                {
-                    Destroy(obj);
-                }
+                child.gameObject.SetActive(false);
+                deactivatedCount++;
             }
         }
-        _pools.Clear();
 
-        Debug.Log("[MinionPool] Pool vidé et objets détruits");
+        Debug.Log($"[MinionPool] Deactivated {deactivatedCount} active minions. Pool has {_pools.Count} prefab types.");
     }
 
     /// <summary>

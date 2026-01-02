@@ -28,23 +28,46 @@ namespace SurvivorGame.Progression
         public int totalEnemiesKilled = 0;
         public float bestRunTime = 0f;
         public int highestLevel = 0;
+        public int highestScore = 0;
 
         /// <summary>
-        /// Creates default starting progression data
+        /// Creates default starting progression data.
+        /// CUSTOMIZE HERE: Modify these values to set the initial player progression.
         /// </summary>
         public static PlayerProgressionData CreateDefault()
         {
             var data = new PlayerProgressionData
             {
+                // Starting gold (meta-currency for upgrades)
                 gold = 0,
+
+                // Starting spell slots (default: 4)
                 maxSpellSlots = 4,
+
+                // Starting rune unlocks (empty = all locked, requires upgrades to unlock)
                 runeUnlocks = new List<RuneUnlockData>(),
-                unlockedLevelIds = new List<string> { "Level_Tutorial" }, // Default first level
+
+                // Starting unlocked levels (add more to unlock levels by default)
+                unlockedLevelIds = new List<string>
+                {
+                    "Level_Tutorial"  // Tutorial is unlocked by default
+                    // "Level_Forest",  // Uncomment to unlock Forest by default
+                    // "Level_Dungeon", // Uncomment to unlock Dungeon by default
+                },
+
+                // Statistics (always start at 0)
                 totalRunsCompleted = 0,
                 totalEnemiesKilled = 0,
                 bestRunTime = 0f,
-                highestLevel = 0
+                highestLevel = 0,
+                highestScore = 0
             };
+
+            // Optional: Unlock some runes by default (example commented out)
+            // data.UnlockRune("Bolt");
+            // data.UpgradeRuneMaxLevel("Bolt", 5);
+            // data.UnlockRune("Fire");
+            // data.UpgradeRuneMaxLevel("Fire", 5);
 
             return data;
         }

@@ -86,9 +86,11 @@ public class StatIconUI : MonoBehaviour
     private void OnDestroy()
     {
         // Unsubscribe from events
-        if (PlayerStats.Instance != null)
+        // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+        var playerStats = FindFirstObjectByType<PlayerStats>();
+        if (playerStats != null)
         {
-            PlayerStats.Instance.OnStatsChanged -= UpdateDisplay;
+            playerStats.OnStatsChanged -= UpdateDisplay;
         }
     }
 

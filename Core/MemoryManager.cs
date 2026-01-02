@@ -88,57 +88,71 @@ public class MemoryManager : Singleton<MemoryManager>
 
     private void ClearAllPools()
     {
+        // Use FindFirstObjectByType to check existence without triggering Singleton getter errors
+        // Scene-based singletons may be destroyed during scene unload
+
         // ProjectilePool
-        if (ProjectilePool.Instance != null)
+        var projectilePool = FindFirstObjectByType<ProjectilePool>();
+        if (projectilePool != null)
         {
             // Note : Vous devrez ajouter ClearAll() dans ProjectilePool
-            ProjectilePool.Instance.ClearAll();
+            projectilePool.ClearAll();
             if (verboseLogging)
                 Debug.Log("[MemoryManager] ProjectilePool nettoyé");
         }
 
         // GemPool
-        if (GemPool.Instance != null)
+        var gemPool = FindFirstObjectByType<GemPool>();
+        if (gemPool != null)
         {
             // Note : Vous devrez ajouter ClearAll() dans GemPool
-            GemPool.Instance.ClearAll();
+            gemPool.ClearAll();
             if (verboseLogging)
                 Debug.Log("[MemoryManager] GemPool nettoyé");
         }
 
         // EnemyPool
-        if (EnemyPool.Instance != null)
+        var enemyPool = FindFirstObjectByType<EnemyPool>();
+        if (enemyPool != null)
         {
-            EnemyPool.Instance.ClearAll();
+            enemyPool.ClearAll();
         }
 
         // DamageTextPool
-        if (DamageTextPool.Instance != null)
+        var damageTextPool = FindFirstObjectByType<DamageTextPool>();
+        if (damageTextPool != null)
         {
-            DamageTextPool.Instance.ClearAll();
+            damageTextPool.ClearAll();
         }
     }
 
     private void DestroyAllPools()
     {
-        if (ProjectilePool.Instance != null)
+        // Use FindFirstObjectByType to check existence without triggering Singleton getter errors
+        // Scene-based singletons are destroyed when scene unloads, so we check safely
+
+        var projectilePool = FindFirstObjectByType<ProjectilePool>();
+        if (projectilePool != null)
         {
             // ProjectilePool.Instance.DestroyAll();
         }
 
-        if (GemPool.Instance != null)
+        var gemPool = FindFirstObjectByType<GemPool>();
+        if (gemPool != null)
         {
             // GemPool.Instance.DestroyAll();
         }
 
-        if (EnemyPool.Instance != null)
+        var enemyPool = FindFirstObjectByType<EnemyPool>();
+        if (enemyPool != null)
         {
-            EnemyPool.Instance.DestroyAll();
+            enemyPool.DestroyAll();
         }
 
-        if (DamageTextPool.Instance != null)
+        var damageTextPool = FindFirstObjectByType<DamageTextPool>();
+        if (damageTextPool != null)
         {
-            DamageTextPool.Instance.ClearAll();
+            damageTextPool.ClearAll();
         }
 
         if (verboseLogging)

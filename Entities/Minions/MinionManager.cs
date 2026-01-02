@@ -122,13 +122,21 @@ public class MinionManager : Singleton<MinionManager>
 
     protected override void OnApplicationQuit()
     {
-        ClearAllMinions();
+        // Don't try to access singletons during application quit
+        if (!SingletonGlobalState.IsSceneLoading)
+        {
+            ClearAllMinions();
+        }
         base.OnApplicationQuit();
     }
 
     protected override void OnDestroy()
     {
-        ClearAllMinions();
+        // Don't try to access singletons during scene unload/restart
+        if (!SingletonGlobalState.IsSceneLoading)
+        {
+            ClearAllMinions();
+        }
         base.OnDestroy();
     }
 }

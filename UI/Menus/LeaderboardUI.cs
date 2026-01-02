@@ -37,9 +37,11 @@ namespace SurvivorGame.UI
         {
             if (backButton) backButton.onClick.RemoveListener(OnBackPressed);
 
-            if (ProgressionManager.Instance != null)
+            // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+            var progressionManager = FindFirstObjectByType<ProgressionManager>();
+            if (progressionManager != null)
             {
-                ProgressionManager.Instance.OnProgressionChanged -= OnProgressionChanged;
+                progressionManager.OnProgressionChanged -= OnProgressionChanged;
             }
 
             SimpleLocalizationManager.OnLanguageChanged -= RefreshText;

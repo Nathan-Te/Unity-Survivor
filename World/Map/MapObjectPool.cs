@@ -49,4 +49,26 @@ public class MapObjectPool : Singleton<MapObjectPool>
 
         _pools[key].Enqueue(obj);
     }
+
+    /// <summary>
+    /// Deactivates all map objects (children of this pool).
+    /// Called during scene transitions to clean up before reload.
+    /// Does NOT destroy objects - they'll be destroyed with scene reload.
+    /// </summary>
+    public void ClearAll()
+    {
+        // Deactivate all children (active map objects)
+        int deactivatedCount = 0;
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = transform.GetChild(i);
+            if (child.gameObject.activeSelf)
+            {
+                child.gameObject.SetActive(false);
+                deactivatedCount++;
+            }
+        }
+
+        Debug.Log($"[MapObjectPool] Deactivated {deactivatedCount} map objects. Pool has {_pools.Count} prefab types.");
+    }
 }

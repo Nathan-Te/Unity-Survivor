@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using SurvivorGame.Progression;
 using SurvivorGame.Localization;
+using SurvivorGame.Settings;
 using TMPro;
 
 namespace SurvivorGame.UI
@@ -35,8 +36,70 @@ namespace SurvivorGame.UI
 
         private CanvasGroup _currentPanel;
 
+        private void Awake()
+        {
+            // CRITICAL: Ensure the main Canvas is always active when MainMenu scene loads
+            // This fixes the issue where returning from game scene leaves Canvas disabled
+            Canvas mainCanvas = GetComponentInParent<Canvas>();
+
+            Debug.Log($"[MainMenuUI] Awake() - Looking for Canvas parent... Scene: {gameObject.scene.name}");
+
+            if (mainCanvas != null)
+            {
+                Debug.Log($"[MainMenuUI] Found Canvas: {mainCanvas.name} (active: {mainCanvas.gameObject.activeSelf}, enabled: {mainCanvas.enabled})");
+
+                mainCanvas.enabled = true;
+                mainCanvas.gameObject.SetActive(true);
+
+                Debug.Log($"[MainMenuUI] Canvas re-activated: {mainCanvas.name}");
+            }
+            else
+            {
+                Debug.LogError("[MainMenuUI] CRITICAL: No Canvas found in parent hierarchy! MainMenu UI will not display.");
+                Debug.LogError($"[MainMenuUI] This GameObject: {gameObject.name}, Scene: {gameObject.scene.name}");
+            }
+
+            // CRITICAL: Force reset to main menu panel (hide all sub-panels)
+            // This ensures we always start at the main menu, not at a sub-panel
+            ResetToMainMenuPanel();
+        }
+
+        /// <summary>
+        /// Forces all panels to their initial state (main menu visible, all others hidden)
+        /// </summary>
+        private void ResetToMainMenuPanel()
+        {
+            // Hide ALL panels first
+            if (levelSelectionPanel != null) SetPanelVisible(levelSelectionPanel, false);
+            if (upgradesPanel != null) SetPanelVisible(upgradesPanel, false);
+            if (settingsPanel != null) SetPanelVisible(settingsPanel, false);
+            if (leaderboardPanel != null) SetPanelVisible(leaderboardPanel, false);
+
+            // Show main menu panel
+            if (mainMenuPanel != null)
+            {
+                SetPanelVisible(mainMenuPanel, true);
+                _currentPanel = mainMenuPanel;
+            }
+
+            if (verboseLogging)
+                Debug.Log("[MainMenuUI] Reset to main menu panel");
+        }
+
         private void Start()
         {
+            // Ensure time is running (in case we came from a paused game scene)
+            Time.timeScale = 1f;
+
+            // Initialize GameSettingsManager and load settings (this will apply language)
+            InitializeGameSettings();
+
+            // Validate critical UI references
+            if (goldText == null)
+            {
+                Debug.LogError("[MainMenuUI] goldText is not assigned in Inspector! Player gold will not display. Please assign the TextMeshProUGUI component in the MainMenuUI Inspector.");
+            }
+
             // Wire up main menu buttons
             if (playButton) playButton.onClick.AddListener(OpenLevelSelection);
             if (upgradesButton) upgradesButton.onClick.AddListener(OpenUpgrades);
@@ -54,14 +117,94 @@ namespace SurvivorGame.UI
             // Subscribe to language changes
             SimpleLocalizationManager.OnLanguageChanged += RefreshText;
 
-            // Show main menu by default
-            ShowPanel(mainMenuPanel);
+            // Note: Panel visibility is already set in Awake() via ResetToMainMenuPanel()
+            // No need to call ShowPanel again
 
-            // Update player info display
-            UpdatePlayerInfo(ProgressionManager.Instance?.CurrentProgression);
+            // Update player info display IMMEDIATELY (synchronous)
+            RefreshPlayerInfo();
+
+            // Also update with a delay as fallback
+            Invoke(nameof(RefreshPlayerInfo), 0.1f);
 
             if (verboseLogging)
                 Debug.Log("[MainMenuUI] Initialized");
+        }
+
+        /// <summary>
+        /// Initializes GameSettingsManager and ProgressionManager if they don't exist yet.
+        /// This ensures settings and save data are loaded at game startup.
+        /// IMPORTANT: SimpleLocalizationManager must exist BEFORE GameSettingsManager initializes.
+        /// IMPORTANT: ProgressionManager must exist to load player progression (unlocked levels, gold, etc.)
+        /// </summary>
+        private void InitializeGameSettings()
+        {
+            // CRITICAL: Ensure SimpleLocalizationManager exists FIRST
+            // (GameSettingsManager needs it to apply language settings)
+            var localizationManager = SimpleLocalizationManager.Instance;
+            if (localizationManager == null)
+            {
+                Debug.LogError("[MainMenuUI] SimpleLocalizationManager is missing! Language settings cannot be applied. " +
+                               "Please ensure there is a GameObject with SimpleLocalizationManager in the MainMenu scene.");
+            }
+
+            // CRITICAL: Ensure ProgressionManager exists (may be destroyed on return to MainMenu)
+            // ProgressionManager is a DontDestroyOnLoad singleton that gets destroyed when returning to MainMenu
+            // We need to recreate it so save data can be loaded
+            var existingProgression = FindFirstObjectByType<ProgressionManager>();
+            if (existingProgression == null)
+            {
+                GameObject progressionManagerObj = new GameObject("ProgressionManager");
+                progressionManagerObj.AddComponent<ProgressionManager>();
+
+                Debug.Log("[MainMenuUI] Created ProgressionManager GameObject - will load save data in Awake()");
+            }
+            else
+            {
+                Debug.Log("[MainMenuUI] ProgressionManager already exists");
+            }
+
+            // Check if GameSettingsManager GameObject exists
+            var existingManager = FindFirstObjectByType<GameSettingsManager>();
+
+            if (existingManager == null)
+            {
+                // Create a new GameObject for GameSettingsManager
+                GameObject settingsManagerObj = new GameObject("GameSettingsManager");
+                settingsManagerObj.AddComponent<GameSettingsManager>();
+
+                if (verboseLogging)
+                    Debug.Log("[MainMenuUI] Created GameSettingsManager GameObject");
+            }
+            else if (verboseLogging)
+            {
+                Debug.Log("[MainMenuUI] GameSettingsManager already exists, settings will be loaded by it");
+            }
+        }
+
+        /// <summary>
+        /// Refreshes player info display (called with delay to ensure ProgressionManager is ready)
+        /// </summary>
+        private void RefreshPlayerInfo()
+        {
+            if (ProgressionManager.Instance != null && ProgressionManager.Instance.CurrentProgression != null)
+            {
+                UpdatePlayerInfo(ProgressionManager.Instance.CurrentProgression);
+
+                if (verboseLogging)
+                    Debug.Log($"[MainMenuUI] Refreshed player info - Gold: {ProgressionManager.Instance.CurrentProgression.gold}");
+            }
+            else
+            {
+                // Fallback: Display 0 gold if ProgressionManager isn't ready yet
+                if (goldText != null)
+                {
+                    //goldText.text = SimpleLocalizationHelper.FormatGold(0);
+                    goldText.text = "0";
+                }
+
+                if (verboseLogging)
+                    Debug.LogWarning("[MainMenuUI] ProgressionManager not ready, displaying 0 gold as fallback");
+            }
         }
 
         private void OnDestroy()
@@ -74,10 +217,12 @@ namespace SurvivorGame.UI
             if (quitButton) quitButton.onClick.RemoveListener(QuitGame);
 
             // Cleanup progression listeners
-            if (ProgressionManager.Instance != null)
+            // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+            var progressionManager = FindFirstObjectByType<ProgressionManager>();
+            if (progressionManager != null)
             {
-                ProgressionManager.Instance.OnProgressionLoaded -= UpdatePlayerInfo;
-                ProgressionManager.Instance.OnProgressionChanged -= UpdatePlayerInfo;
+                progressionManager.OnProgressionLoaded -= UpdatePlayerInfo;
+                progressionManager.OnProgressionChanged -= UpdatePlayerInfo;
             }
 
             // Cleanup localization listener
@@ -89,11 +234,77 @@ namespace SurvivorGame.UI
         /// </summary>
         private void UpdatePlayerInfo(PlayerProgressionData data)
         {
-            if (data == null) return;
+            if (data == null)
+            {
+                if (verboseLogging)
+                    Debug.LogWarning("[MainMenuUI] UpdatePlayerInfo called with null data");
+                return;
+            }
 
             if (goldText != null)
             {
-                goldText.text = SimpleLocalizationHelper.FormatGold(data.gold);
+                // DEBUG: Check if SimpleLocalizationManager exists
+                if (SimpleLocalizationManager.Instance == null)
+                {
+                    Debug.LogError("[MainMenuUI] SimpleLocalizationManager.Instance is NULL!");
+                    goldText.text = $"Gold: {data.gold}"; // Fallback without localization
+                    return;
+                }
+
+                // DEBUG: Try to get the key directly
+                string testKey = SimpleLocalizationManager.Instance.GetString("HUD_GOLD", "KEY_NOT_FOUND");
+                Debug.Log($"[MainMenuUI] Testing HUD_GOLD key: '{testKey}'");
+
+                string formattedGold = data.gold.ToString();
+                //string formattedGold = SimpleLocalizationHelper.FormatGold(data.gold);
+                Debug.Log($"[MainMenuUI] FormatGold({data.gold}) returned: '{formattedGold}'");
+
+                // If FormatGold returns empty, use fallback
+                if (string.IsNullOrEmpty(formattedGold))
+                {
+                    Debug.LogWarning("[MainMenuUI] FormatGold returned empty string! Using fallback.");
+                    goldText.text = $"Gold: {data.gold}"; // Hard-coded fallback
+                }
+                else
+                {
+                    goldText.text = formattedGold;
+                }
+
+                // FORCE enable the GameObject in case it's disabled
+                if (!goldText.gameObject.activeInHierarchy)
+                {
+                    goldText.gameObject.SetActive(true);
+                    Debug.LogWarning($"[MainMenuUI] goldText GameObject was disabled, re-enabled it");
+                }
+
+                // Log immediately after setting
+                Debug.Log($"[MainMenuUI] Final gold text: '{goldText.text}'");
+
+                // Additional check after 1 frame to see if something clears it
+                if (verboseLogging)
+                {
+                    StartCoroutine(CheckGoldTextAfterFrame());
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[MainMenuUI] goldText is null, cannot update display");
+            }
+        }
+
+        /// <summary>
+        /// Checks if goldText is still correct after one frame
+        /// </summary>
+        private System.Collections.IEnumerator CheckGoldTextAfterFrame()
+        {
+            yield return null; // Wait 1 frame
+            if (goldText != null)
+            {
+                Debug.Log($"[MainMenuUI] Gold text after 1 frame: '{goldText.text}' (should NOT be empty)");
+                if (string.IsNullOrEmpty(goldText.text))
+                {
+                    Debug.LogError("[MainMenuUI] CRITICAL: Gold text was CLEARED after assignment! Something is overwriting it.");
+                }
             }
         }
 

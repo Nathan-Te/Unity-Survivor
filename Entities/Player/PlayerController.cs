@@ -195,15 +195,7 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
 
         if (_currentHp <= 0)
         {
-            Debug.Log("GAME OVER");
-
-            // Play game over sound
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayGameOverSound();
-            }
-
-            Time.timeScale = 0;
+            Die();
         }
     }
 
@@ -214,6 +206,53 @@ public class PlayerController : Singleton<PlayerController>, IDamageable
         Vector3 finalMove = move * speed;
         finalMove.y = -9.81f;
         _controller.Move(finalMove * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// Handles player death and triggers game over event
+    /// </summary>
+    private void Die()
+    {
+        Debug.Log("[PlayerController] Player died!");
+
+        // Play game over sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayGameOverSound();
+        }
+
+        // Gather statistics for Game Over screen
+        float timeSurvived = 0f;
+        int levelReached = 1;
+        int enemiesKilled = 0;
+
+        // Get time survived from GameTimer
+        if (GameTimer.Instance != null)
+        {
+            timeSurvived = GameTimer.Instance.ElapsedTime;
+        }
+
+        // Get level reached from LevelManager
+        if (LevelManager.Instance != null)
+        {
+            levelReached = LevelManager.Instance.currentLevel;
+        }
+
+        // Get enemies killed from EnemyManager
+        if (EnemyManager.Instance != null)
+        {
+            enemiesKilled = EnemyManager.Instance.TotalKills;
+        }
+
+        // Get score from ArcadeScoreSystem
+        int score = 0;
+        if (ArcadeScoreSystem.Instance != null)
+        {
+            score = ArcadeScoreSystem.Instance.TotalScore;
+        }
+
+        // Fire death event (GameOverManager will handle the rest)
+        GameEvents.OnPlayerDeath.Invoke(timeSurvived, levelReached, enemiesKilled, score);
     }
 
     private void HandleRotation()

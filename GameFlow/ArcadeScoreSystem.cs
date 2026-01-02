@@ -259,9 +259,11 @@ public class ArcadeScoreSystem : Singleton<ArcadeScoreSystem>
 
     protected override void OnDestroy()
     {
-        if (EnemyManager.Instance != null)
+        // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+        var enemyManager = FindFirstObjectByType<EnemyManager>();
+        if (enemyManager != null)
         {
-            EnemyManager.Instance.OnEnemyKilledWithScore -= OnEnemyKilled;
+            enemyManager.OnEnemyKilledWithScore -= OnEnemyKilled;
         }
 
         base.OnDestroy();

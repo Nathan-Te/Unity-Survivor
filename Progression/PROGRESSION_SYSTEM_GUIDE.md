@@ -277,14 +277,35 @@ Le fichier de sauvegarde est stocké ici:
 
 Chemin accessible via: `Application.persistentDataPath`
 
+### Menu de Debug Unity
+
+Utilisez le menu `Tools > Save System` pour:
+- **Show Save File Location** - Affiche et ouvre le dossier de sauvegarde
+- **Delete Save File** - Supprime la save (avec confirmation)
+- **Create Test Save (1000 Gold)** - Crée une save de test
+- **View Save File Content** - Affiche le JSON de la save
+
 ### Réinitialiser la Sauvegarde (Debug)
 ```csharp
-// Option 1: Via code
+// Option 1: Via Unity Menu (Recommandé)
+// Tools > Save System > Delete Save File
+
+// Option 2: Via code
 ProgressionManager.Instance.ResetProgression();
 
-// Option 2: Supprimer le fichier
+// Option 3: Supprimer le fichier
 SaveSystem.DeleteSave();
 ```
+
+### Configuration de la Progression Initiale
+
+Modifiez `PlayerProgressionData.CreateDefault()` pour configurer:
+- Gold de départ
+- Spell slots initiaux
+- Runes débloquées par défaut
+- Niveaux débloqués par défaut
+
+**Pour plus de détails**, voir: [SAVE_SYSTEM_FAQ.md](SAVE_SYSTEM_FAQ.md)
 
 ## Events
 

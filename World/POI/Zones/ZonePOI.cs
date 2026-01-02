@@ -36,9 +36,14 @@ public abstract class ZonePOI : PointOfInterest
 
     private void OnDestroy()
     {
-        if (chargeByKills && EnemyManager.Instance != null)
+        // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+        if (chargeByKills)
         {
-            EnemyManager.Instance.OnEnemyDeathPosition -= OnEnemyDeath;
+            var enemyManager = FindFirstObjectByType<EnemyManager>();
+            if (enemyManager != null)
+            {
+                enemyManager.OnEnemyDeathPosition -= OnEnemyDeath;
+            }
         }
     }
 

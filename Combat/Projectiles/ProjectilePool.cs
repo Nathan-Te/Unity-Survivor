@@ -18,6 +18,10 @@ public class ProjectilePool : Singleton<ProjectilePool>
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         float dt = Time.deltaTime;
         for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
         {
@@ -110,19 +114,25 @@ public class ProjectilePool : Singleton<ProjectilePool>
         }
     }
 
+    /// <summary>
+    /// Deactivates all active projectiles and returns them to pool.
+    /// Called during scene transitions to clean up before reload.
+    /// </summary>
     public void ClearAll()
     {
-        foreach (var kvp in _pools)
+        // Deactivate all active projectiles (iterate backwards for safe removal)
+        for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
         {
-            while (kvp.Value.Count > 0)
+            var projectile = _activeProjectiles[i];
+            if (projectile != null && projectile.gameObject.activeSelf)
             {
-                GameObject obj = kvp.Value.Dequeue();
-                if (obj != null) Destroy(obj);
+                projectile.gameObject.SetActive(false);
             }
         }
-        _pools.Clear();
+
+        // Clear the active list
         _activeProjectiles.Clear();
 
-        Debug.Log("[ProjectilePool] Pool vid�");
+        Debug.Log($"[ProjectilePool] Cleared all active projectiles. Pool has {_pools.Count} prefab types.");
     }
 }

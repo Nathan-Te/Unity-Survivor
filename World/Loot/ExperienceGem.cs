@@ -15,8 +15,8 @@ public class ExperienceGem : MonoBehaviour
         _isAttracted = false;
         _target = null;
 
-        // Optimisation : On désactive ce script (Update) tant qu'il n'est pas attiré !
-        // Le mouvement ne sert à rien tant qu'elle est au sol.
+        // Optimisation : On dï¿½sactive ce script (Update) tant qu'il n'est pas attirï¿½ !
+        // Le mouvement ne sert ï¿½ rien tant qu'elle est au sol.
         this.enabled = false;
     }
 
@@ -27,16 +27,22 @@ public class ExperienceGem : MonoBehaviour
         _isAttracted = true;
         _target = target;
 
-        // On réactive le script pour que l'Update tourne enfin
+        // On rï¿½active le script pour que l'Update tourne enfin
         this.enabled = true;
     }
 
     private void Update()
     {
-        // Plus besoin de vérifier _isAttracted ici, car si le script est enabled, c'est qu'on est attiré
+        // Don't update if game is restarting or not playing
+        if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
+        {
+            return;
+        }
+
+        // Plus besoin de vï¿½rifier _isAttracted ici, car si le script est enabled, c'est qu'on est attirï¿½
         if (_target == null)
         {
-            Collect(); // Sécurité si le joueur meurt ou disparaît
+            Collect(); // Sï¿½curitï¿½ si le joueur meurt ou disparaï¿½t
             return;
         }
 

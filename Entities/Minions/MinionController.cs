@@ -130,6 +130,10 @@ public class MinionController : MonoBehaviour
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         // Don't process if game is not playing
         if (GameStateController.Instance != null && !GameStateController.Instance.IsPlaying)
             return;

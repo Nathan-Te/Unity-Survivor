@@ -30,6 +30,10 @@ public class VFXPool : Singleton<VFXPool>
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+            return;
+
         float dt = Time.deltaTime;
 
         // Update all active VFX lifetimes
@@ -119,21 +123,26 @@ public class VFXPool : Singleton<VFXPool>
     }
 
     /// <summary>
-    /// Clears all pooled VFX
+    /// Deactivates all active VFX.
+    /// Called during scene transitions to clean up before reload.
+    /// Does NOT destroy objects - they'll be destroyed with scene reload.
     /// </summary>
     public void ClearAll()
     {
-        foreach (var kvp in _pools)
+        // Deactivate all active VFX
+        int deactivatedCount = 0;
+        foreach (var vfx in _activeVfx)
         {
-            while (kvp.Value.Count > 0)
+            if (vfx.GameObject != null && vfx.GameObject.activeSelf)
             {
-                GameObject obj = kvp.Value.Dequeue();
-                if (obj != null) Destroy(obj);
+                vfx.GameObject.SetActive(false);
+                deactivatedCount++;
             }
         }
-        _pools.Clear();
+
+        // Clear the active list
         _activeVfx.Clear();
 
-        Debug.Log("[VFXPool] Pool cleared");
+        Debug.Log($"[VFXPool] Deactivated {deactivatedCount} active VFX. Pool has {_pools.Count} prefab types.");
     }
 }

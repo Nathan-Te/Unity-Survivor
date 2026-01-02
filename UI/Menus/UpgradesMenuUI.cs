@@ -52,9 +52,11 @@ namespace SurvivorGame.UI
         {
             if (backButton) backButton.onClick.RemoveListener(OnBackPressed);
 
-            if (ProgressionManager.Instance != null)
+            // Use FindFirstObjectByType to avoid Singleton getter error during scene unload
+            var progressionManager = FindFirstObjectByType<ProgressionManager>();
+            if (progressionManager != null)
             {
-                ProgressionManager.Instance.OnProgressionChanged -= OnProgressionChanged;
+                progressionManager.OnProgressionChanged -= OnProgressionChanged;
             }
 
             SimpleLocalizationManager.OnLanguageChanged -= RefreshText;
@@ -76,7 +78,8 @@ namespace SurvivorGame.UI
             var data = ProgressionManager.Instance?.CurrentProgression;
             if (goldText != null && data != null)
             {
-                goldText.text = SimpleLocalizationHelper.FormatGold(data.gold);
+                //goldText.text = SimpleLocalizationHelper.FormatGold(data.gold);
+                goldText.text = data.gold.ToString();
             }
         }
 

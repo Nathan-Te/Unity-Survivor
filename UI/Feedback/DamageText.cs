@@ -62,6 +62,12 @@ public class DamageText : MonoBehaviour
 
     private void Update()
     {
+        // SAFETY: Stop executing if scene is restarting/loading to avoid NullReferenceException
+        if (SingletonGlobalState.IsSceneLoading || SingletonGlobalState.IsApplicationQuitting)
+        {
+            return;
+        }
+
         // Mouvement vers le haut
         transform.Translate(Vector3.up * moveSpeed * Time.deltaTime);
 
@@ -72,7 +78,16 @@ public class DamageText : MonoBehaviour
 
         if (_timer <= 0f)
         {
-            DamageTextPool.Instance.ReturnToPool(this);
+            // SAFETY: Check if pool instance still exists before returning
+            if (DamageTextPool.Instance != null)
+            {
+                DamageTextPool.Instance.ReturnToPool(this);
+            }
+            else
+            {
+                // Pool is destroyed, just deactivate ourselves
+                gameObject.SetActive(false);
+            }
         }
     }
 }

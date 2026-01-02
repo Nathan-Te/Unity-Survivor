@@ -56,6 +56,17 @@ namespace SurvivorGame.Localization
         }
 
         /// <summary>
+        /// Forces language reload even if it's already the current language.
+        /// Useful for applying settings on startup.
+        /// </summary>
+        public void ForceSetLanguage(Language language)
+        {
+            _currentLanguage = language;
+            LoadLanguage(_currentLanguage);
+            OnLanguageChanged?.Invoke();
+        }
+
+        /// <summary>
         /// Gets a localized string by key.
         /// </summary>
         public string GetString(string key, string fallback = "")

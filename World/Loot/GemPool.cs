@@ -70,21 +70,27 @@ public class GemPool : Singleton<GemPool>
         _inactivePool.Enqueue(gemObj);
     }
 
+    /// <summary>
+    /// Deactivates all active gems.
+    /// Called during scene transitions to clean up before reload.
+    /// Does NOT destroy objects - they'll be destroyed with scene reload.
+    /// </summary>
     public void ClearAll()
     {
+        // Deactivate all active gems
+        int deactivatedCount = 0;
         foreach (var gem in _activeGems)
         {
-            if (gem != null && gem.gameObject != null)
-                Destroy(gem.gameObject);
+            if (gem != null && gem.gameObject != null && gem.gameObject.activeSelf)
+            {
+                gem.gameObject.SetActive(false);
+                deactivatedCount++;
+            }
         }
+
+        // Clear the active list
         _activeGems.Clear();
 
-        while (_inactivePool.Count > 0)
-        {
-            GameObject obj = _inactivePool.Dequeue();
-            if (obj != null) Destroy(obj);
-        }
-
-        Debug.Log("[GemPool] Pool vid�");
+        Debug.Log($"[GemPool] Deactivated {deactivatedCount} active gems.");
     }
 }
