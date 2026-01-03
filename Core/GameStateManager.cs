@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using SurvivorGame.Core;
 
 /// <summary>
 /// Centralized manager for game state transitions (restart, quit, etc.)
@@ -57,6 +58,9 @@ public class GameStateManager : Singleton<GameStateManager>
 
     private System.Collections.IEnumerator RestartSequence()
     {
+        // CRITICAL: Get SceneLoader reference BEFORE blocking singleton access
+        var sceneLoader = SceneLoader.Instance;
+
         // Mark game as restarting via GameStateController
         if (GameStateController.Instance != null)
             GameStateController.Instance.MarkRestarting();
@@ -73,15 +77,33 @@ public class GameStateManager : Singleton<GameStateManager>
         // IMPORTANT: Disable ALL GameObjects in current scene to stop all Update() loops
         DeactivateCurrentScene();
 
-        // Clean up persistent state BEFORE reloading
-        CleanupBeforeReload();
+        // Clean up persistent state BEFORE reloading (but DON'T clear pools yet - SceneLoader might need them)
+        ResetProgression();
+        ResetPlayerPersistentStats();
+        ClearSceneSingletonReferences();
 
         // Subscribe to scene loaded event
         SceneManager.sceneLoaded += OnRestartSceneLoaded;
 
-        // Reload the scene (LoadSceneMode.Single will destroy all scene objects)
+        // Reload the scene using SceneLoader (shows loading screen)
         string sceneName = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+
+        if (sceneLoader != null)
+        {
+            // CRITICAL: Let SceneLoader handle the transition (use cached reference)
+            // Don't clear pools here - SceneLoader's cleanup will handle it
+            sceneLoader.LoadScene(sceneName);
+        }
+        else
+        {
+            // Fallback: Use SceneManager directly if SceneLoader doesn't exist
+            Debug.LogWarning("[GameStateManager] SceneLoader not found, using fallback SceneManager.LoadScene");
+
+            // If no SceneLoader, do cleanup manually before loading
+            ClearAllPools();
+
+            SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
 
         if (verboseLogging)
             Debug.Log("[GameStateManager] Scene reload initiated");
@@ -296,6 +318,10 @@ public class GameStateManager : Singleton<GameStateManager>
 
     private System.Collections.IEnumerator ReturnToMainMenuSequence()
     {
+        // CRITICAL: Get SceneLoader reference BEFORE blocking singleton access
+        // Otherwise SceneLoader.Instance will return null when IsSceneLoading = true
+        var sceneLoader = SceneLoader.Instance;
+
         // Mark game as restarting via GameStateController
         if (GameStateController.Instance != null)
             GameStateController.Instance.MarkRestarting();
@@ -332,20 +358,42 @@ public class GameStateManager : Singleton<GameStateManager>
 
         Debug.Log("[GameStateManager] Loading MainMenu scene...");
 
-        // CRITICAL: Start loading MainMenu scene BEFORE destroying managers
-        // This ensures the load operation is registered before this object is destroyed
-        AsyncOperation loadOp = SceneManager.LoadSceneAsync("MainMenu", LoadSceneMode.Single);
-        loadOp.allowSceneActivation = true;
+        // CRITICAL: Use SceneLoader if available (using reference captured before blocking)
+        if (sceneLoader != null)
+        {
+            // Start the loading process (use cached reference, not Instance getter)
+            sceneLoader.LoadScene("MainMenu");
 
-        // Wait one frame to ensure load operation started
-        yield return null;
+            // IMPORTANT: Wait for SceneLoader to complete the fade-in and start loading
+            // This gives the loading screen time to appear before we destroy everything
+            yield return new WaitForSecondsRealtime(0.7f); // Fade duration + cleanup + buffer
 
-        Debug.Log("[GameStateManager] Scene load started, now destroying all DontDestroyOnLoad objects...");
+            Debug.Log("[GameStateManager] SceneLoader fade-in complete, now destroying DontDestroyOnLoad objects...");
 
-        // CRITICAL: Destroy ALL DontDestroyOnLoad objects for a completely fresh start
-        // This includes GameStateManager itself, but the coroutine will stop here
-        // The scene load will complete independently
-        DestroyAllPersistentSingletonsForMainMenu();
+            // Now safe to destroy all persistent objects (except SceneLoader which is protected)
+            // SceneLoader will continue running and complete the scene transition
+            DestroyAllPersistentSingletonsExceptSceneLoader();
+
+            // SceneLoader will persist and be reused in the MainMenu scene
+            // No need to destroy it - it's designed to be reusable
+        }
+        else
+        {
+            Debug.LogWarning("[GameStateManager] SceneLoader not found, using fallback SceneManager.LoadSceneAsync");
+
+            // CRITICAL: Start loading MainMenu scene BEFORE destroying managers
+            // This ensures the load operation is registered before this object is destroyed
+            AsyncOperation loadOp = SceneManager.LoadSceneAsync("MainMenu", LoadSceneMode.Single);
+            loadOp.allowSceneActivation = true;
+
+            // Wait one frame to ensure load operation started
+            yield return null;
+
+            Debug.Log("[GameStateManager] Scene load started (fallback), now destroying all DontDestroyOnLoad objects...");
+
+            // Destroy everything EXCEPT SceneLoader (even in fallback mode, protect it)
+            DestroyAllPersistentSingletonsExceptSceneLoader();
+        }
 
         // NOTE: Code after this point will NOT execute because GameStateManager is destroyed
         // The scene load will complete and OnMainMenuSceneLoadedFinal will be called automatically
@@ -510,27 +558,38 @@ public class GameStateManager : Singleton<GameStateManager>
     }
 
     /// <summary>
-    /// Destroys ALL DontDestroyOnLoad GameObjects including GameStateManager.
-    /// Used when returning to MainMenu to ensure a completely fresh start.
-    /// MainMenu scene will recreate all managers from scratch.
+    /// Destroys ALL DontDestroyOnLoad GameObjects EXCEPT SceneLoader.
+    /// Used for ALL cleanup scenarios to ensure loading screen always works.
+    /// SceneLoader is ALWAYS protected and persists for the entire game session.
     /// </summary>
-    private void DestroyAllPersistentSingletonsForMainMenu()
+    private void DestroyAllPersistentSingletonsExceptSceneLoader()
     {
         if (verboseLogging)
-            Debug.Log("[GameStateManager] Destroying ALL persistent singletons for fresh MainMenu start...");
+            Debug.Log("[GameStateManager] Destroying persistent singletons (always protecting SceneLoader)...");
 
         // Clear singleton references first
         ClearSceneSingletonReferences();
 
-        // Destroy ALL DontDestroyOnLoad GameObjects (including this GameStateManager)
+        // Destroy ALL DontDestroyOnLoad GameObjects EXCEPT SceneLoader
         GameObject[] dontDestroyObjects = GameObject.FindObjectsOfType<GameObject>();
         int destroyedCount = 0;
+        int skippedCount = 0;
 
         foreach (GameObject obj in dontDestroyObjects)
         {
             // Check if object is in DontDestroyOnLoad scene
             if (obj.scene.name == "DontDestroyOnLoad")
             {
+                // CRITICAL: ALWAYS skip SceneLoader and its children
+                // This ensures loading screen works for ALL transitions
+                if (obj.GetComponent<SceneLoader>() != null || obj.GetComponentInParent<SceneLoader>() != null)
+                {
+                    if (verboseLogging)
+                        Debug.Log($"[GameStateManager] Protecting SceneLoader object: {obj.name}");
+                    skippedCount++;
+                    continue;
+                }
+
                 if (verboseLogging)
                     Debug.Log($"[GameStateManager] Destroying DontDestroyOnLoad object: {obj.name}");
 
@@ -540,7 +599,7 @@ public class GameStateManager : Singleton<GameStateManager>
         }
 
         if (verboseLogging)
-            Debug.Log($"[GameStateManager] Destroyed {destroyedCount} DontDestroyOnLoad objects (complete wipe for fresh start)");
+            Debug.Log($"[GameStateManager] Destroyed {destroyedCount} objects, protected {skippedCount} SceneLoader objects");
     }
 
     /// <summary>

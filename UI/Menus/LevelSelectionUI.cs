@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using SurvivorGame.Progression;
 using SurvivorGame.Localization;
+using SurvivorGame.Core;
 using TMPro;
 using System.Collections.Generic;
 
@@ -119,36 +120,17 @@ namespace SurvivorGame.UI
             if (verboseLogging)
                 Debug.Log($"[LevelSelectionUI] Loading level: {level.sceneName}");
 
-            // Hide all menu UI before loading game scene
-            HideAllMenuUI();
-
-            // Load the level scene
+            // Load the level scene using SceneLoader (shows loading screen)
             // Note: GameStateController will be initialized in the game scene
             // and will automatically set state to Playing in its Awake/Start
-            SceneManager.LoadScene(level.sceneName);
-        }
-
-        /// <summary>
-        /// Hides all main menu UI elements before transitioning to game scene
-        /// </summary>
-        private void HideAllMenuUI()
-        {
-            // Find and disable the main Canvas (parent of all menu UI)
-            Canvas mainCanvas = GetComponentInParent<Canvas>();
-            if (mainCanvas != null)
+            if (SceneLoader.Instance != null)
             {
-                // Disable Canvas rendering
-                mainCanvas.enabled = false;
-
-                // Also disable GameObject to prevent any interaction
-                mainCanvas.gameObject.SetActive(false);
-
-                if (verboseLogging)
-                    Debug.Log("[LevelSelectionUI] Disabled main menu Canvas and GameObject");
+                SceneLoader.Instance.LoadScene(level.sceneName);
             }
             else
             {
-                Debug.LogWarning("[LevelSelectionUI] Could not find main Canvas to disable");
+                Debug.LogWarning("[LevelSelectionUI] SceneLoader not found, using fallback SceneManager.LoadScene");
+                SceneManager.LoadScene(level.sceneName);
             }
         }
 
