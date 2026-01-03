@@ -19,6 +19,7 @@ namespace SurvivorGame.UI
         [SerializeField] private Button backButton;
         [SerializeField] private Transform levelButtonContainer;
         [SerializeField] private LevelSelectButton levelButtonPrefab;
+        [SerializeField] private CanvasGroup levelSelectionCanvasGroup;
 
         [Header("Level Definitions")]
         [SerializeField] private List<LevelDefinition> availableLevels = new List<LevelDefinition>();
@@ -120,6 +121,10 @@ namespace SurvivorGame.UI
             if (verboseLogging)
                 Debug.Log($"[LevelSelectionUI] Loading level: {level.sceneName}");
 
+            // CRITICAL: Hide level selection UI BEFORE loading screen appears
+            // This prevents the panel from appearing over the loading screen
+            HideLevelSelectionPanel();
+
             // Load the level scene using SceneLoader (shows loading screen)
             // Note: GameStateController will be initialized in the game scene
             // and will automatically set state to Playing in its Awake/Start
@@ -131,6 +136,26 @@ namespace SurvivorGame.UI
             {
                 Debug.LogWarning("[LevelSelectionUI] SceneLoader not found, using fallback SceneManager.LoadScene");
                 SceneManager.LoadScene(level.sceneName);
+            }
+        }
+
+        /// <summary>
+        /// Hides the level selection panel (prevents overlap with loading screen)
+        /// </summary>
+        private void HideLevelSelectionPanel()
+        {
+            if (levelSelectionCanvasGroup != null)
+            {
+                levelSelectionCanvasGroup.alpha = 0f;
+                levelSelectionCanvasGroup.interactable = false;
+                levelSelectionCanvasGroup.blocksRaycasts = false;
+
+                if (verboseLogging)
+                    Debug.Log("[LevelSelectionUI] Level selection panel hidden");
+            }
+            else
+            {
+                Debug.LogWarning("[LevelSelectionUI] levelSelectionCanvasGroup is not assigned! Panel may appear over loading screen.");
             }
         }
 

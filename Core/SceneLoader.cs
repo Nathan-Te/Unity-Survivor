@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 using System.Collections;
+using SurvivorGame.Localization;
 
 namespace SurvivorGame.Core
 {
@@ -24,30 +25,35 @@ namespace SurvivorGame.Core
         [SerializeField] private float fadeDuration = 0.5f;
 
         [Header("Game Tips")]
-        [SerializeField] private string[] gameTips = new string[]
+        [SerializeField] private string[] gameTipKeys = new string[]
         {
-            "Tip: Combine Form and Effect runes to create powerful spells!",
-            "Tip: Different elements have different effects on enemies.",
-            "Tip: Multicast repeats your entire spell cast multiple times.",
-            "Tip: Multishot adds extra projectiles to each cast.",
-            "Tip: Level up your runes to unlock powerful upgrades!",
-            "Tip: Collect gems to gain experience and level up.",
-            "Tip: Some enemies are resistant to certain elements.",
-            "Tip: Use the ban feature to avoid unwanted runes.",
-            "Tip: Area spells always spread in a full circle.",
-            "Tip: Orbit spells never despawn and can hit multiple enemies.",
-            "Tip: Critical hits can stack - over 100% crit chance means multiple crits!",
-            "Tip: Necrotic damage can spawn ghost minions when enemies die.",
-            "Tip: Ghost minions explode on impact, dealing area damage.",
-            "Tip: Move to avoid enemy attacks - mobility is key!",
-            "Tip: Try different spell combinations to find your playstyle."
+            "LOADING_TIP_1",
+            "LOADING_TIP_2",
+            "LOADING_TIP_3",
+            "LOADING_TIP_4",
+            "LOADING_TIP_5",
+            "LOADING_TIP_6",
+            "LOADING_TIP_7",
+            "LOADING_TIP_8",
+            "LOADING_TIP_9",
+            "LOADING_TIP_10",
+            "LOADING_TIP_11",
+            "LOADING_TIP_12",
+            "LOADING_TIP_13",
+            "LOADING_TIP_14",
+            "LOADING_TIP_15"
         };
+
+        [Header("Tip Rotation")]
+        [Tooltip("Interval in seconds to rotate tips during long loads")]
+        [SerializeField] private float tipRotationInterval = 5f;
 
         [Header("Settings")]
         [SerializeField] private bool verboseLogging = false;
 
         private Canvas _loadingCanvas;
         private bool _isLoading = false;
+        private Coroutine _tipRotationCoroutine;
 
         protected override void Awake()
         {
@@ -132,14 +138,18 @@ namespace SurvivorGame.Core
             _isLoading = true;
             float loadStartTime = Time.realtimeSinceStartup;
 
+            // CRITICAL: Initialize tip and reset progress BEFORE fade-in (prevents visible swap)
+            ResetProgressBar();
+            DisplayRandomTip();
+
             // PHASE A: FADE IN (Apparition)
             if (verboseLogging)
                 Debug.Log("[SceneLoader] Phase A: Fading in loading screen");
 
             yield return StartCoroutine(FadeInLoadingScreen());
 
-            // Display random tip
-            DisplayRandomTip();
+            // Start tip rotation for long loads
+            _tipRotationCoroutine = StartCoroutine(RotateTipsCoroutine());
 
             // PHASE B: CLEANUP (Nettoyage)
             if (verboseLogging)
@@ -199,6 +209,13 @@ namespace SurvivorGame.Core
             // PHASE E: FADE OUT (Disparition)
             if (verboseLogging)
                 Debug.Log("[SceneLoader] Phase E: Fading out loading screen");
+
+            // Stop tip rotation
+            if (_tipRotationCoroutine != null)
+            {
+                StopCoroutine(_tipRotationCoroutine);
+                _tipRotationCoroutine = null;
+            }
 
             yield return StartCoroutine(FadeOutLoadingScreen());
 
@@ -299,18 +316,20 @@ namespace SurvivorGame.Core
         }
 
         /// <summary>
-        /// Displays a random tip from the gameTips array
+        /// Displays a random localized tip from the gameTipKeys array
         /// </summary>
         private void DisplayRandomTip()
         {
-            if (tipText == null || gameTips == null || gameTips.Length == 0)
+            if (tipText == null || gameTipKeys == null || gameTipKeys.Length == 0)
                 return;
 
-            int randomIndex = Random.Range(0, gameTips.Length);
-            tipText.text = gameTips[randomIndex];
+            int randomIndex = Random.Range(0, gameTipKeys.Length);
+            string tipKey = gameTipKeys[randomIndex];
+            string localizedTip = SimpleLocalizationHelper.Get(tipKey, "Loading...");
+            tipText.text = localizedTip;
 
             if (verboseLogging)
-                Debug.Log($"[SceneLoader] Displaying tip: {gameTips[randomIndex]}");
+                Debug.Log($"[SceneLoader] Displaying tip: {tipKey} = {localizedTip}");
         }
 
         /// <summary>
@@ -339,6 +358,39 @@ namespace SurvivorGame.Core
 
             // Unload unused assets
             Resources.UnloadUnusedAssets();
+        }
+
+        /// <summary>
+        /// Rotates tips at regular intervals during long loads
+        /// </summary>
+        private IEnumerator RotateTipsCoroutine()
+        {
+            while (_isLoading)
+            {
+                yield return new WaitForSecondsRealtime(tipRotationInterval);
+
+                if (_isLoading)
+                {
+                    DisplayRandomTip();
+
+                    if (verboseLogging)
+                        Debug.Log($"[SceneLoader] Tip rotated after {tipRotationInterval}s");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resets the progress bar to 0
+        /// </summary>
+        private void ResetProgressBar()
+        {
+            if (progressBar != null)
+            {
+                progressBar.value = 0f;
+
+                if (verboseLogging)
+                    Debug.Log("[SceneLoader] Progress bar reset to 0");
+            }
         }
     }
 }
