@@ -124,11 +124,11 @@ public class PauseMenuUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Quits the game (exits application)
+    /// Returns to the main menu
     /// </summary>
     private void Quit()
     {
-        GameStateManager.QuitGame();
+        GameStateManager.ReturnToMainMenu();
     }
 
     /// <summary>
